@@ -1,4 +1,5 @@
 import { defineConfig, globalIgnores } from "eslint/config";
+import eslintConfigPrettier from "eslint-config-prettier";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import sonarjs from "eslint-plugin-sonarjs";
@@ -87,8 +88,11 @@ const eslintConfig = defineConfig([
       // Um `describe` inteiro conta como uma função; o tamanho útil ali é o
       // do arquivo.
       "max-lines-per-function": "off",
-      "complexity": "off",
-      "max-lines": ["warn", { max: 800, skipBlankLines: true, skipComments: true }],
+      complexity: "off",
+      "max-lines": [
+        "warn",
+        { max: 800, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
   {
@@ -96,6 +100,8 @@ const eslintConfig = defineConfig([
     files: ["scripts/**/*.mjs"],
     rules: { "max-lines-per-function": "off" },
   },
+  // Desliga regras de estilo do ESLint que brigariam com o Prettier.
+  eslintConfigPrettier,
 ]);
 
 export default eslintConfig;

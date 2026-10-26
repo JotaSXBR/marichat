@@ -61,7 +61,9 @@ export async function runZernioConnectionTest(
       return result;
     }
 
-    const match = accounts.find((item) => item.id === account.providerAccountId);
+    const match = accounts.find(
+      (item) => item.id === account.providerAccountId,
+    );
     if (!match) {
       result.problems.push(
         `A conta @${account.username} não aparece mais na Zernio (ou foi reconectada). Use "Conectar conta da Zernio" para atualizar o vínculo.`,

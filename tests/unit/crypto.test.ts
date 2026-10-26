@@ -31,9 +31,9 @@ describe("AES-256-GCM do token", () => {
   });
 
   it("rejeita chave de tamanho inválido", () => {
-    expect(() => encryptToken("abc", Buffer.alloc(16).toString("base64"))).toThrow(
-      /32 bytes/,
-    );
+    expect(() =>
+      encryptToken("abc", Buffer.alloc(16).toString("base64")),
+    ).toThrow(/32 bytes/);
   });
 });
 

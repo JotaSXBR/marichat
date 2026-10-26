@@ -86,7 +86,11 @@ export function toZernioMessage(payload: unknown): ZernioMessage {
     if (raw.type === "web_url" && typeof raw.url === "string") {
       buttons.push({ type: "url", title: raw.title, url: raw.url });
     } else if (raw.type === "postback" && typeof raw.payload === "string") {
-      buttons.push({ type: "postback", title: raw.title, payload: raw.payload });
+      buttons.push({
+        type: "postback",
+        title: raw.title,
+        payload: raw.payload,
+      });
     }
   }
 
@@ -217,7 +221,10 @@ export function buildOptionalLinkPayload(params: {
         type: "template",
         payload: {
           template_type: "button",
-          text: truncateUtf8(settings.followOptionalText, MAX_BUTTON_TEXT_BYTES),
+          text: truncateUtf8(
+            settings.followOptionalText,
+            MAX_BUTTON_TEXT_BYTES,
+          ),
           buttons: [
             {
               type: "web_url",

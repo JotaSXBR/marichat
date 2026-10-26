@@ -99,7 +99,9 @@ export async function runConnectionTest(
       }
       result.subscriptionChecked = true;
       result.subscribedFields = [...fields].sort();
-      result.missingFields = IG.webhookFields.filter((field) => !fields.has(field));
+      result.missingFields = IG.webhookFields.filter(
+        (field) => !fields.has(field),
+      );
 
       if (result.missingFields.length > 0) {
         result.problems.push(

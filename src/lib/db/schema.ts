@@ -71,7 +71,9 @@ export const automations = pgTable(
      * Campo legado da primeira versão (botão de quick reply na primeira DM).
      * Mantido para não perder dados; a primeira DM agora é sempre texto puro.
      */
-    quickReplyTitle: text("quick_reply_title").notNull().default("Quero o link"),
+    quickReplyTitle: text("quick_reply_title")
+      .notNull()
+      .default("Quero o link"),
     secondDmText: text("second_dm_text").notNull(),
     linkButtonTitle: text("link_button_title").notNull(),
     linkUrl: text("link_url").notNull(),
@@ -88,7 +90,7 @@ export const automations = pgTable(
     followGateText: text("follow_gate_text")
       .notNull()
       .default(
-        "Para liberar o link, siga o perfil e depois toque em \"Já segui\". Se preferir, toque em \"Seguir agora\".",
+        'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".',
       ),
     followGateFollowLabel: text("follow_gate_follow_label")
       .notNull()
@@ -170,8 +172,9 @@ export const commentInteractions = pgTable(
      */
     providerConversationId: text("provider_conversation_id"),
     commentText: text("comment_text"),
-    commentCreatedAt: timestamp("comment_created_at", { withTimezone: true })
-      .notNull(),
+    commentCreatedAt: timestamp("comment_created_at", {
+      withTimezone: true,
+    }).notNull(),
     /** commentCreatedAt + 7 dias (janela oficial de resposta privada). */
     replyDeadlineAt: timestamp("reply_deadline_at", {
       withTimezone: true,

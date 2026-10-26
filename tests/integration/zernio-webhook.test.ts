@@ -132,7 +132,9 @@ suite("webhook da Zernio: tradução para o motor", () => {
     await seedAutomation(account.id);
 
     await handleZernioEvent(commentEvent({ id: "evt-repetido" }));
-    const duplicated = await handleZernioEvent(commentEvent({ id: "evt-repetido" }));
+    const duplicated = await handleZernioEvent(
+      commentEvent({ id: "evt-repetido" }),
+    );
 
     expect(duplicated.ignored).toBe(1);
     const db = getDb();
@@ -243,6 +245,11 @@ suite("webhook da Zernio: tradução para o motor", () => {
 
   it("ignora evento de teste da Zernio", async () => {
     const summary = await handleZernioEvent({ ...commentEvent(), test: true });
-    expect(summary).toEqual({ received: 0, processed: 0, ignored: 0, failed: 0 });
+    expect(summary).toEqual({
+      received: 0,
+      processed: 0,
+      ignored: 0,
+      failed: 0,
+    });
   });
 });

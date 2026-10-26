@@ -184,17 +184,16 @@ async function updateJobIfLocked(
     .where(
       and(
         eq(outboundMessages.id, job.id),
-        job.lockToken ? eq(outboundMessages.lockToken, job.lockToken) : sql`true`,
+        job.lockToken
+          ? eq(outboundMessages.lockToken, job.lockToken)
+          : sql`true`,
       ),
     )
     .returning({ id: outboundMessages.id });
   return updated.length > 0;
 }
 
-function deadlineFor(
-  job: JobRow,
-  interaction: InteractionRow,
-): number | null {
+function deadlineFor(job: JobRow, interaction: InteractionRow): number | null {
   if (job.kind === "private_reply") {
     return interaction.replyDeadlineAt.getTime();
   }
@@ -248,7 +247,11 @@ async function markAccepted(
       return;
     }
 
-    if (job.kind === "followup_link" || job.kind === "link_optional" || job.kind === "link_direct") {
+    if (
+      job.kind === "followup_link" ||
+      job.kind === "link_optional" ||
+      job.kind === "link_direct"
+    ) {
       await tx
         .update(commentInteractions)
         .set({
@@ -450,10 +453,7 @@ async function privateReplyUsage(accountId: string): Promise<{
   };
 }
 
-async function requeueForRateLimit(
-  job: JobRow,
-  retryAt: Date,
-): Promise<void> {
+async function requeueForRateLimit(job: JobRow, retryAt: Date): Promise<void> {
   const db = getDb();
   await db
     .update(outboundMessages)
@@ -491,9 +491,8 @@ async function retryOrFail(
   }
 
   const delay =
-    IG.retryDelaysMs[
-      Math.min(job.attempts - 1, IG.retryDelaysMs.length - 1)
-    ] ?? IG.retryDelaysMs[0];
+    IG.retryDelaysMs[Math.min(job.attempts - 1, IG.retryDelaysMs.length - 1)] ??
+    IG.retryDelaysMs[0];
 
   await db
     .update(outboundMessages)
@@ -598,7 +597,8 @@ async function processFollowCheck(
     } catch (error) {
       // Consulta indisponível não deve travar o fluxo: tratamos como
       // "desconhecido" e a decisão segue igual à da Meta.
-      profileError = error instanceof Error ? error.message : "erro desconhecido";
+      profileError =
+        error instanceof Error ? error.message : "erro desconhecido";
       isFollowing = null;
     }
   } else {
@@ -787,7 +787,8 @@ async function processJob(
   job: JobRow,
   account: AccountRow,
   interaction: InteractionRow,
-): Promise<"accepted" | "failed" | "uncertain" | "requeued" | "expired"> {  if (job.kind === "follow_check" || job.kind === "follow_check_2") {
+): Promise<"accepted" | "failed" | "uncertain" | "requeued" | "expired"> {
+  if (job.kind === "follow_check" || job.kind === "follow_check_2") {
     return processFollowCheck(job, account, interaction);
   }
 
@@ -910,7 +911,12 @@ async function processJob(
         );
       }
 
-      await markFailed(job, interaction, error.message, error.code ? String(error.code) : null);
+      await markFailed(
+        job,
+        interaction,
+        error.message,
+        error.code ? String(error.code) : null,
+      );
       return "failed";
     }
 
@@ -1054,7 +1060,10 @@ export async function refreshTokenIfNeeded(): Promise<{
       .where(eq(instagramAccounts.id, account.id));
 
     await setAppStateValue("token_refresh_failed_at", null);
-    await setAppStateValue("last_token_refresh_at", new Date(now).toISOString());
+    await setAppStateValue(
+      "last_token_refresh_at",
+      new Date(now).toISOString(),
+    );
     return { refreshed: true };
   } catch (error) {
     await setAppStateValue("token_refresh_failed_at", now);

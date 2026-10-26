@@ -19,8 +19,16 @@ describe("cliente do Instagram: inscrições de webhook", () => {
       expect(String(input)).toContain("/subscribed_apps");
       return jsonResponse({
         data: [
-          { id: "1", name: "App A", subscribed_fields: ["comments", "messages"] },
-          { id: "2", name: "App B", subscribed_fields: ["messaging_postbacks"] },
+          {
+            id: "1",
+            name: "App A",
+            subscribed_fields: ["comments", "messages"],
+          },
+          {
+            id: "2",
+            name: "App B",
+            subscribed_fields: ["messaging_postbacks"],
+          },
         ],
       });
     });
@@ -69,7 +77,10 @@ describe("cliente do Instagram: inscrições de webhook", () => {
   });
 
   it("devolve lista vazia quando a resposta não tem data", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ success: true })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse({ success: true })),
+    );
 
     await expect(
       getSubscribedApps({ igUserId: "1784", accessToken: "token" }),

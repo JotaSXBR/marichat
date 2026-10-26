@@ -2,7 +2,11 @@ import { createHmac } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { buildGatePayload, buildLinkPayload, toZernioMessage } from "@/lib/outbound";
+import {
+  buildGatePayload,
+  buildLinkPayload,
+  toZernioMessage,
+} from "@/lib/outbound";
 import { getFollowStatus } from "@/lib/zernio/client";
 import { verifyZernioSignature } from "@/lib/zernio/signature";
 
@@ -13,9 +17,9 @@ describe("assinatura do webhook da Zernio", () => {
     const body = JSON.stringify({ event: "comment.received" });
     const signature = createHmac("sha256", secret).update(body).digest("hex");
 
-    expect(
-      verifyZernioSignature({ rawBody: body, signature, secret }),
-    ).toBe(true);
+    expect(verifyZernioSignature({ rawBody: body, signature, secret })).toBe(
+      true,
+    );
   });
 
   it("rejeita corpo alterado, segredo errado e cabeçalho ausente", () => {
@@ -140,14 +144,15 @@ describe("cliente da Zernio", () => {
   it("trata isFollower nulo como desconhecido", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            isFollower: null,
-            unavailableReason: "consent_required",
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              isFollower: null,
+              unavailableReason: "consent_required",
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          ),
       ),
     );
 

@@ -21,9 +21,7 @@ describe("assinatura de webhook", () => {
   it("rejeita quando o corpo muda", () => {
     const body = JSON.stringify({ object: "instagram" });
     const signature = computeHubSignature256(body, secret);
-    expect(
-      verifyHubSignature256(`${body} `, signature, secret),
-    ).toBe(false);
+    expect(verifyHubSignature256(`${body} `, signature, secret)).toBe(false);
   });
 
   it("rejeita segredo errado, cabeçalho vazio ou malformado", () => {

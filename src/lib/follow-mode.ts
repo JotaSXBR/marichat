@@ -26,9 +26,7 @@ export function isFollowMode(value: unknown): value is FollowMode {
 }
 
 /** Modos que consultam o perfil antes de entregar o link. */
-export function usesFollowCheck(
-  mode: FollowMode,
-): mode is "soft" | "locked" {
+export function usesFollowCheck(mode: FollowMode): mode is "soft" | "locked" {
   return mode === "soft" || mode === "locked";
 }
 

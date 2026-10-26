@@ -282,8 +282,7 @@ export async function getFollowStatus(params: {
   } | null;
 
   return {
-    isFollowing:
-      typeof item?.isFollower === "boolean" ? item.isFollower : null,
+    isFollowing: typeof item?.isFollower === "boolean" ? item.isFollower : null,
     unavailableReason: item?.unavailableReason,
   };
 }
@@ -313,7 +312,12 @@ export async function createWebhookSettings(params: {
   });
 
   const item = data as {
-    webhook?: { _id?: string; url?: string; events?: string[]; isActive?: boolean };
+    webhook?: {
+      _id?: string;
+      url?: string;
+      events?: string[];
+      isActive?: boolean;
+    };
   } | null;
 
   return {

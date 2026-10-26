@@ -84,7 +84,10 @@ type GatePayload = {
 
 describe("outbound: corpos enviados à API", () => {
   it("primeira DM é texto puro, sem botão", () => {
-    const payload = buildPrivateReplyPayload(settings(), "comment-1") as PrivateReply;
+    const payload = buildPrivateReplyPayload(
+      settings(),
+      "comment-1",
+    ) as PrivateReply;
 
     expect(payload.recipient).toEqual({ comment_id: "comment-1" });
     expect(payload.message.text).toBe(
@@ -99,7 +102,9 @@ describe("outbound: corpos enviados à API", () => {
       "comment-1",
     ) as PrivateReply;
 
-    expect(Buffer.byteLength(payload.message.text, "utf8")).toBeLessThanOrEqual(1000);
+    expect(Buffer.byteLength(payload.message.text, "utf8")).toBeLessThanOrEqual(
+      1000,
+    );
   });
 
   it("segunda DM é template genérico com botão HTTPS", () => {

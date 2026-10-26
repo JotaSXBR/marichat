@@ -36,8 +36,8 @@ export default async function AutomationsPage({
         <div>
           <h1 className="text-2xl font-semibold">Automações</h1>
           <p className="mt-1 text-sm text-zinc-600">
-            Cada automação escuta uma palavra-chave nos comentários e responde com
-            uma DM.
+            Cada automação escuta uma palavra-chave nos comentários e responde
+            com uma DM.
           </p>
         </div>
         <Link
@@ -67,7 +67,8 @@ export default async function AutomationsPage({
       {account && rows.length === 0 ? (
         <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center">
           <p className="text-sm text-zinc-600">
-            Nenhuma automação criada ainda. A primeira leva menos de dois minutos.
+            Nenhuma automação criada ainda. A primeira leva menos de dois
+            minutos.
           </p>
           <Link
             href="/admin/automacoes/nova"

@@ -143,7 +143,9 @@ export async function completeOAuth(params: {
     await setAppStateValue("webhook_subscribed_at", now.toISOString());
   } catch (error) {
     webhookError =
-      error instanceof Error ? error.message : "Erro desconhecido ao assinar webhooks.";
+      error instanceof Error
+        ? error.message
+        : "Erro desconhecido ao assinar webhooks.";
     await setAppStateValue("webhook_subscription_error", webhookError);
     console.error("[oauth] falha ao assinar webhooks:", error);
   }

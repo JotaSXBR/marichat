@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db/client";
@@ -71,8 +79,10 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
       | "follow_gate"
       | "follow_check"
       | "follow_check_2" = "private_reply",
-    followMode: "off" | "soft" | "locked" | "optional" | "direct" =
-      kind === "follow_check" || kind === "follow_check_2" ? "soft" : "off",
+    followMode: "off" | "soft" | "locked" | "optional" | "direct" = kind ===
+      "follow_check" || kind === "follow_check_2"
+      ? "soft"
+      : "off",
   ) {
     const account = await seedAccount();
     const automation = await seedAutomation(account.id, { followMode });

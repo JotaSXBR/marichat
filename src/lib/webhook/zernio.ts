@@ -64,7 +64,8 @@ function accountIdOf(event: ZernioEvent): string | null {
 }
 
 function eventTime(event: ZernioEvent): Date {
-  const raw = event.timestamp ?? event.comment?.createdAt ?? event.message?.sentAt;
+  const raw =
+    event.timestamp ?? event.comment?.createdAt ?? event.message?.sentAt;
   if (!raw) return new Date();
   const date = new Date(raw);
   return Number.isNaN(date.getTime()) ? new Date() : date;
@@ -83,7 +84,10 @@ export async function handleZernioEvent(
   };
 
   if (event.test) return summary;
-  if (event.event !== "comment.received" && event.event !== "message.received") {
+  if (
+    event.event !== "comment.received" &&
+    event.event !== "message.received"
+  ) {
     return summary;
   }
 

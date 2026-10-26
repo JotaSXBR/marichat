@@ -110,7 +110,8 @@ export async function seedInteraction(params: {
       commenterIgsid: params.commenterIgsid ?? "user-123",
       commentText: "Quero",
       commentCreatedAt: new Date(),
-      replyDeadlineAt: params.replyDeadlineAt ?? new Date(Date.now() + 86_400_000),
+      replyDeadlineAt:
+        params.replyDeadlineAt ?? new Date(Date.now() + 86_400_000),
       token: randomUUID().replace(/-/g, ""),
       state: params.state ?? "queued",
       userLastMessageAt: params.userLastMessageAt ?? null,

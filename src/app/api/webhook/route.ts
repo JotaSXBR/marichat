@@ -4,7 +4,10 @@ import { safeEqual } from "@/lib/crypto";
 import { requireEnv } from "@/lib/env";
 import { verifyHubSignature256 } from "@/lib/signature";
 import { drainQueue } from "@/lib/queue/drain";
-import { handleWebhookPayload, type WebhookPayload } from "@/lib/webhook/process";
+import {
+  handleWebhookPayload,
+  type WebhookPayload,
+} from "@/lib/webhook/process";
 
 /**
  * Webhook oficial da Meta para comentários e mensagens do Instagram.

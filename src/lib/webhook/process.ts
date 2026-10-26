@@ -12,10 +12,7 @@ import {
 } from "@/lib/db/schema";
 import { IG } from "@/lib/instagram/config";
 import { isFollowMode, type FollowMode } from "@/lib/follow-mode";
-import {
-  commentMatchesKeyword,
-  pickAutomation,
-} from "@/lib/matching";
+import { commentMatchesKeyword, pickAutomation } from "@/lib/matching";
 import {
   buildDirectLinkPayload,
   buildLinkPayload,
@@ -86,7 +83,10 @@ export type WebhookSummary = {
 type InteractionRow = typeof commentInteractions.$inferSelect;
 
 function opaqueToken(): string {
-  return crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  return (
+    crypto.randomUUID().replace(/-/g, "") +
+    crypto.randomUUID().replace(/-/g, "")
+  );
 }
 
 export async function claimEvent(params: {
@@ -186,7 +186,11 @@ export async function processComment(params: {
   const commentText = value.text ?? null;
   if (!commentText) return "ignored";
 
-  const automation = await findMatchingAutomation(account, commentText, mediaId);
+  const automation = await findMatchingAutomation(
+    account,
+    commentText,
+    mediaId,
+  );
   if (!automation) return "ignored";
 
   const settings = await fullAutomation(automation.id);
@@ -576,7 +580,11 @@ export async function handleWebhookPayload(
       }
 
       if (!account) {
-        await finishEvent(eventKey, "ignored", "Conta do Instagram não conectada.");
+        await finishEvent(
+          eventKey,
+          "ignored",
+          "Conta do Instagram não conectada.",
+        );
         summary.ignored += 1;
         continue;
       }
@@ -615,7 +623,11 @@ export async function handleWebhookPayload(
       }
 
       if (!account) {
-        await finishEvent(eventKey, "ignored", "Conta do Instagram não conectada.");
+        await finishEvent(
+          eventKey,
+          "ignored",
+          "Conta do Instagram não conectada.",
+        );
         summary.ignored += 1;
         continue;
       }

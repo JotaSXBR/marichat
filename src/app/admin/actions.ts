@@ -180,7 +180,9 @@ export async function saveAutomation(
 
   const account = await getActiveAccount();
   if (!account) {
-    return { error: "Conecte uma conta do Instagram antes de criar automaÃ§Ãµes." };
+    return {
+      error: "Conecte uma conta do Instagram antes de criar automaÃ§Ãµes.",
+    };
   }
 
   const raw = readForm(formData);
@@ -197,7 +199,8 @@ export async function saveAutomation(
   const values = parsed.data;
   const db = getDb();
   const id = readText(formData, "id").trim();
-  const mediaId = values.mediaId && values.mediaId.length > 0 ? values.mediaId : null;
+  const mediaId =
+    values.mediaId && values.mediaId.length > 0 ? values.mediaId : null;
 
   if (id) {
     const updated = await db
@@ -220,9 +223,7 @@ export async function saveAutomation(
         isActive: values.isActive,
         updatedAt: new Date(),
       })
-      .where(
-        and(eq(automations.id, id), eq(automations.accountId, account.id)),
-      )
+      .where(and(eq(automations.id, id), eq(automations.accountId, account.id)))
       .returning({ id: automations.id });
 
     if (updated.length === 0) {
@@ -471,7 +472,9 @@ export async function connectZernio(formData: FormData): Promise<void> {
 
   revalidatePath(CONNECTION_PATH);
   revalidatePath(ADMIN_PATH);
-  redirect(`/admin/conexao?ok=1&conta=${encodeURIComponent(chosen.username ?? "")}`);
+  redirect(
+    `/admin/conexao?ok=1&conta=${encodeURIComponent(chosen.username ?? "")}`,
+  );
 }
 
 /** Cria (ou recria) o endpoint de webhook na Zernio apontando para este app. */

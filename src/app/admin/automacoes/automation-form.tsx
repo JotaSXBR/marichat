@@ -78,12 +78,13 @@ export function AutomationForm({
     initial?.followMode ?? "off",
   );
   const needsCheck = followMode === "soft" || followMode === "locked";
-  const needsFollowButton =
-    needsCheck || followMode === "optional";
+  const needsFollowButton = needsCheck || followMode === "optional";
 
   return (
     <form action={formAction} className="space-y-8">
-      {initial?.id ? <input type="hidden" name="id" value={initial.id} /> : null}
+      {initial?.id ? (
+        <input type="hidden" name="id" value={initial.id} />
+      ) : null}
 
       {state?.error ? (
         <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
@@ -95,7 +96,10 @@ export function AutomationForm({
         <h2 className="text-sm font-semibold">Identificação</h2>
 
         <div>
-          <Label htmlFor="name" hint="Uso interno; não aparece para o seguidor.">
+          <Label
+            htmlFor="name"
+            hint="Uso interno; não aparece para o seguidor."
+          >
             Nome da automação
           </Label>
           <input
@@ -216,7 +220,10 @@ export function AutomationForm({
           </div>
         ) : (
           <div>
-            <Label htmlFor="mediaId" hint="Deixe em branco para qualquer publicação.">
+            <Label
+              htmlFor="mediaId"
+              hint="Deixe em branco para qualquer publicação."
+            >
               ID da publicação (opcional)
             </Label>
             <input
@@ -436,7 +443,10 @@ export function AutomationForm({
             </div>
             {needsCheck ? (
               <div>
-                <Label htmlFor="followGateConfirmLabel" hint="Até 20 caracteres.">
+                <Label
+                  htmlFor="followGateConfirmLabel"
+                  hint="Até 20 caracteres."
+                >
                   Botão de confirmação
                 </Label>
                 <input
@@ -473,7 +483,10 @@ export function AutomationForm({
         </div>
 
         <div>
-          <Label htmlFor="secondDmText" hint="Até 80 caracteres; aparece como título.">
+          <Label
+            htmlFor="secondDmText"
+            hint="Até 80 caracteres; aparece como título."
+          >
             Texto da mensagem com o link
           </Label>
           <input

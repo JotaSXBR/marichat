@@ -18,7 +18,9 @@ export async function isAdminAuthenticated(): Promise<boolean> {
 
 export class NotAuthenticatedError extends Error {
   constructor() {
-    super("Sessão administrativa inválida. Recarregue a página e informe a senha.");
+    super(
+      "Sessão administrativa inválida. Recarregue a página e informe a senha.",
+    );
     this.name = "NotAuthenticatedError";
   }
 }

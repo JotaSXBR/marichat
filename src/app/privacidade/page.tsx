@@ -39,9 +39,9 @@ export default async function PrivacyPage() {
             <li>identificador do Instagram de quem comentou (IGSID);</li>
             <li>texto do comentário e identificador da publicação;</li>
             <li>
-              conteúdo das mensagens trocadas com o perfil, incluindo sua resposta
-              na DM e a confirmação de que segue o perfil (quando essa opção
-              estiver ligada);
+              conteúdo das mensagens trocadas com o perfil, incluindo sua
+              resposta na DM e a confirmação de que segue o perfil (quando essa
+              opção estiver ligada);
             </li>
             <li>identificadores técnicos e datas dos eventos da Meta.</li>
           </ul>
@@ -56,8 +56,8 @@ export default async function PrivacyPage() {
           <p className="mt-2">
             Exclusivamente para responder ao seu comentário e enviar o link
             solicitado, garantir a segurança e o funcionamento do serviço,
-            prevenir abusos e cumprir obrigações legais. Não usamos os dados para
-            publicidade nem os vendemos.
+            prevenir abusos e cumprir obrigações legais. Não usamos os dados
+            para publicidade nem os vendemos.
           </p>
         </section>
 
@@ -82,13 +82,16 @@ export default async function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-base font-semibold">6. Por quanto tempo guardamos</h2>
+          <h2 className="text-base font-semibold">
+            6. Por quanto tempo guardamos
+          </h2>
           <p className="mt-2">
             O conteúdo técnico dos eventos (payloads de webhook) e das mensagens
-            enviadas é removido após 30 dias, mantendo-se apenas identificadores e
-            situação para auditoria. O identificador usado no pedido de exclusão é
-            guardado somente como hash (não reversível). O token de acesso ao
-            Instagram fica cifrado e é descartado ao desconectar a conta.
+            enviadas é removido após 30 dias, mantendo-se apenas identificadores
+            e situação para auditoria. O identificador usado no pedido de
+            exclusão é guardado somente como hash (não reversível). O token de
+            acesso ao Instagram fica cifrado e é descartado ao desconectar a
+            conta.
           </p>
         </section>
 

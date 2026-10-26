@@ -36,7 +36,10 @@ function loadEnvLocal() {
 
 loadEnvLocal();
 
-const APP_URL = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+const APP_URL = (process.env.APP_URL ?? "http://localhost:3000").replace(
+  /\/+$/,
+  "",
+);
 const DATABASE_URL = process.env.DATABASE_URL;
 const APP_SECRET = process.env.INSTAGRAM_APP_SECRET;
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -58,9 +61,13 @@ const DEMO_TOKEN = "IGQVJ-token-simulado-de-teste";
 const results = [];
 function check(condition, label, detail = "") {
   results.push({ ok: Boolean(condition), label, detail });
-  console.log(`${condition ? "  OK  " : " FALHA"}  ${label}${detail ? ` — ${detail}` : ""}`);
+  console.log(
+    `${condition ? "  OK  " : " FALHA"}  ${label}${detail ? ` — ${detail}` : ""}`,
+  );
   if (!condition) {
-    throw new Error(`Verificação falhou: ${label}${detail ? ` (${detail})` : ""}`);
+    throw new Error(
+      `Verificação falhou: ${label}${detail ? ` (${detail})` : ""}`,
+    );
   }
 }
 
@@ -75,7 +82,10 @@ function encryptToken(plaintext) {
   }
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
-  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const ciphertext = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
   return [
     "v1",
     iv.toString("base64url"),
@@ -87,7 +97,9 @@ function encryptToken(plaintext) {
 function signBody(rawBody) {
   return (
     "sha256=" +
-    createHmac("sha256", APP_SECRET ?? "").update(rawBody).digest("hex")
+    createHmac("sha256", APP_SECRET ?? "")
+      .update(rawBody)
+      .digest("hex")
   );
 }
 
@@ -165,7 +177,11 @@ function startMockApi() {
     }
 
     if (/^\/v\d+\.\d+\/me$/.test(url.pathname)) {
-      return json(200, { user_id: DEMO_IG_ID, username: DEMO_USERNAME, account_type: "BUSINESS" });
+      return json(200, {
+        user_id: DEMO_IG_ID,
+        username: DEMO_USERNAME,
+        account_type: "BUSINESS",
+      });
     }
 
     if (/\/subscribed_apps$/.test(url.pathname)) {
@@ -175,12 +191,18 @@ function startMockApi() {
             {
               id: DEMO_IG_ID,
               name: "MARICHAT demo",
-              subscribed_fields: ["comments", "messages", "messaging_postbacks"],
+              subscribed_fields: [
+                "comments",
+                "messages",
+                "messaging_postbacks",
+              ],
             },
           ],
         });
       }
-      console.log(`   [mock] webhooks assinados: ${url.searchParams.get("subscribed_fields")}`);
+      console.log(
+        `   [mock] webhooks assinados: ${url.searchParams.get("subscribed_fields")}`,
+      );
       return json(200, { success: true });
     }
 
@@ -196,18 +218,27 @@ function startMockApi() {
       console.log(`   [mock] mensagem recebida (id ${messageId})`);
       return json(200, {
         message_id: messageId,
-        recipient_id: body?.recipient?.id ?? body?.recipient?.comment_id ?? null,
+        recipient_id:
+          body?.recipient?.id ?? body?.recipient?.comment_id ?? null,
       });
     }
 
-    if (url.pathname === "/access_token" || url.pathname === "/refresh_access_token") {
+    if (
+      url.pathname === "/access_token" ||
+      url.pathname === "/refresh_access_token"
+    ) {
       return json(200, {
         access_token: "IGQVJ-token-longa-duracao-simulado",
         expires_in: 60 * 24 * 3600,
       });
     }
 
-    return json(404, { error: { message: `Rota simulada não implementada: ${request.method} ${url.pathname}`, code: 100 } });
+    return json(404, {
+      error: {
+        message: `Rota simulada não implementada: ${request.method} ${url.pathname}`,
+        code: 100,
+      },
+    });
   });
 
   return new Promise((resolve, reject) => {
@@ -304,7 +335,9 @@ async function runCron() {
 
 async function main() {
   if (!DATABASE_URL || !APP_SECRET || !CRON_SECRET || !TOKEN_KEY) {
-    throw new Error("Faltam variáveis no .env.local (banco, App Secret, cron ou chave).");
+    throw new Error(
+      "Faltam variáveis no .env.local (banco, App Secret, cron ou chave).",
+    );
   }
 
   const { default: postgres } = await import("postgres");
@@ -312,7 +345,9 @@ async function main() {
 
   step("1. Subindo a API do Instagram simulada");
   const mock = await startMockApi();
-  console.log(`   API falsa em ${MOCK_URL} (nenhuma mensagem real será enviada)`);
+  console.log(
+    `   API falsa em ${MOCK_URL} (nenhuma mensagem real será enviada)`,
+  );
 
   try {
     step("2. Verificando a aplicação local");
@@ -350,7 +385,11 @@ async function main() {
         },
       ],
     });
-    check(commentResponse.status === 200, "Webhook de comentário aceito", `HTTP ${commentResponse.status}`);
+    check(
+      commentResponse.status === 200,
+      "Webhook de comentário aceito",
+      `HTTP ${commentResponse.status}`,
+    );
 
     step("5. Executando a fila (tarefa agendada)");
     const firstTick = await runCron();
@@ -361,7 +400,11 @@ async function main() {
       FROM comment_interactions WHERE comment_id = ${commentId}
     `;
     check(Boolean(afterFirst), "Interação registrada no banco");
-    check(afterFirst?.state === "accepted", "Primeira DM aceita pela API", `estado: ${afterFirst?.state}`);
+    check(
+      afterFirst?.state === "accepted",
+      "Primeira DM aceita pela API",
+      `estado: ${afterFirst?.state}`,
+    );
 
     const firstMessage = receivedMessages.at(-1)?.body;
     check(Boolean(firstMessage?.message?.text), "Primeira DM tem texto");
@@ -403,7 +446,11 @@ async function main() {
         },
       ],
     });
-    check(tapResponse.status === 200, "Webhook de resposta aceito", `HTTP ${tapResponse.status}`);
+    check(
+      tapResponse.status === 200,
+      "Webhook de resposta aceito",
+      `HTTP ${tapResponse.status}`,
+    );
 
     step("7. Executando a fila novamente");
     const secondTick = await runCron();
@@ -413,40 +460,68 @@ async function main() {
       SELECT state, second_dm_message_id
       FROM comment_interactions WHERE comment_id = ${commentId}
     `;
-    check(afterSecond?.state === "link_sent", "Segunda mensagem aceita", `estado: ${afterSecond?.state}`);
+    check(
+      afterSecond?.state === "link_sent",
+      "Segunda mensagem aceita",
+      `estado: ${afterSecond?.state}`,
+    );
 
     const secondMessage = receivedMessages.at(-1)?.body;
     const button =
       secondMessage?.message?.attachment?.payload?.elements?.[0]?.buttons?.[0];
     check(button?.type === "web_url", "Segunda mensagem tem botão de link");
-    check(button?.url === DEMO_LINK, "O link do botão é o configurado", button?.url ?? "(sem link)");
     check(
-      button?.url?.startsWith("https://") ?? false,
-      "O link usa HTTPS",
+      button?.url === DEMO_LINK,
+      "O link do botão é o configurado",
+      button?.url ?? "(sem link)",
     );
+    check(button?.url?.startsWith("https://") ?? false, "O link usa HTTPS");
 
     step("8. Conferindo o painel administrativo");
     const admin = await fetch(`${APP_URL}/admin`, {
       headers: {
         authorization:
-          "Basic " + Buffer.from(`admin:${process.env.ADMIN_PASSWORD ?? ""}`).toString("base64"),
+          "Basic " +
+          Buffer.from(`admin:${process.env.ADMIN_PASSWORD ?? ""}`).toString(
+            "base64",
+          ),
       },
     });
-    check(admin.status === 200, "Painel abre com a senha", `HTTP ${admin.status}`);
+    check(
+      admin.status === 200,
+      "Painel abre com a senha",
+      `HTTP ${admin.status}`,
+    );
     const html = await admin.text();
     check(html.includes("Demonstração local"), "Automação aparece no painel");
 
     const formPage = await fetch(`${APP_URL}/admin/automacoes/nova`, {
       headers: {
         authorization:
-          "Basic " + Buffer.from(`admin:${process.env.ADMIN_PASSWORD ?? ""}`).toString("base64"),
+          "Basic " +
+          Buffer.from(`admin:${process.env.ADMIN_PASSWORD ?? ""}`).toString(
+            "base64",
+          ),
       },
     });
     const formHtml = await formPage.text();
-    check(formPage.status === 200, "Tela de nova automação abre", `HTTP ${formPage.status}`);
-    check(formHtml.includes("Reel de demonstração"), "Lista de publicações vem da API (vídeo)");
-    check(formHtml.includes("/thumb/video.svg"), "Vídeo mostra a miniatura correta");
-    check(formHtml.includes("Post de demonstração"), "Lista de publicações vem da API (imagem)");
+    check(
+      formPage.status === 200,
+      "Tela de nova automação abre",
+      `HTTP ${formPage.status}`,
+    );
+    check(
+      formHtml.includes("Reel de demonstração"),
+      "Lista de publicações vem da API (vídeo)",
+    );
+    check(
+      formHtml.includes("/thumb/video.svg"),
+      "Vídeo mostra a miniatura correta",
+    );
+    check(
+      formHtml.includes("Post de demonstração"),
+      "Lista de publicações vem da API (imagem)",
+    );
 
     step("9. Resumo do que foi enviado (API simulada)");
     receivedMessages.forEach((item, index) => {
@@ -459,7 +534,9 @@ async function main() {
       );
     });
 
-    console.log("\nFluxo completo validado: comentário → DM pedindo resposta → resposta → link.\n");
+    console.log(
+      "\nFluxo completo validado: comentário → DM pedindo resposta → resposta → link.\n",
+    );
     console.log(`Abra ${APP_URL}/admin (usuário admin) para ver os registros.`);
   } finally {
     await sql.end({ timeout: 5 });

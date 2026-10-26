@@ -21,7 +21,9 @@ describe("HTTP Basic do painel", () => {
     expect(isAdminAuthValid(basic("maria", "senha-forte"), "senha-forte")).toBe(
       false,
     );
-    expect(isAdminAuthValid(basic("admin", "outra"), "senha-forte")).toBe(false);
+    expect(isAdminAuthValid(basic("admin", "outra"), "senha-forte")).toBe(
+      false,
+    );
     expect(isAdminAuthValid(null, "senha-forte")).toBe(false);
     expect(isAdminAuthValid("Bearer abc", "senha-forte")).toBe(false);
   });

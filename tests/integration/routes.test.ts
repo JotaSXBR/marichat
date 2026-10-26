@@ -31,7 +31,10 @@ vi.mock("next/headers", () => ({
   },
 }));
 
-import { GET as webhookGet, POST as webhookPost } from "@/app/api/webhook/route";
+import {
+  GET as webhookGet,
+  POST as webhookPost,
+} from "@/app/api/webhook/route";
 import { POST as zernioWebhookPost } from "@/app/api/webhook/zernio/route";
 import { GET as cronGet } from "@/app/api/cron/tick/route";
 import { POST as dataDeletionPost } from "@/app/api/data-deletion/route";
@@ -40,7 +43,8 @@ import { GET as oauthStartGet } from "@/app/api/auth/instagram/start/route";
 const suite = hasTestDatabase ? describe : describe.skip;
 
 const APP_SECRET = process.env.INSTAGRAM_APP_SECRET ?? "test-app-secret";
-const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN ?? "test-verify-token";
+const VERIFY_TOKEN =
+  process.env.META_WEBHOOK_VERIFY_TOKEN ?? "test-verify-token";
 const CRON_SECRET = process.env.CRON_SECRET ?? "test-cron-secret";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "test-admin-password";
 const ZERNIO_SECRET =
@@ -249,7 +253,9 @@ suite("rotas HTTP", () => {
     const location = allowed.headers.get("location") ?? "";
     expect(location).toContain("instagram.com/oauth/authorize");
     expect(location).toContain("state=");
-    expect(allowed.headers.get("set-cookie")).toContain("marichat_ig_oauth_state");
+    expect(allowed.headers.get("set-cookie")).toContain(
+      "marichat_ig_oauth_state",
+    );
   });
 
   it("apaga os dados do usuário no callback assinado da Meta", async () => {
@@ -274,7 +280,9 @@ suite("rotas HTTP", () => {
       .update(payload)
       .digest("base64url");
 
-    const form = new URLSearchParams({ signed_request: `${signature}.${payload}` });
+    const form = new URLSearchParams({
+      signed_request: `${signature}.${payload}`,
+    });
 
     const response = await dataDeletionPost(
       new Request("http://localhost/api/data-deletion", {

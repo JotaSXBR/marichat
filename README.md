@@ -91,7 +91,9 @@ npm run lint     # eslint, sem informação de tipo
 npm run lint:ci  # eslint + tipos; falha se os avisos passarem do baseline
 npm run typecheck
 npm run build
-npm run clean    # apaga .next/caches regeneráveis (limpeza de disco)
+npm run format       # formata com Prettier
+npm run format:check # só confere (usado no CI)
+npm run clean        # apaga .next/caches regeneráveis (limpeza de disco)
 ```
 
 O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
@@ -101,10 +103,10 @@ O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
 ### Verificação automática (CI)
 
 Todo push em `master` e todo Pull Request rodam `.github/workflows/ci.yml`:
-PostgreSQL 18, migrations, `lint:ci`, `typecheck`, testes e build. Se o lint
-passar do baseline de avisos (56 em `package.json`) ou qualquer etapa falhar, o
-PR fica vermelho. O build não recebe segredos e não acessa o banco, igual ao
-Dockerfile.
+PostgreSQL 18, migrations, `format:check`, `lint:ci`, `typecheck`, testes e
+build. Se o lint passar do baseline de avisos (58 em `package.json`) ou qualquer
+etapa falhar, o PR fica vermelho. O build não recebe segredos e não acessa o
+banco, igual ao Dockerfile.
 
 
 Os testes de integração só rodam quando `DATABASE_URL` aponta para

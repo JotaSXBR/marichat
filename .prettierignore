@@ -1,0 +1,15 @@
+# Gerados / dependências
+.next/
+out/
+build/
+coverage/
+node_modules/
+
+# Banco e lockfile (não devem ser reformatados)
+drizzle/
+package-lock.json
+
+# Textos longos: evita reflow e diff gigante sem ganho
+*.md
+
+next-env.d.ts

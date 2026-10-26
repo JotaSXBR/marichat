@@ -44,7 +44,10 @@ export default async function EditAutomationPage({
 
   if (!automation) notFound();
 
-  const media = await loadMediaOptions(account, automation.mediaId ?? undefined);
+  const media = await loadMediaOptions(
+    account,
+    automation.mediaId ?? undefined,
+  );
 
   return (
     <div className="space-y-6">

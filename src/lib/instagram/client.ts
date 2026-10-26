@@ -53,10 +53,7 @@ type GraphErrorBody = {
   code?: number;
 };
 
-async function requestJson(
-  url: string,
-  init: RequestInit,
-): Promise<unknown> {
+async function requestJson(url: string, init: RequestInit): Promise<unknown> {
   const response = await fetch(url, {
     ...init,
     signal: AbortSignal.timeout(IG.requestTimeoutMs),
@@ -331,10 +328,7 @@ export async function refreshLongLivedToken(
   } | null;
 
   if (!item?.access_token) {
-    throw new InstagramApiError(
-      "A Meta não retornou o token renovado.",
-      502,
-    );
+    throw new InstagramApiError("A Meta não retornou o token renovado.", 502);
   }
 
   return {

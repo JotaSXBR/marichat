@@ -17,7 +17,10 @@ import {
   outboundMessages,
   webhookEvents,
 } from "@/lib/db/schema";
-import { CONNECTION_TEST_KEY, type ConnectionTestResult } from "@/lib/instagram/diagnostics";
+import {
+  CONNECTION_TEST_KEY,
+  type ConnectionTestResult,
+} from "@/lib/instagram/diagnostics";
 import type { DrainSummary } from "@/lib/queue/drain";
 import { desc, eq, sql } from "drizzle-orm";
 
@@ -43,7 +46,11 @@ function statusClass(status: string): string {
   if (status === "failed" || status === "uncertain" || status === "expired") {
     return "text-red-700";
   }
-  if (status === "accepted" || status === "processed" || status === "link_sent") {
+  if (
+    status === "accepted" ||
+    status === "processed" ||
+    status === "link_sent"
+  ) {
     return "text-green-700";
   }
   return "text-zinc-700";
@@ -65,7 +72,9 @@ export default async function ActivityPage() {
   const db = getDb();
   const account = await getActiveAccount();
   // Hora do banco: mantém a página determinística e alinhada ao cron.
-  const nowRows = await db.execute<{ now: Date | string }>(sql`select now() as now`);
+  const nowRows = await db.execute<{ now: Date | string }>(
+    sql`select now() as now`,
+  );
   const dbNow = nowRows[0]?.now ? new Date(nowRows[0].now) : null;
 
   const [interactions, jobs, events] = await Promise.all([
@@ -84,7 +93,10 @@ export default async function ActivityPage() {
         automationName: automations.name,
       })
       .from(commentInteractions)
-      .leftJoin(automations, eq(automations.id, commentInteractions.automationId))
+      .leftJoin(
+        automations,
+        eq(automations.id, commentInteractions.automationId),
+      )
       .orderBy(desc(commentInteractions.createdAt))
       .limit(LIMIT),
     db
@@ -126,7 +138,9 @@ export default async function ActivityPage() {
   const lastDrainSummary =
     await getAppStateValue<DrainSummary>("last_drain_summary");
   const lastSendAt = await getAppStateValue<string>("last_send_accepted_at");
-  const webhookError = await getAppStateValue<string>("webhook_subscription_error");
+  const webhookError = await getAppStateValue<string>(
+    "webhook_subscription_error",
+  );
   const connectionTest =
     await getAppStateValue<ConnectionTestResult>(CONNECTION_TEST_KEY);
 
@@ -244,7 +258,9 @@ export default async function ActivityPage() {
                     <td className={`px-4 py-2 ${statusClass(row.state)}`}>
                       {interactionLabels[row.state] ?? row.state}
                     </td>
-                    <td className="px-4 py-2 text-zinc-600">{row.followChecks}</td>
+                    <td className="px-4 py-2 text-zinc-600">
+                      {row.followChecks}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-2 text-zinc-600">
                       {formatDateTime(row.userLastMessageAt)}
                     </td>
@@ -350,7 +366,9 @@ export default async function ActivityPage() {
                     <td className="whitespace-nowrap px-4 py-2 text-zinc-600">
                       {formatDateTime(row.receivedAt)}
                     </td>
-                    <td className="px-4 py-2 font-mono text-xs">{row.eventKey}</td>
+                    <td className="px-4 py-2 font-mono text-xs">
+                      {row.eventKey}
+                    </td>
                     <td className="px-4 py-2 text-zinc-600">{row.field}</td>
                     <td className={`px-4 py-2 ${statusClass(row.status)}`}>
                       {webhookStatusLabels[row.status] ?? row.status}

@@ -42,7 +42,9 @@ export default async function AdminDashboard() {
   const account = await getActiveAccount();
   // Hora do banco: evita divergência entre servidores e mantém a renderização
   // determinística do ponto de vista do React.
-  const nowRows = await db.execute<{ now: Date | string }>(sql`select now() as now`);
+  const nowRows = await db.execute<{ now: Date | string }>(
+    sql`select now() as now`,
+  );
   const rawNow = nowRows[0]?.now ?? null;
   const dbNow = rawNow ? new Date(rawNow) : null;
 
@@ -85,9 +87,13 @@ export default async function AdminDashboard() {
     .limit(3);
 
   const lastTickAt = await getAppStateValue<string>("last_tick_at");
-  const webhookError = await getAppStateValue<string>("webhook_subscription_error");
+  const webhookError = await getAppStateValue<string>(
+    "webhook_subscription_error",
+  );
 
-  const byState = new Map(interactionStats.map((row) => [row.state, Number(row.total)]));
+  const byState = new Map(
+    interactionStats.map((row) => [row.state, Number(row.total)]),
+  );
   const byJob = new Map(jobStats.map((row) => [row.status, Number(row.total)]));
 
   const totalAutomations = automationStats.reduce(
@@ -97,7 +103,8 @@ export default async function AdminDashboard() {
   const activeAutomations =
     automationStats.find((row) => row.isActive)?.total ?? 0;
 
-  const waitingReply = (byState.get("accepted") ?? 0) + (byState.get("gate_pending") ?? 0);
+  const waitingReply =
+    (byState.get("accepted") ?? 0) + (byState.get("gate_pending") ?? 0);
   const linkSent = byState.get("link_sent") ?? 0;
   const queuedJobs = byJob.get("pending") ?? 0;
   const needAttention =
@@ -174,7 +181,11 @@ export default async function AdminDashboard() {
           value={waitingReply}
           hint="Primeira DM aceita; link ainda não enviado"
         />
-        <Card title="Links enviados" value={linkSent} hint="Segunda mensagem aceita" />
+        <Card
+          title="Links enviados"
+          value={linkSent}
+          hint="Segunda mensagem aceita"
+        />
         <Card
           title="Precisam de atenção"
           value={needAttention}
@@ -189,7 +200,9 @@ export default async function AdminDashboard() {
             <dl className="mt-2 space-y-1 text-zinc-600">
               <div className="flex justify-between gap-4">
                 <dt>Perfil</dt>
-                <dd className="font-medium text-zinc-900">@{account.username}</dd>
+                <dd className="font-medium text-zinc-900">
+                  @{account.username}
+                </dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt>Status</dt>
@@ -226,8 +239,8 @@ export default async function AdminDashboard() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-zinc-500">
-            &quot;Aceita&quot; significa que a Meta recebeu a solicitação. O Instagram
-            não informa confirmação de entrega nem de leitura.
+            &quot;Aceita&quot; significa que a Meta recebeu a solicitação. O
+            Instagram não informa confirmação de entrega nem de leitura.
           </p>
         </div>
       </section>

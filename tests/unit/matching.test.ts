@@ -34,7 +34,9 @@ describe("correspondência de palavra-chave", () => {
     expect(commentMatchesKeyword("Oi! Quero o link, pfv", "quero o link")).toBe(
       true,
     );
-    expect(commentMatchesKeyword("Quero o linktree", "quero o link")).toBe(false);
+    expect(commentMatchesKeyword("Quero o linktree", "quero o link")).toBe(
+      false,
+    );
   });
 
   it("rejeita texto vazio", () => {

@@ -62,7 +62,10 @@ jobs:
       - name: Aplicar migrations no banco de teste
         run: npm run db:migrate
 
-      # Falha se aparecer aviso novo (baseline de 56 em package.json).
+      - name: Formatação (Prettier)
+        run: npm run format:check
+
+      # Falha se aparecer aviso novo (baseline de 58 em package.json).
       - name: Lint com tipos e orçamentos
         run: npm run lint:ci
 

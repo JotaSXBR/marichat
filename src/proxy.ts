@@ -35,7 +35,7 @@ export function proxy(request: NextRequest) {
   }
 
   return new NextResponse(
-    "<!doctype html><html lang=\"pt-BR\"><meta charset=\"utf-8\"><title>Acesso restrito</title><body style=\"font-family:system-ui;padding:2rem\"><h1>Acesso restrito</h1><p>Informe o usuário <strong>admin</strong> e a senha do painel.</p></body></html>",
+    '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Acesso restrito</title><body style="font-family:system-ui;padding:2rem"><h1>Acesso restrito</h1><p>Informe o usuário <strong>admin</strong> e a senha do painel.</p></body></html>',
     {
       status: 401,
       headers: {

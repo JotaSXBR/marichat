@@ -27,7 +27,9 @@ export default async function DataDeletionPage({
   await connection();
 
   const params = await searchParams;
-  const rawCode = Array.isArray(params.codigo) ? params.codigo[0] : params.codigo;
+  const rawCode = Array.isArray(params.codigo)
+    ? params.codigo[0]
+    : params.codigo;
   const code = rawCode?.trim() ?? "";
   const contactEmail = process.env.PRIVACY_CONTACT_EMAIL?.trim();
 
@@ -57,9 +59,9 @@ export default async function DataDeletionPage({
     <div className="mx-auto max-w-3xl px-4 py-10 text-zinc-800">
       <h1 className="text-2xl font-semibold">Exclusão de dados</h1>
       <p className="mt-2 text-sm leading-6">
-        Você pode solicitar a exclusão dos dados tratados pelo MARICHAT a qualquer
-        momento. Apagamos o identificador do Instagram, os comentários e as
-        mensagens registradas para atendimento.
+        Você pode solicitar a exclusão dos dados tratados pelo MARICHAT a
+        qualquer momento. Apagamos o identificador do Instagram, os comentários
+        e as mensagens registradas para atendimento.
       </p>
 
       {code ? (
@@ -95,8 +97,8 @@ export default async function DataDeletionPage({
           <h2 className="text-base font-semibold">Como pedir a exclusão</h2>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             <li>
-              Envie uma mensagem privada para o perfil do Instagram que publicou o
-              conteúdo, com o texto <strong>EXCLUIR MEUS DADOS</strong>.
+              Envie uma mensagem privada para o perfil do Instagram que publicou
+              o conteúdo, com o texto <strong>EXCLUIR MEUS DADOS</strong>.
             </li>
             <li>
               Ou use a opção de exclusão de dados disponibilizada pelo próprio
@@ -128,9 +130,9 @@ export default async function DataDeletionPage({
         <div>
           <h2 className="text-base font-semibold">Dados na Meta</h2>
           <p className="mt-2">
-            A exclusão no MARICHAT não apaga o conteúdo que está no Instagram. Para
-            isso, use as ferramentas do próprio Instagram (por exemplo, apagar o
-            comentário ou a conversa).
+            A exclusão no MARICHAT não apaga o conteúdo que está no Instagram.
+            Para isso, use as ferramentas do próprio Instagram (por exemplo,
+            apagar o comentário ou a conversa).
           </p>
         </div>
 

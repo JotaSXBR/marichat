@@ -12,17 +12,19 @@ Os testes cobrem o motor, o webhook, a fila, as rotas, o cliente da Meta e o
 tradutor da Zernio.
 
 O lint com tipos foi **aplicado na Fase 1**, os orçamentos de tamanho,
-complexidade e duplicação na **Fase 2** e a verificação automática na **Fase 3**
-(ver plano no fim). O que resta é formatação e refatoração guiada.
+complexidade e duplicação na **Fase 2**, a verificação automática na **Fase 3**
+e a formatação na **Fase 4** (ver plano no fim). O que resta é a refatoração
+guiada dos arquivos grandes.
 
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
-| Arquivos `src` acima de 400 linhas | 5 | 0 (avisos) |
-| Funções acima de 60 linhas | 21 | 0 (avisos) |
+| Arquivos `src` acima de 400 linhas | 6 (inclui `scripts`) | 0 (avisos) |
+| Funções acima de 60 linhas | 22 | 0 (avisos) |
 | Funções com complexidade > 12 | 19 | 0 (avisos) |
-| Avisos de orçamento no lint | 56 (baseline do CI) | 0 |
+| Avisos de orçamento no lint | 58 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
+| Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
 
 ## O que já está bom
@@ -114,21 +116,21 @@ caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
 reduz a dívida.
 
 **Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=56`. Esse 56 é o baseline medido na adoção. Um aviso
-novo faz o CI falhar; corrigir avisos nunca quebra o CI. Quando o número cair,
-baixe o valor em `package.json` (e aqui). Quando chegar a zero, os limites
-podem virar `error`.
+`eslint . --max-warnings=58`. Esse 58 é o baseline medido depois da formatação
+(que quebrou algumas linhas em mais de uma). Um aviso novo faz o CI falhar;
+corrigir avisos nunca quebra o CI. Quando o número cair, baixe o valor em
+`package.json` (e aqui). Quando chegar a zero, os limites podem virar `error`.
 
-Baseline por regra (2026-10-26):
+Baseline por regra (2026-10-26, após Prettier):
 
 | Regra | Avisos |
 | --- | --- |
 | `complexity` (limite 12) | 19 |
-| `max-lines-per-function` (60) | 21 |
-| `max-lines` (400) | 5 |
+| `max-lines-per-function` (60) | 22 |
+| `max-lines` (400) | 6 |
 | `sonarjs/cognitive-complexity` (15) | 10 |
 | `max-depth` (3) | 1 |
-| **Total** | **56** |
+| **Total** | **58** |
 
 Testes e scripts têm exceções conscientes:
 
@@ -206,15 +208,16 @@ O preset atual **não** liga o `eslint:recommended` do núcleo. Vale ligar
 `no-console` com `allow: ["warn", "error"]` mantém os logs de servidor atuais e
 evita `console.log` esquecido.
 
-### 6. Formatação e comentários de lint
+### 6. Formatação (aplicada) e comentários de lint
 
-- ESLint não formata mais (as regras de estilo foram depreciadas). Adotar
-  **Prettier** (`printWidth: 80`, aspas duplas, `semi: true`) +
-  `eslint-config-prettier`, com um commit único de formatação antes de exigir
-  `prettier --check`.
+- **Prettier** (`printWidth: 80`, aspas duplas, `semi: true`,
+  `trailingComma: "all"`, `endOfLine: "lf"`) + `eslint-config-prettier`, que
+  desliga as regras de estilo do ESLint. A formatação foi aplicada em 40
+  arquivos num commit só de estilo, e o CI roda `npm run format:check`.
 - `.editorconfig` com UTF-8, LF, 2 espaços e linha final.
-- `@eslint-community/eslint-plugin-eslint-comments` com
-  `no-unlimited-disable`: proíbe `eslint-disable` sem justificativa.
+- Ainda pendente: `@eslint-community/eslint-plugin-eslint-comments` com
+  `no-unlimited-disable`, para proibir `eslint-disable` sem justificativa
+  (hoje existe um único `eslint-disable` no projeto).
 
 ### 7. O que **não** adotar agora
 
@@ -292,18 +295,18 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
 ## Plano de adoção (em commits separados)
 
 1. **Fase 1 — lint tipado + correções** ✅ **concluída**: `recommendedTypeChecked`
-   ativo em `src` e `tests`, 22 achados corrigidos, `npm run lint:ci` com
-   `--max-warnings=0` sem erros nem avisos.
+   ativo em `src` e `tests`, 22 achados corrigidos e `npm run lint:ci` sem erros
+   nem avisos (antes dos orçamentos da Fase 2).
 2. **Fase 2 — orçamentos como aviso** ✅ **concluída**: `max-lines`,
    `max-lines-per-function`, `complexity`, `max-depth`, `max-params`,
-   `max-nested-callbacks` e SonarJS selecionado. Baseline de 56 avisos no
-   `lint:ci`, sem refatoração grande ainda.
+   `max-nested-callbacks` e SonarJS selecionado. Baseline de 58 avisos no
+   `lint:ci` (56 antes do Prettier), sem refatoração grande ainda.
 3. **Fase 3 — CI** ✅ **concluída**: `.github/workflows/ci.yml` roda em push
    para `master` e em Pull Request, com PostgreSQL 18 na porta 5433, migrations,
    `lint:ci`, `typecheck`, testes e build. O build não recebe segredos, igual ao
    Dockerfile.
-4. **Fase 4 — formatação**: Prettier + `.editorconfig` em um commit só de
-   formatação.
+4. **Fase 4 — formatação** ✅ **concluída**: Prettier + `.editorconfig` num
+   commit só de formatação; `format:check` entrou no CI.
 5. **Fase 5 — refatoração guiada**: atacar Prioridade 1, arquivo por arquivo,
    com testes antes/depois. Ao zerar um arquivo, apertar o limite dele.
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver

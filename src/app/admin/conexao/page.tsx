@@ -89,7 +89,9 @@ export default async function ConnectionPage({
   const provider = getMessagingProvider();
   const isZernio = provider === "zernio";
   const account = await getActiveAccount();
-  const webhookError = await getAppStateValue<string>("webhook_subscription_error");
+  const webhookError = await getAppStateValue<string>(
+    "webhook_subscription_error",
+  );
   const subscribedAt = await getAppStateValue<string>("webhook_subscribed_at");
   const connectionTest =
     await getAppStateValue<ConnectionTestResult>(CONNECTION_TEST_KEY);
@@ -133,8 +135,9 @@ export default async function ConnectionPage({
             : "A conexão usa o login oficial da Meta. O MARICHAT nunca vê sua senha do Instagram."}
         </p>
         <p className="mt-2 inline-block rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-600">
-          Transporte ativo: <strong>{isZernio ? "Zernio" : "Meta (direto)"}</strong>{" "}
-          — definido por <code>MESSAGING_PROVIDER</code>
+          Transporte ativo:{" "}
+          <strong>{isZernio ? "Zernio" : "Meta (direto)"}</strong> — definido
+          por <code>MESSAGING_PROVIDER</code>
         </p>
       </div>
 
@@ -166,7 +169,8 @@ export default async function ConnectionPage({
 
       {get("testado") === "1" ? (
         <div className="rounded-lg border border-zinc-300 bg-white p-4 text-sm text-zinc-700">
-          Teste concluído. Veja o resultado em <strong>Diagnóstico da conexão</strong>.
+          Teste concluído. Veja o resultado em{" "}
+          <strong>Diagnóstico da conexão</strong>.
         </div>
       ) : null}
 
@@ -189,7 +193,9 @@ export default async function ConnectionPage({
               ) : (
                 <div>
                   <dt className="text-zinc-500">ID na API</dt>
-                  <dd className="font-mono text-xs">{account.instagramUserId}</dd>
+                  <dd className="font-mono text-xs">
+                    {account.instagramUserId}
+                  </dd>
                 </div>
               )}
               <div>
@@ -228,12 +234,16 @@ export default async function ConnectionPage({
                   Reconectar / trocar de conta
                 </a>
               )}
-              <form action={isZernio ? registerZernioWebhook : resubscribeWebhooks}>
+              <form
+                action={isZernio ? registerZernioWebhook : resubscribeWebhooks}
+              >
                 <button
                   type="submit"
                   className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
                 >
-                  {isZernio ? "Registrar webhook na Zernio" : "Reassinar webhooks"}
+                  {isZernio
+                    ? "Registrar webhook na Zernio"
+                    : "Reassinar webhooks"}
                 </button>
               </form>
               <form action={disconnectInstagram}>
@@ -262,7 +272,10 @@ export default async function ConnectionPage({
                 ) : null}
                 {zernioAccounts.length > 0 ? (
                   <form action={connectZernio} className="space-y-3">
-                    <label className="block text-sm font-medium" htmlFor="accountId">
+                    <label
+                      className="block text-sm font-medium"
+                      htmlFor="accountId"
+                    >
                       Conta da Zernio
                     </label>
                     <select
@@ -295,8 +308,8 @@ export default async function ConnectionPage({
             ) : (
               <>
                 <p className="text-zinc-600">
-                  Nenhuma conta conectada. Use uma conta profissional do Instagram
-                  (criador ou empresa) com acesso às mensagens.
+                  Nenhuma conta conectada. Use uma conta profissional do
+                  Instagram (criador ou empresa) com acesso às mensagens.
                 </p>
                 <a
                   href="/api/auth/instagram/start"
@@ -321,7 +334,9 @@ export default async function ConnectionPage({
                   : "Confere se o token ainda é aceito pela Meta e se os campos de webhook estão realmente assinados nesta conta."}
               </p>
             </div>
-            <form action={isZernio ? testZernioConnection : testInstagramConnection}>
+            <form
+              action={isZernio ? testZernioConnection : testInstagramConnection}
+            >
               <button
                 type="submit"
                 className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
@@ -350,7 +365,9 @@ export default async function ConnectionPage({
                     : isZernio
                       ? "✗ Chave da Zernio recusada ou ausente"
                       : "✗ Token recusado ou ilegível"}
-                  {connectionTest.username ? ` — @${connectionTest.username}` : ""}
+                  {connectionTest.username
+                    ? ` — @${connectionTest.username}`
+                    : ""}
                 </li>
                 <li
                   className={
@@ -415,33 +432,45 @@ export default async function ConnectionPage({
           <p className="mt-2 text-sm text-zinc-600">
             Assine os eventos <strong>comment.received</strong> e{" "}
             <strong>message.received</strong>. O segredo usado na assinatura é o
-            valor de <code className="rounded bg-zinc-100 px-1">ZERNIO_WEBHOOK_SECRET</code>.
+            valor de{" "}
+            <code className="rounded bg-zinc-100 px-1">
+              ZERNIO_WEBHOOK_SECRET
+            </code>
+            .
           </p>
           <p className="mt-2 text-xs text-zinc-500">
-            O botão <strong>Registrar webhook na Zernio</strong> cria esse endpoint
-            automaticamente. Se você já criou um endpoint no painel da Zernio,
-            evite clicar para não duplicar.
+            O botão <strong>Registrar webhook na Zernio</strong> cria esse
+            endpoint automaticamente. Se você já criou um endpoint no painel da
+            Zernio, evite clicar para não duplicar.
           </p>
         </section>
       ) : (
         <section className="rounded-lg border border-zinc-200 bg-white p-5">
-          <h2 className="text-sm font-medium">Configuração no painel da Meta</h2>
+          <h2 className="text-sm font-medium">
+            Configuração no painel da Meta
+          </h2>
           <p className="mt-2 text-sm text-zinc-600">
             No app da Meta, o webhook do Instagram deve apontar para:
           </p>
           <code className="mt-1 block break-all rounded-md bg-zinc-100 px-3 py-2 text-xs">
-            {appUrl ? `${appUrl}/api/webhook` : "(APP_URL ainda não configurada)"}
+            {appUrl
+              ? `${appUrl}/api/webhook`
+              : "(APP_URL ainda não configurada)"}
           </code>
           <p className="mt-2 text-sm text-zinc-600">
-            Assine os campos <strong>comments</strong>, <strong>messages</strong> e{" "}
-            <strong>messaging_postbacks</strong>. O token de verificação é o valor
-            de <code className="rounded bg-zinc-100 px-1">META_WEBHOOK_VERIFY_TOKEN</code>.
+            Assine os campos <strong>comments</strong>,{" "}
+            <strong>messages</strong> e <strong>messaging_postbacks</strong>. O
+            token de verificação é o valor de{" "}
+            <code className="rounded bg-zinc-100 px-1">
+              META_WEBHOOK_VERIFY_TOKEN
+            </code>
+            .
           </p>
           <p className="mt-2 text-xs text-zinc-500">
-            <strong>messaging_postbacks</strong> é necessário para receber o toque
-            em &quot;Já segui&quot;. Sem ele, quem toca no botão não recebe o link.
-            Os três campos precisam estar ativos também nas assinaturas do app
-            (App Dashboard → Webhooks → Instagram).
+            <strong>messaging_postbacks</strong> é necessário para receber o
+            toque em &quot;Já segui&quot;. Sem ele, quem toca no botão não
+            recebe o link. Os três campos precisam estar ativos também nas
+            assinaturas do app (App Dashboard → Webhooks → Instagram).
           </p>
         </section>
       )}
@@ -461,7 +490,9 @@ export default async function ConnectionPage({
                 </span>
                 <span>
                   <code className="text-xs">{name}</code>
-                  <span className="block text-xs text-zinc-500">{description}</span>
+                  <span className="block text-xs text-zinc-500">
+                    {description}
+                  </span>
                 </span>
               </li>
             );

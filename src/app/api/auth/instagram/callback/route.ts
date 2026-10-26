@@ -1,7 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { safeEqualStrings } from "@/lib/http-auth";
-import { completeOAuth, getRedirectUri, STATE_COOKIE } from "@/lib/instagram/oauth";
+import {
+  completeOAuth,
+  getRedirectUri,
+  STATE_COOKIE,
+} from "@/lib/instagram/oauth";
 
 /**
  * Retorno do login do Instagram.

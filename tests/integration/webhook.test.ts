@@ -35,8 +35,14 @@ function commentPayload(params: {
             value: {
               id: params.commentId,
               text: params.text,
-              from: { id: params.commenterId ?? "user-123", username: "pessoa" },
-              media: { id: params.mediaId ?? "media-1", media_product_type: "FEED" },
+              from: {
+                id: params.commenterId ?? "user-123",
+                username: "pessoa",
+              },
+              media: {
+                id: params.mediaId ?? "media-1",
+                media_product_type: "FEED",
+              },
               ...(params.parentId ? { parent_id: params.parentId } : {}),
             },
           },
@@ -316,9 +322,9 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
       }),
     );
     const afterDuplicate = await db.select().from(outboundMessages);
-    expect(afterDuplicate.filter((job) => job.kind === "followup_link")).toHaveLength(
-      1,
-    );
+    expect(
+      afterDuplicate.filter((job) => job.kind === "followup_link"),
+    ).toHaveLength(1);
   });
 
   it("com a porta ligada, a resposta agenda só a checagem (sem link)", async () => {
@@ -420,7 +426,9 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
         };
       };
     };
-    expect(payload.message.attachment.payload.text).toContain("caixa principal");
+    expect(payload.message.attachment.payload.text).toContain(
+      "caixa principal",
+    );
     expect(payload.message.attachment.payload.buttons).toHaveLength(1);
     expect(payload.message.attachment.payload.buttons[0]!.url).toBe(
       "https://www.exemplo.com/material",
