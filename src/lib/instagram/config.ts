@@ -9,9 +9,19 @@
 export const INSTAGRAM_API_VERSION =
   process.env.INSTAGRAM_API_VERSION?.trim() || "v26.0";
 
+/**
+ * Só existe para o teste local com a API simulada (`npm run demo:local`).
+ * Em produção é sempre ignorada: o endereço oficial não pode ser trocado
+ * por variável de ambiente.
+ */
+const localGraphOverride =
+  process.env.NODE_ENV === "production"
+    ? undefined
+    : process.env.INSTAGRAM_GRAPH_BASE_URL?.trim();
+
 export const IG = {
   apiVersion: INSTAGRAM_API_VERSION,
-  graphBaseUrl: "https://graph.instagram.com",
+  graphBaseUrl: localGraphOverride || "https://graph.instagram.com",
   oauthAuthorizeUrl: "https://www.instagram.com/oauth/authorize",
   oauthTokenUrl: "https://api.instagram.com/oauth/access_token",
   longLivedTokenUrl: "https://graph.instagram.com/access_token",

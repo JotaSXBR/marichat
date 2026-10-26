@@ -60,8 +60,9 @@ export default async function AdminDashboard() {
   const account = await getActiveAccount();
   // Hora do banco: evita divergência entre servidores e mantém a renderização
   // determinística do ponto de vista do React.
-  const nowRows = await db.execute<{ now: Date }>(sql`select now() as now`);
-  const dbNow = nowRows[0]?.now ?? null;
+  const nowRows = await db.execute<{ now: Date | string }>(sql`select now() as now`);
+  const rawNow = nowRows[0]?.now ?? null;
+  const dbNow = rawNow ? new Date(rawNow) : null;
 
   const automationStats = await db
     .select({ isActive: automations.isActive, total: count() })

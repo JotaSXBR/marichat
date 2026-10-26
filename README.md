@@ -80,6 +80,31 @@ Nenhuma mensagem real é enviada: a API é simulada nos testes de fila.
 O PGlite não é usado: a fila depende de `FOR UPDATE SKIP LOCKED` e de conexões
 concorrentes reais, que o PGlite (uma única conexão) não reproduz.
 
+### Teste completo local (Instagram simulado)
+
+Valida o fluxo inteiro sem tocar na Meta. Com o banco local ligado:
+
+```powershell
+# terminal 1
+npm run dev
+
+# terminal 2
+npm run demo:local
+```
+
+O script sobe um "Instagram falso" em `127.0.0.1:4010`, cadastra uma conta e uma
+automação de demonstração, envia o webhook assinado de comentário, roda a fila
+pelo endpoint de cron e confere:
+
+- a primeira DM com o botão `Quero o link`, em resposta privada ao comentário;
+- o toque no botão abrindo a segunda mensagem com o botão HTTPS;
+- o painel e a lista de publicações (incluindo a miniatura do vídeo).
+
+No fim ele imprime o JSON exato que seria enviado. Para isso o `.env.local`
+define `INSTAGRAM_GRAPH_BASE_URL=http://127.0.0.1:4010`; essa variável é
+**ignorada em produção** (o endereço oficial não pode ser trocado). Sem a API
+falsa ligada, o app local não envia nada para a Meta.
+
 ## Variáveis de ambiente
 
 | Variável | Obrigatória | Para que serve |
@@ -95,6 +120,7 @@ concorrentes reais, que o PGlite (uma única conexão) não reproduz.
 | `PRIVACY_CONTACT_EMAIL` | recomendada | E-mail nas páginas de privacidade/exclusão. |
 | `INSTAGRAM_OAUTH_REDIRECT_URI` | opcional | Sobrescreve a URL de callback do OAuth. |
 | `INSTAGRAM_API_VERSION` | opcional | Versão da Graph API (padrão `v26.0`). |
+| `INSTAGRAM_GRAPH_BASE_URL` | só local | Aponta para a API simulada. Ignorada em produção. |
 
 Nunca troque `TOKEN_ENCRYPTION_KEY` com uma conta conectada sem antes
 reconectar: o token antigo fica ilegível.
