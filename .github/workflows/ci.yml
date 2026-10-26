@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# Cancela execuções antigas do mesmo commit/branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: lint, tipos, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        # Mesma versão usada no Coolify.
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: marichat_test
+        ports:
+          # A suíte de integração só roda na porta 5433 (proteção contra banco
+          # de produção). Ver tests/helpers/db.ts.
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5433/marichat_test
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Aplicar migrations no banco de teste
+        run: npm run db:migrate
+
+      # Falha se aparecer aviso novo (baseline de 56 em package.json).
+      - name: Lint com tipos e orçamentos
+        run: npm run lint:ci
+
+      - name: Tipos do TypeScript
+        run: npm run typecheck
+
+      - name: Testes
+        run: npm test
+
+      # O build não acessa o banco: o cliente é criado em tempo de execução.
+      - name: Build de produção
+        run: npm run build

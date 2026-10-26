@@ -11,9 +11,9 @@ TypeScript, zero `any` explícito e zero asserções `!` no código de produçã
 Os testes cobrem o motor, o webhook, a fila, as rotas, o cliente da Meta e o
 tradutor da Zernio.
 
-O lint com tipos foi **aplicado na Fase 1** e os orçamentos de tamanho,
-complexidade e duplicação na **Fase 2** (ver plano no fim). O que falta agora é
-o **portão automático (CI)**.
+O lint com tipos foi **aplicado na Fase 1**, os orçamentos de tamanho,
+complexidade e duplicação na **Fase 2** e a verificação automática na **Fase 3**
+(ver plano no fim). O que resta é formatação e refatoração guiada.
 
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ o **portão automático (CI)**.
 | Funções com complexidade > 12 | 19 | 0 (avisos) |
 | Avisos de orçamento no lint | 56 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
-| CI / GitHub Actions | não existe | lint + tipos + testes + build |
+| CI / GitHub Actions | lint + tipos + testes + build | manter |
 
 ## O que já está bom
 
@@ -298,8 +298,10 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    `max-lines-per-function`, `complexity`, `max-depth`, `max-params`,
    `max-nested-callbacks` e SonarJS selecionado. Baseline de 56 avisos no
    `lint:ci`, sem refatoração grande ainda.
-3. **Fase 3 — CI**: GitHub Actions com Postgres 18, `npm ci`, `lint`,
-   `typecheck`, `test` e `build` em cada PR.
+3. **Fase 3 — CI** ✅ **concluída**: `.github/workflows/ci.yml` roda em push
+   para `master` e em Pull Request, com PostgreSQL 18 na porta 5433, migrations,
+   `lint:ci`, `typecheck`, testes e build. O build não recebe segredos, igual ao
+   Dockerfile.
 4. **Fase 4 — formatação**: Prettier + `.editorconfig` em um commit só de
    formatação.
 5. **Fase 5 — refatoração guiada**: atacar Prioridade 1, arquivo por arquivo,

@@ -1,5 +1,7 @@
 # MARICHAT
 
+[![CI](https://github.com/JotaSXBR/marichat/actions/workflows/ci.yml/badge.svg)](https://github.com/JotaSXBR/marichat/actions/workflows/ci.yml)
+
 Automação oficial de comentários do Instagram: quando alguém comenta uma
 palavra-chave, o perfil envia uma DM privada pedindo uma resposta. Quando a
 pessoa responde (abre a janela de 24h), ela recebe uma segunda mensagem com o
@@ -94,6 +96,15 @@ npm run build
 O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
 `tests`. As escolhas de regras e a dívida de refatoração estão em
 `docs/QUALIDADE.md`.
+
+### Verificação automática (CI)
+
+Todo push em `master` e todo Pull Request rodam `.github/workflows/ci.yml`:
+PostgreSQL 18, migrations, `lint:ci`, `typecheck`, testes e build. Se o lint
+passar do baseline de avisos (56 em `package.json`) ou qualquer etapa falhar, o
+PR fica vermelho. O build não recebe segredos e não acessa o banco, igual ao
+Dockerfile.
+
 
 Os testes de integração só rodam quando `DATABASE_URL` aponta para
 `127.0.0.1:5433` ou `localhost:5433`. Eles limpam as tabelas antes de cada caso.
