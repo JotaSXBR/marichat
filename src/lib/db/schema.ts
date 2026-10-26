@@ -138,6 +138,10 @@ export const commentInteractions = pgTable(
     secondDmAcceptedAt: timestamp("second_dm_accepted_at", {
       withTimezone: true,
     }),
+    /** Última mensagem recebida do usuário (abre a janela de 24h). */
+    userLastMessageAt: timestamp("user_last_message_at", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -213,3 +217,29 @@ export const appState = pgTable("app_state", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Pedidos de exclusão de dados recebidos pelo callback da Meta.
+ * Guardamos apenas o hash do identificador, não o ID em texto puro.
+ */
+export const dataDeletionRequests = pgTable(
+  "data_deletion_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** SHA-256 do Instagram-scoped ID informado pela Meta. */
+    instagramUserIdHash: text("instagram_user_id_hash").notNull(),
+    confirmationCode: text("confirmation_code").notNull(),
+    /** pending | completed | failed */
+    status: text("status").notNull().default("pending"),
+    requestedAt: timestamp("requested_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("data_deletion_requests_confirmation_uq").on(
+      table.confirmationCode,
+    ),
+    index("data_deletion_requests_requested_idx").on(table.requestedAt),
+  ],
+);

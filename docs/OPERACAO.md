@@ -1,0 +1,67 @@
+# MARICHAT — resumo operacional (1 página)
+
+## Rotina diária (2 minutos)
+
+1. Abra `https://SEU_DOMINIO/admin`.
+2. Confira os cartões **Aguardando toque**, **Links enviados** e
+   **Precisam de atenção**.
+3. Se houver aviso de token, conexão ou webhook, abra **Conexão**.
+4. Se "Precisam de atenção" aumentar, veja os últimos comentários na visão geral.
+
+## Criar uma automação
+
+1. **Automações → Nova automação**.
+2. Nome interno (só você vê).
+3. Palavra-chave: compare sem diferenciar maiúsculas, acentos ou pontuação;
+   precisa ser a palavra inteira (`quero` não casa com `queroo`).
+4. Escolha **qualquer publicação** ou uma publicação específica.
+5. DM 1: texto (até ~1.000 bytes) e botão (até 20 caracteres).
+6. DM 2: texto (até 80 caracteres), botão (até 20) e link **https://**.
+7. Marque **Ativa** e salve.
+8. Teste com uma **conta secundária**: comente a palavra-chave, abra a DM,
+   toque no botão e confirme o link.
+
+Editar uma automação **não** altera conversas já iniciadas.
+
+## Situações no painel
+
+| Situação | Significado | Ação |
+| --- | --- | --- |
+| Na fila | Aguardando envio pelo cron | Nenhuma (roda a cada minuto) |
+| DM enviada (aceita) | Meta aceitou a requisição; não é confirmação de entrega | Nenhuma |
+| Link enviado | Segunda mensagem aceita | Nenhuma |
+| Incerta | Não sabemos se a Meta recebeu | **Não reenviar**: pode duplicar |
+| Expirada | Passou de 7 dias (DM 1) ou 24h (link) | Nenhuma; prazo da Meta |
+| Falhou | Erro definitivo (token, permissão, texto inválido) | Ver erro e reconectar/corrigir |
+
+## Se algo der errado
+
+- **Token expirado/revogado:** Conexão → Reconectar. Envios ficam parados até lá.
+- **Webhooks não chegam:** Conexão → Reassinar webhooks; confira no painel da
+  Meta se a callback é `https://SEU_DOMINIO/api/webhook` e os campos `comments`
+  e `messages` estão assinados.
+- **Nada é enviado:** verifique a tarefa agendada no Coolify (a cada minuto) e
+  os logs do container.
+- **Mensagem duplicada:** nunca "reprocessar" uma tarefa `uncertain` sem
+  conferir a conversa no Instagram.
+- **Pedido de exclusão de dados:** use `/exclusao-de-dados` ou o callback da
+  Meta; o pedido é concluído automaticamente.
+
+## Regras de ouro
+
+1. Nunca cole senhas, tokens ou App Secret em conversas, prints ou issues.
+2. Nunca teste automações na conta principal com seguidores reais sem avisar.
+3. Não altere `TOKEN_ENCRYPTION_KEY` com a conta conectada.
+4. Antes de deploy ou migration destrutiva: backup do PostgreSQL.
+5. "Aceita" não significa "entregue"; o Instagram não fornece essa confirmação.
+6. Uma conta do Instagram por instalação no MVP.
+
+## Onde estão as coisas
+
+- Painel: `/admin` (usuário `admin`).
+- Webhook da Meta: `/api/webhook`.
+- Saúde: `/api/health`.
+- Cron: `/api/cron/tick` (Bearer `CRON_SECRET`).
+- Privacidade: `/privacidade` · Exclusão: `/exclusao-de-dados`.
+- Logs e variáveis: Coolify, na aplicação `marichat`.
+- Segredos: gerenciador de senhas da conta; não no código.
