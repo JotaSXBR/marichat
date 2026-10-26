@@ -10,7 +10,7 @@ perfil.
 comentário com a palavra-chave
         │
         ▼
-webhook assinado da Meta ──► PostgreSQL (interação + tarefa)
+webhook assinado (Meta ou Zernio) ──► PostgreSQL (interação + tarefa)
         │                                 │
         ▼                                 ▼
 resposta privada (DM 1)  ◄──── fila com retentativas (cron)
@@ -33,6 +33,9 @@ Tailwind, Docker. Sem Supabase, sem serviços pagos, sem `pg_cron`.
   AES-256-GCM, renovação automática).
 - Webhook `GET` (verificação) e `POST` (assinatura `X-Hub-Signature-256`),
   deduplicação de eventos e resposta rápida.
+- Transporte alternativo pela **Zernio** (`MESSAGING_PROVIDER=zernio`), que já
+  tem app Meta aprovado: o motor continua igual e só a entrada/saída mudam
+  (`/api/webhook/zernio`, assinatura `X-Zernio-Signature`).
 - Fila em PostgreSQL com `FOR UPDATE SKIP LOCKED`, 3 tentativas com espera
   progressiva, expiração pelos prazos da Meta e estado "incerto" sem reenvio.
 - Porta de seguidor com cinco modos: direta, tolerante (até 2 checagens),
@@ -128,19 +131,53 @@ falsa ligada, o app local não envia nada para a Meta.
 | `DATABASE_URL` | sim | Conexão PostgreSQL (rede interna do Coolify). |
 | `ADMIN_PASSWORD` | sim | Senha do painel (usuário `admin`). |
 | `TOKEN_ENCRYPTION_KEY` | sim | 32 bytes em base64; cifra o token do Instagram. |
-| `INSTAGRAM_APP_ID` | sim | App ID do app Business da Meta. |
-| `INSTAGRAM_APP_SECRET` | sim | App Secret (assina os webhooks). |
-| `META_WEBHOOK_VERIFY_TOKEN` | sim | Token que você define no painel da Meta. |
+| `MESSAGING_PROVIDER` | não | `meta` (padrão) ou `zernio`. Define o transporte. |
+| `INSTAGRAM_APP_ID` | só com `meta` | App ID do app Business da Meta. |
+| `INSTAGRAM_APP_SECRET` | só com `meta` | App Secret (assina os webhooks). |
+| `META_WEBHOOK_VERIFY_TOKEN` | só com `meta` | Token que você define no painel da Meta. |
+| `ZERNIO_API_KEY` | só com `zernio` | Chave de API da Zernio (Bearer). |
+| `ZERNIO_WEBHOOK_SECRET` | só com `zernio` | Segredo do webhook da Zernio (HMAC-SHA256). |
 | `CRON_SECRET` | sim | Segredo da tarefa agendada. |
 | `PRIVACY_CONTACT_EMAIL` | recomendada | E-mail nas páginas de privacidade/exclusão. |
 | `INSTAGRAM_OAUTH_REDIRECT_URI` | opcional | Sobrescreve a URL de callback do OAuth. |
 | `INSTAGRAM_API_VERSION` | opcional | Versão da Graph API (padrão `v26.0`). |
 | `INSTAGRAM_GRAPH_BASE_URL` | só local | Aponta para a API simulada. Ignorada em produção. |
+| `ZERNIO_BASE_URL` | só local | Aponta para uma Zernio simulada (padrão `https://zernio.com/api`). |
 
 Nunca troque `TOKEN_ENCRYPTION_KEY` com uma conta conectada sem antes
 reconectar: o token antigo fica ilegível.
 
-## Configurar o app na Meta
+## Usar a Zernio como transporte
+
+A Zernio é uma API intermediária que já possui um app aprovado pela Meta. Ao
+usá-la, você **não precisa** criar app, pedir permissões nem passar por análise:
+basta conectar a conta do Instagram no painel da Zernio. O levantamento completo
+da API está em [`docs/ZERNIO.md`](docs/ZERNIO.md).
+
+1. No painel da Zernio, conecte a conta profissional do Instagram.
+2. Crie uma **API key** e copie o valor.
+3. Defina no servidor:
+   - `MESSAGING_PROVIDER=zernio`
+   - `ZERNIO_API_KEY=<a chave>`
+   - `ZERNIO_WEBHOOK_SECRET=<um segredo aleatório seu>`
+4. Reinicie a aplicação e abra **Conexão**. Escolha a conta da Zernio e clique
+   em **Conectar conta da Zernio**.
+5. Clique em **Registrar webhook na Zernio**. Se preferir criar manualmente no
+   painel dela, a URL é `https://SEU_DOMINIO/api/webhook/zernio`, os eventos são
+   `comment.received` e `message.received`, e o segredo é o mesmo
+   `ZERNIO_WEBHOOK_SECRET`.
+6. Rode **Testar conexão** e faça um comentário de teste com uma conta
+   secundária.
+
+Regras que continuam valendo: a primeira DM é texto puro (a Zernio/Meta pode
+recusar botões para quem não segue e a falha consumiria a única resposta
+privada), a segunda mensagem sai na conversa aberta pela resposta da pessoa, e
+os cinco modos da porta de seguidor funcionam igual.
+
+Para voltar à Meta direto, troque `MESSAGING_PROVIDER=meta`, preencha as
+variáveis da Meta e conecte a conta em **Conexão → Conectar Instagram**.
+
+## Configurar o app na Meta (somente com `MESSAGING_PROVIDER=meta`)
 
 Estas etapas são feitas por você, no painel da Meta (developers.facebook.com).
 O app precisa ser do tipo **Business**.
@@ -175,7 +212,8 @@ dela (`/subscribed_apps`). Se essa etapa falhar, use **Reassinar webhooks** em
 3. Crie uma aplicação a partir do repositório, build pack **Dockerfile**,
    porta `3000`, uma réplica.
 4. Configure o domínio com HTTPS e defina `APP_URL` com esse domínio.
-5. Cadastre todas as variáveis da tabela acima (ambiente de produção).
+5. Cadastre todas as variáveis da tabela acima (ambiente de produção),
+   incluindo `MESSAGING_PROVIDER` e as credenciais do transporte escolhido.
 6. Health check: `GET /api/health`.
 7. Faça o deploy. O container aplica as migrations do Drizzle antes de iniciar o
    servidor; se a migração falhar, o container não sobe (fail fast).
@@ -233,12 +271,15 @@ Pontos que não podem ser esquecidos:
 ```
 src/app/admin/            painel (páginas + Server Actions)
 src/app/api/webhook/      webhook da Meta (GET/POST)
+src/app/api/webhook/zernio webhook da Zernio (POST assinado)
 src/app/api/auth/...      login OAuth do Instagram
 src/app/api/cron/tick/    tarefa agendada
 src/app/api/data-deletion callback de exclusão
-src/lib/queue/drain.ts    fila, retentativas, prazos, token
+src/lib/queue/drain.ts    fila, retentativas, prazos, token, envio Meta/Zernio
 src/lib/webhook/process.ts regras de comentário e DM
+src/lib/webhook/zernio.ts tradução dos eventos da Zernio
 src/lib/instagram/        config, cliente Graph API, OAuth
+src/lib/zernio/           cliente, assinatura, configuração e diagnóstico
 src/lib/db/               schema e cliente Drizzle
 drizzle/                  migrations SQL
 scripts/migrate.mjs       migrations no start do container
@@ -251,6 +292,10 @@ tests/                    unitários e integração
   quem conversa. No modo travado, a ausência do campo mantém a conversa retida
   (por definição, não há como confirmar o follow); nos demais modos o link é
   liberado ou entregue sem checagem.
-- Criar o app Meta, obter credenciais, revisar permissões e publicar o app.
+- Com a Zernio, confirmar em conta real que `comment.received` chega para posts
+  antigos e que o status de seguidor vem preenchido; os testes cobrem apenas o
+  formato documentado.
+- Criar o app Meta, obter credenciais, revisar permissões e publicar o app —
+  **somente se** usar `MESSAGING_PROVIDER=meta`.
 - Definir o e-mail de privacidade (`PRIVACY_CONTACT_EMAIL`).
 - Revisar a política de privacidade com quem for responsável pelo perfil.

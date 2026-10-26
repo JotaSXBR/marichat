@@ -26,7 +26,17 @@ import {
 } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
 import { isFollowMode } from "@/lib/follow-mode";
-import { buildGatePayload, buildLinkPayload } from "@/lib/outbound";
+import {
+  buildGatePayload,
+  buildLinkPayload,
+  toZernioMessage,
+} from "@/lib/outbound";
+import {
+  ZernioApiError,
+  getFollowStatus,
+  sendConversationMessage,
+  sendPrivateReply,
+} from "@/lib/zernio/client";
 
 type JobRow = typeof outboundMessages.$inferSelect;
 type InteractionRow = typeof commentInteractions.$inferSelect;
@@ -530,18 +540,20 @@ async function processFollowCheck(
     return "requeued";
   }
 
-  let accessToken: string;
-  try {
-    accessToken = decryptToken(account.accessTokenEncrypted);
-  } catch {
-    await markAccountReconnectRequired(account.id);
-    await markFailed(
-      job,
-      interaction,
-      "Não foi possível ler o token guardado. Reconecte o Instagram.",
-      "TOKEN_UNREADABLE",
-    );
-    return "failed";
+  let accessToken: string | null = null;
+  if (account.provider !== "zernio") {
+    try {
+      accessToken = decryptToken(account.accessTokenEncrypted);
+    } catch {
+      await markAccountReconnectRequired(account.id);
+      await markFailed(
+        job,
+        interaction,
+        "Não foi possível ler o token guardado. Reconecte o Instagram.",
+        "TOKEN_UNREADABLE",
+      );
+      return "failed";
+    }
   }
 
   const db = getDb();
@@ -561,10 +573,42 @@ async function processFollowCheck(
     return "failed";
   }
 
-  const profile = await getUserProfile({
-    accessToken,
-    igsid: interaction.commenterIgsid,
-  });
+  let isFollowing: boolean | null;
+  let profileError: string | undefined;
+
+  if (account.provider === "zernio") {
+    if (!account.providerAccountId) {
+      await markFailed(
+        job,
+        interaction,
+        "A conta da Zernio não está vinculada. Reconecte em Conexão.",
+        "PROVIDER_ACCOUNT_MISSING",
+      );
+      return "failed";
+    }
+    try {
+      const status = await getFollowStatus({
+        accountId: account.providerAccountId,
+        userId: interaction.commenterIgsid,
+        // O follow recém-feito demora alguns segundos para aparecer no perfil.
+        refresh: true,
+      });
+      isFollowing = status.isFollowing;
+      profileError = status.unavailableReason;
+    } catch (error) {
+      // Consulta indisponível não deve travar o fluxo: tratamos como
+      // "desconhecido" e a decisão segue igual à da Meta.
+      profileError = error instanceof Error ? error.message : "erro desconhecido";
+      isFollowing = null;
+    }
+  } else {
+    const profile = await getUserProfile({
+      accessToken: accessToken ?? "",
+      igsid: interaction.commenterIgsid,
+    });
+    isFollowing = profile.isFollowing;
+    profileError = profile.error;
+  }
 
   const checks = interaction.followChecks + 1;
   const mode = isFollowMode(settings.followMode) ? settings.followMode : "off";
@@ -573,9 +617,9 @@ async function processFollowCheck(
   // mantêm o pedido — é o que "travado" significa.
   const releaseLink =
     mode === "locked"
-      ? profile.isFollowing === true
+      ? isFollowing === true
       : mode === "soft"
-        ? profile.isFollowing !== false || checks >= 2
+        ? isFollowing !== false || checks >= 2
         : // Modo alterado depois que a checagem foi agendada: não retém ninguém.
           true;
   const now = new Date();
@@ -588,7 +632,7 @@ async function processFollowCheck(
         acceptedAt: now,
         externalMessageId: null,
         errorCode: null,
-        errorMessage: null,
+        errorMessage: releaseLink ? null : (profileError ?? null),
         lockedAt: null,
         lockToken: null,
         updatedAt: now,
@@ -687,12 +731,63 @@ async function processFollowCheck(
   return "accepted";
 }
 
+/**
+ * Envio pela Zernio.
+ *
+ * A resposta privada usa IDs da própria Meta (`mediaId` e `commentId`), então
+ * funciona em posts antigos. As demais mensagens vão para a conversa aberta
+ * quando a pessoa respondeu — por isso `providerConversationId` é obrigatório.
+ *
+ * A `Idempotency-Key` é o id da tarefa: se a resposta se perder e a tarefa for
+ * repetida dentro de 24h, a Zernio devolve o resultado anterior em vez de
+ * mandar duas vezes.
+ */
+async function sendWithZernio(
+  job: JobRow,
+  account: AccountRow,
+  interaction: InteractionRow,
+): Promise<{ messageId: string }> {
+  if (!account.providerAccountId) {
+    throw new ZernioApiError(
+      "A conta da Zernio não está vinculada. Reconecte em Conexão.",
+      409,
+      "provider_account_missing",
+    );
+  }
+
+  const content = toZernioMessage(job.payload);
+
+  if (job.kind === "private_reply") {
+    return sendPrivateReply({
+      accountId: account.providerAccountId,
+      postId: interaction.mediaId,
+      commentId: interaction.commentId,
+      ...content,
+      idempotencyKey: job.id,
+    });
+  }
+
+  if (!interaction.providerConversationId) {
+    throw new ZernioApiError(
+      "A conversa ainda não foi registrada. A pessoa precisa responder à primeira mensagem para abrir a janela.",
+      409,
+      "conversation_missing",
+    );
+  }
+
+  return sendConversationMessage({
+    accountId: account.providerAccountId,
+    conversationId: interaction.providerConversationId,
+    ...content,
+    idempotencyKey: job.id,
+  });
+}
+
 async function processJob(
   job: JobRow,
   account: AccountRow,
   interaction: InteractionRow,
-): Promise<"accepted" | "failed" | "uncertain" | "requeued" | "expired"> {
-  if (job.kind === "follow_check" || job.kind === "follow_check_2") {
+): Promise<"accepted" | "failed" | "uncertain" | "requeued" | "expired"> {  if (job.kind === "follow_check" || job.kind === "follow_check_2") {
     return processFollowCheck(job, account, interaction);
   }
 
@@ -710,18 +805,20 @@ async function processJob(
     return "requeued";
   }
 
-  let accessToken: string;
-  try {
-    accessToken = decryptToken(account.accessTokenEncrypted);
-  } catch {
-    await markAccountReconnectRequired(account.id);
-    await markFailed(
-      job,
-      interaction,
-      "Não foi possível ler o token guardado. Reconecte o Instagram.",
-      "TOKEN_UNREADABLE",
-    );
-    return "failed";
+  let accessToken: string | null = null;
+  if (account.provider !== "zernio") {
+    try {
+      accessToken = decryptToken(account.accessTokenEncrypted);
+    } catch {
+      await markAccountReconnectRequired(account.id);
+      await markFailed(
+        job,
+        interaction,
+        "Não foi possível ler o token guardado. Reconecte o Instagram.",
+        "TOKEN_UNREADABLE",
+      );
+      return "failed";
+    }
   }
 
   if (job.kind === "private_reply") {
@@ -733,15 +830,65 @@ async function processJob(
   }
 
   try {
-    const sent = await sendMessage({
-      igUserId: account.instagramUserId,
-      accessToken,
-      body: job.payload,
-    });
+    const sent =
+      account.provider === "zernio"
+        ? await sendWithZernio(job, account, interaction)
+        : await sendMessage({
+            igUserId: account.instagramUserId,
+            accessToken: accessToken ?? "",
+            body: job.payload,
+          });
     await markAccepted(job, interaction, sent.messageId);
     await setAppStateValue("last_send_accepted_at", new Date().toISOString());
     return "accepted";
   } catch (error) {
+    if (error instanceof ZernioApiError) {
+      if (error.authProblem) {
+        await markAccountReconnectRequired(account.id);
+        await markFailed(
+          job,
+          interaction,
+          "A Zernio recusou a chave de API. Confira ZERNIO_API_KEY e reconecte.",
+          error.code ?? "AUTH",
+        );
+        return "failed";
+      }
+
+      // A resposta privada deste comentário já foi gasta: repetir nunca
+      // funciona e a Meta recusa a segunda tentativa.
+      if (error.privateReplyConsumed) {
+        await markFailed(
+          job,
+          interaction,
+          "A resposta privada deste comentário já foi usada. Não é possível reenviar.",
+          "PRIVATE_REPLY_CONSUMED",
+        );
+        return "failed";
+      }
+
+      // Falha depois do envio: pode ter sido entregue. Não repetir às cegas.
+      if (error.outcomeUnknown || error.status === 0) {
+        await markUncertain(
+          job,
+          interaction,
+          "A Zernio não confirmou se a mensagem foi entregue. Confira a conversa antes de reenviar.",
+        );
+        return "uncertain";
+      }
+
+      if (error.retryable) {
+        return retryOrFail(
+          job,
+          interaction,
+          `A Zernio limitou ou está instável: ${error.message}`,
+          error.code ?? null,
+        );
+      }
+
+      await markFailed(job, interaction, error.message, error.code ?? null);
+      return "failed";
+    }
+
     if (error instanceof InstagramApiError) {
       if (error.authProblem) {
         await markAccountReconnectRequired(account.id);
@@ -870,6 +1017,8 @@ export async function refreshTokenIfNeeded(): Promise<{
   if (!account || account.connectionStatus !== "connected") {
     return { refreshed: false };
   }
+  // A Zernio cuida do token da Meta: não há token nosso para renovar.
+  if (account.provider === "zernio") return { refreshed: false };
   if (!account.tokenExpiresAt) return { refreshed: false };
 
   const now = Date.now();

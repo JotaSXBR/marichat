@@ -20,8 +20,16 @@ export const instagramAccounts = pgTable(
   "instagram_accounts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** ID do usuário do Instagram profissional obtido pela API oficial. */
+    /**
+     * De onde vêm os eventos e por onde saem as mensagens:
+     * `meta` = API oficial com Instagram Login (token próprio);
+     * `zernio` = API da Zernio (app Meta aprovado por ela, sem token nosso).
+     */
+    provider: text("provider").notNull().default("meta"),
+    /** ID da conta do Instagram na API oficial. */
     instagramUserId: text("instagram_user_id").notNull(),
+    /** ID da conta na Zernio (`accountId`), quando provider = zernio. */
+    providerAccountId: text("provider_account_id"),
     username: text("username").notNull(),
     /** Token cifrado com AES-256-GCM; nunca gravado em texto puro. */
     accessTokenEncrypted: text("access_token_encrypted").notNull(),
@@ -156,6 +164,11 @@ export const commentInteractions = pgTable(
     mediaId: text("media_id").notNull(),
     /** Instagram-scoped ID de quem comentou. */
     commenterIgsid: text("commenter_igsid").notNull(),
+    /**
+     * ID da conversa no provedor (hoje só a Zernio usa). A DM 2 é enviada
+     * nessa conversa; na Meta o destinatário é o próprio IGSID.
+     */
+    providerConversationId: text("provider_conversation_id"),
     commentText: text("comment_text"),
     commentCreatedAt: timestamp("comment_created_at", { withTimezone: true })
       .notNull(),

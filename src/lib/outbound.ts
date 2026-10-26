@@ -15,6 +15,97 @@ export const MAX_BUTTON_TEXT_BYTES = 640;
 export const MAX_TEMPLATE_TITLE_CHARS = 80;
 export const MAX_BUTTON_TITLE_CHARS = 20;
 
+/**
+ * Converte o corpo no formato da Meta (que os builders acima produzem) para o
+ * formato da Zernio. Manter um único formato interno evita duplicar os textos,
+ * os truncamentos e os testes: o provider só traduz o "envelope".
+ */
+export type ZernioButton =
+  | { type: "url"; title: string; url: string }
+  | { type: "postback"; title: string; payload: string };
+
+export type ZernioMessage = { message: string; buttons?: ZernioButton[] };
+
+export function toZernioMessage(payload: unknown): ZernioMessage {
+  const root = payload as {
+    message?: {
+      text?: unknown;
+      attachment?: {
+        type?: unknown;
+        payload?: {
+          template_type?: unknown;
+          text?: unknown;
+          elements?: Array<{
+            title?: unknown;
+            buttons?: Array<{
+              type?: unknown;
+              title?: unknown;
+              url?: unknown;
+              payload?: unknown;
+            }>;
+          }>;
+        };
+      };
+    };
+  } | null;
+
+  const message = root?.message;
+  if (message && typeof message.text === "string") {
+    return { message: message.text };
+  }
+
+  type RawButton = {
+    type?: unknown;
+    title?: unknown;
+    url?: unknown;
+    payload?: unknown;
+  };
+
+  const template = message?.attachment?.payload as
+    | {
+        template_type?: unknown;
+        text?: unknown;
+        buttons?: RawButton[];
+        elements?: Array<{ title?: unknown; buttons?: RawButton[] }>;
+      }
+    | undefined;
+
+  if (message?.attachment?.type !== "template" || !template) {
+    throw new Error("Formato de mensagem não suportado pela Zernio.");
+  }
+
+  const text =
+    typeof template.text === "string"
+      ? template.text
+      : typeof template.elements?.[0]?.title === "string"
+        ? template.elements[0].title
+        : null;
+
+  const rawButtons: RawButton[] = Array.isArray(
+    template.elements?.[0]?.buttons,
+  )
+    ? template.elements[0].buttons
+    : Array.isArray(template.buttons)
+      ? template.buttons
+      : [];
+
+  if (!text) {
+    throw new Error("Mensagem sem texto para a Zernio.");
+  }
+
+  const buttons: ZernioButton[] = [];
+  for (const raw of rawButtons) {
+    if (!raw || typeof raw.title !== "string") continue;
+    if (raw.type === "web_url" && typeof raw.url === "string") {
+      buttons.push({ type: "url", title: raw.title, url: raw.url });
+    } else if (raw.type === "postback" && typeof raw.payload === "string") {
+      buttons.push({ type: "postback", title: raw.title, payload: raw.payload });
+    }
+  }
+
+  return buttons.length > 0 ? { message: text, buttons } : { message: text };
+}
+
 export function truncateUtf8(text: string, maxBytes: number): string {
   if (Buffer.byteLength(text, "utf8") <= maxBytes) return text;
   let result = "";

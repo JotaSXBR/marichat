@@ -1,12 +1,18 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { getActiveAccount, getAccountToken, setAppStateValue } from "@/lib/accounts";
+import {
+  getActiveAccount,
+  getAccountToken,
+  setAppStateValue,
+  zernioWebhookUrl,
+} from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
+import { encryptToken } from "@/lib/crypto";
 import { getDb } from "@/lib/db/client";
 import { automations, instagramAccounts } from "@/lib/db/schema";
 import { FOLLOW_MODES } from "@/lib/follow-mode";
@@ -17,6 +23,12 @@ import {
   runConnectionTest,
 } from "@/lib/instagram/diagnostics";
 import { normalizeKeyword } from "@/lib/matching";
+import {
+  createWebhookSettings,
+  listInstagramAccounts,
+} from "@/lib/zernio/client";
+import { ZERNIO, isZernioConfigured } from "@/lib/zernio/config";
+import { runZernioConnectionTest } from "@/lib/zernio/diagnostics";
 
 /** Ações do painel. Todas revalidam a autenticação no servidor. */
 
@@ -283,6 +295,12 @@ export async function resubscribeWebhooks(): Promise<void> {
     redirect("/admin/conexao?erro=conexao");
   }
 
+  if (account.provider === "zernio") {
+    await registerZernioWebhookFor();
+    revalidatePath("/admin/conexao");
+    redirect("/admin/conexao?webhook=1");
+  }
+
   try {
     const accessToken = getAccountToken(account);
     await subscribeWebhooks({
@@ -330,6 +348,174 @@ export async function testInstagramConnection(): Promise<void> {
   }
 
   const result = await runConnectionTest(account);
+  await setAppStateValue(CONNECTION_TEST_KEY, result);
+
+  revalidatePath("/admin/conexao");
+  revalidatePath("/admin");
+  redirect("/admin/conexao?testado=1");
+}
+
+/**
+ * Vincula uma conta do Instagram que já está conectada dentro da Zernio.
+ *
+ * A Zernio cuida do OAuth e do token; guardamos apenas o `accountId` dela e
+ * um marcador cifrado no lugar do token (o campo é obrigatório no schema e a
+ * leitura do token é ignorada quando `provider = zernio`).
+ */
+export async function connectZernio(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  if (!isZernioConfigured()) {
+    redirect("/admin/conexao?erro=zernio-chave");
+  }
+
+  let accounts;
+  try {
+    accounts = await listInstagramAccounts();
+  } catch (error) {
+    await setAppStateValue(
+      "zernio_connection_error",
+      error instanceof Error ? error.message : "erro desconhecido",
+    );
+    redirect("/admin/conexao?erro=zernio-api");
+  }
+
+  if (accounts.length === 0) {
+    redirect("/admin/conexao?erro=zernio-conta");
+  }
+
+  const requestedId = String(formData.get("accountId") ?? "").trim();
+  const chosen = requestedId
+    ? accounts.find((item) => item.id === requestedId)
+    : accounts.length === 1
+      ? accounts[0]
+      : null;
+
+  if (!chosen) {
+    redirect("/admin/conexao?erro=zernio-escolha");
+  }
+
+  const instagramUserId =
+    chosen.platformUserId ?? chosen.instagramScopedId ?? chosen.id;
+  const now = new Date();
+  const db = getDb();
+
+  const [existingByProvider] = await db
+    .select({ id: instagramAccounts.id })
+    .from(instagramAccounts)
+    .where(eq(instagramAccounts.providerAccountId, chosen.id))
+    .limit(1);
+
+  const [existingById] = await db
+    .select({ id: instagramAccounts.id })
+    .from(instagramAccounts)
+    .where(eq(instagramAccounts.instagramUserId, instagramUserId))
+    .limit(1);
+
+  const existingId = existingByProvider?.id ?? existingById?.id;
+
+  const values = {
+    provider: "zernio",
+    providerAccountId: chosen.id,
+    instagramUserId,
+    username: chosen.username ?? "instagram",
+    accessTokenEncrypted: encryptToken(`zernio:${chosen.id}`),
+    tokenExpiresAt: null,
+    connectionStatus: "connected",
+    lastVerifiedAt: now,
+    updatedAt: now,
+  };
+
+  try {
+    if (existingId) {
+      await db
+        .update(instagramAccounts)
+        .set(values)
+        .where(eq(instagramAccounts.id, existingId));
+    } else {
+      await db.insert(instagramAccounts).values(values);
+    }
+  } catch (error) {
+    await setAppStateValue(
+      "zernio_connection_error",
+      error instanceof Error ? error.message : "erro desconhecido",
+    );
+    redirect("/admin/conexao?erro=zernio-salvar");
+  }
+
+  // Apenas uma conta por provedor fica ativa (o motor trabalha com uma).
+  await db
+    .update(instagramAccounts)
+    .set({ connectionStatus: "disconnected", updatedAt: now })
+    .where(
+      and(
+        eq(instagramAccounts.provider, "zernio"),
+        ne(instagramAccounts.id, existingId ?? "00000000-0000-0000-0000-000000000000"),
+      ),
+    );
+
+  await setAppStateValue("zernio_connection_error", null);
+  await setAppStateValue("webhook_subscription_error", null);
+  await setAppStateValue("webhook_subscribed_at", now.toISOString());
+
+  revalidatePath("/admin/conexao");
+  revalidatePath("/admin");
+  redirect(`/admin/conexao?ok=1&conta=${encodeURIComponent(chosen.username ?? "")}`);
+}
+
+/** Cria (ou recria) o endpoint de webhook na Zernio apontando para este app. */
+async function registerZernioWebhookFor(): Promise<void> {
+  const url = zernioWebhookUrl();
+
+  if (!isZernioConfigured() || !ZERNIO.webhookSecret || !url) {
+    await setAppStateValue(
+      "webhook_subscription_error",
+      "Faltam ZERNIO_API_KEY, ZERNIO_WEBHOOK_SECRET ou APP_URL para registrar o webhook.",
+    );
+    return;
+  }
+
+  try {
+    const created = await createWebhookSettings({
+      name: "MARICHAT",
+      url,
+      secret: ZERNIO.webhookSecret,
+      events: ZERNIO.webhookEvents,
+    });
+    await setAppStateValue("zernio_webhook_id", created.id);
+    await setAppStateValue("webhook_subscription_error", null);
+    await setAppStateValue("webhook_subscribed_at", new Date().toISOString());
+  } catch (error) {
+    await setAppStateValue(
+      "webhook_subscription_error",
+      error instanceof Error
+        ? error.message
+        : "Erro desconhecido ao registrar o webhook.",
+    );
+  }
+}
+
+/** Botão "Registrar webhook" quando o transporte ativo é a Zernio. */
+export async function registerZernioWebhook(): Promise<void> {
+  await requireAdmin();
+  const account = await getActiveAccount();
+  if (!account || account.provider !== "zernio") {
+    redirect("/admin/conexao?erro=conexao");
+  }
+
+  await registerZernioWebhookFor();
+  revalidatePath("/admin/conexao");
+  redirect("/admin/conexao?webhook=1");
+}
+
+/** Teste de conexão quando o transporte ativo é a Zernio. */
+export async function testZernioConnection(): Promise<void> {
+  await requireAdmin();
+  const account = await getActiveAccount();
+
+  const result = await runZernioConnectionTest(
+    account?.provider === "zernio" ? account : null,
+  );
   await setAppStateValue(CONNECTION_TEST_KEY, result);
 
   revalidatePath("/admin/conexao");

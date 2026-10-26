@@ -98,6 +98,7 @@ export async function completeOAuth(params: {
   await db
     .insert(instagramAccounts)
     .values({
+      provider: "meta",
       instagramUserId: me.userId,
       username: me.username,
       accessTokenEncrypted: encrypted,
@@ -109,6 +110,8 @@ export async function completeOAuth(params: {
     .onConflictDoUpdate({
       target: instagramAccounts.instagramUserId,
       set: {
+        provider: "meta",
+        providerAccountId: null,
         username: me.username,
         accessTokenEncrypted: encrypted,
         tokenExpiresAt: expiresAt,

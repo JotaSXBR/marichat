@@ -53,10 +53,13 @@ para conversas em andamento.
 ## Se algo der errado
 
 - **Token expirado/revogado:** Conexão → Reconectar. Envios ficam parados até lá.
-- **Webhooks não chegam:** Conexão → **Testar conexão** (mostra o token e os
-  campos assinados) e → **Reassinar webhooks**. Confira no painel da Meta se a
-  callback é `https://SEU_DOMINIO/api/webhook` e se `comments`, `messages` e
-  `messaging_postbacks` estão ativos no app **e** na conta.
+- **Webhooks não chegam:** Conexão → **Testar conexão**.
+  - Com Meta: confira a callback `https://SEU_DOMINIO/api/webhook`, os campos
+    `comments`, `messages` e `messaging_postbacks` no app **e** na conta; use
+    **Reassinar webhooks**.
+  - Com Zernio: confira a callback `https://SEU_DOMINIO/api/webhook/zernio`, os
+    eventos `comment.received`/`message.received` e o `ZERNIO_WEBHOOK_SECRET`;
+    use **Registrar webhook na Zernio**.
 - **Nada é enviado:** abra **Atividade** para ver a fila e os erros; confira a
   tarefa agendada no Coolify (a cada minuto) e os logs do container.
 - **Muitos comentários de uma vez:** a fila respeita o limite de 750 respostas

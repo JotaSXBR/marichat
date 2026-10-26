@@ -5,19 +5,35 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { decryptToken } from "@/lib/crypto";
 import { getDb } from "@/lib/db/client";
 import { appState, instagramAccounts } from "@/lib/db/schema";
+import { getMessagingProvider } from "@/lib/messaging/provider";
+import type { MessagingProvider } from "@/lib/messaging/provider";
 
 export type Account = typeof instagramAccounts.$inferSelect;
 
-/** Conta ativa do MVP (apenas uma). O schema já permite várias no futuro. */
+/**
+ * Conta ativa do MVP (apenas uma). O schema já permite várias no futuro.
+ * Filtra pelo transporte configurado para nunca misturar conta Meta com Zernio.
+ */
 export async function getActiveAccount(): Promise<Account | null> {
   const db = getDb();
   const rows = await db
     .select()
     .from(instagramAccounts)
-    .where(ne(instagramAccounts.connectionStatus, "disconnected"))
+    .where(
+      and(
+        ne(instagramAccounts.connectionStatus, "disconnected"),
+        eq(instagramAccounts.provider, getMessagingProvider()),
+      ),
+    )
     .orderBy(desc(instagramAccounts.createdAt))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/** Endereço público do webhook da Zernio (usado ao registrar o endpoint). */
+export function zernioWebhookUrl(): string | null {
+  const base = process.env.APP_URL?.trim().replace(/\/+$/, "");
+  return base ? `${base}/api/webhook/zernio` : null;
 }
 
 export function getAccountToken(account: Account): string {
@@ -74,6 +90,7 @@ export async function markAccountConnected(accountId: string): Promise<void> {
 
 export async function findAccountByInstagramUserId(
   instagramUserId: string,
+  provider: MessagingProvider = "meta",
 ): Promise<Account | null> {
   const db = getDb();
   const rows = await db
@@ -82,9 +99,30 @@ export async function findAccountByInstagramUserId(
     .where(
       and(
         eq(instagramAccounts.instagramUserId, instagramUserId),
+        eq(instagramAccounts.provider, provider),
         ne(instagramAccounts.connectionStatus, "disconnected"),
       ),
     )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Conta pelo `accountId` da Zernio, usado nos webhooks dela. */
+export async function findAccountByProviderAccountId(
+  providerAccountId: string,
+): Promise<Account | null> {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(instagramAccounts)
+    .where(
+      and(
+        eq(instagramAccounts.provider, "zernio"),
+        eq(instagramAccounts.providerAccountId, providerAccountId),
+        ne(instagramAccounts.connectionStatus, "disconnected"),
+      ),
+    )
+    .orderBy(desc(instagramAccounts.createdAt))
     .limit(1);
   return rows[0] ?? null;
 }

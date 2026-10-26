@@ -32,6 +32,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { GET as webhookGet, POST as webhookPost } from "@/app/api/webhook/route";
+import { POST as zernioWebhookPost } from "@/app/api/webhook/zernio/route";
 import { GET as cronGet } from "@/app/api/cron/tick/route";
 import { POST as dataDeletionPost } from "@/app/api/data-deletion/route";
 import { GET as oauthStartGet } from "@/app/api/auth/instagram/start/route";
@@ -42,6 +43,8 @@ const APP_SECRET = process.env.INSTAGRAM_APP_SECRET ?? "test-app-secret";
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN ?? "test-verify-token";
 const CRON_SECRET = process.env.CRON_SECRET ?? "test-cron-secret";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "test-admin-password";
+const ZERNIO_SECRET =
+  process.env.ZERNIO_WEBHOOK_SECRET ?? "test-zernio-webhook-secret";
 
 function basic(username: string, password: string): string {
   return `Basic ${Buffer.from(`${username}:${password}`, "utf8").toString("base64")}`;
@@ -130,6 +133,76 @@ suite("rotas HTTP", () => {
         headers: {
           "content-type": "application/json",
           "x-hub-signature-256": computeHubSignature256(body, APP_SECRET),
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const json = (await response.json()) as { ok: boolean; processed: number };
+    expect(json.ok).toBe(true);
+    expect(json.processed).toBe(1);
+
+    const db = getDb();
+    expect(await db.select().from(commentInteractions)).toHaveLength(1);
+  });
+
+  it("recusa o webhook da Zernio sem assinatura válida", async () => {
+    const body = JSON.stringify({ event: "comment.received" });
+
+    const missing = await zernioWebhookPost(
+      new Request("http://localhost/api/webhook/zernio", {
+        method: "POST",
+        body,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    expect(missing.status).toBe(401);
+
+    const forged = await zernioWebhookPost(
+      new Request("http://localhost/api/webhook/zernio", {
+        method: "POST",
+        body,
+        headers: {
+          "content-type": "application/json",
+          "x-zernio-signature": "00",
+        },
+      }),
+    );
+    expect(forged.status).toBe(401);
+  });
+
+  it("aceita o webhook assinado da Zernio e cria a interação", async () => {
+    const account = await seedAccount({
+      provider: "zernio",
+      providerAccountId: "zernio-rota",
+      instagramUserId: "17841400000000001",
+    });
+    await seedAutomation(account.id);
+
+    const body = JSON.stringify({
+      id: "evt-rota-1",
+      event: "comment.received",
+      timestamp: new Date().toISOString(),
+      account: { accountId: "zernio-rota" },
+      comment: {
+        id: "comment-zernio",
+        platformPostId: "media-zernio",
+        text: "quero",
+        createdAt: new Date().toISOString(),
+        isReply: false,
+        author: { id: "user-zernio", username: "pessoa" },
+      },
+    });
+
+    const response = await zernioWebhookPost(
+      new Request("http://localhost/api/webhook/zernio", {
+        method: "POST",
+        body,
+        headers: {
+          "content-type": "application/json",
+          "x-zernio-signature": createHmac("sha256", ZERNIO_SECRET)
+            .update(body)
+            .digest("hex"),
         },
       }),
     );

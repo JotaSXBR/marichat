@@ -38,7 +38,7 @@ import {
  *   sempre: no máximo duas checagens e, se a Meta não informar, libera.
  */
 
-type CommentValue = {
+export type CommentValue = {
   id?: string;
   text?: string;
   parent_id?: string;
@@ -46,7 +46,7 @@ type CommentValue = {
   media?: { id?: string; media_product_type?: string };
 };
 
-type InboundMessage = {
+export type InboundMessage = {
   sender?: { id?: string };
   recipient?: { id?: string };
   timestamp?: number;
@@ -89,7 +89,7 @@ function opaqueToken(): string {
   return crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
 }
 
-async function claimEvent(params: {
+export async function claimEvent(params: {
   eventKey: string;
   field: string;
   instagramUserId: string | null;
@@ -110,7 +110,7 @@ async function claimEvent(params: {
   return inserted.length > 0;
 }
 
-async function finishEvent(
+export async function finishEvent(
   eventKey: string,
   status: "processed" | "ignored" | "failed",
   errorMessage?: string,
@@ -166,7 +166,7 @@ async function fullAutomation(automationId: string) {
   return row ?? null;
 }
 
-async function processComment(params: {
+export async function processComment(params: {
   account: Account;
   value: CommentValue;
   notificationTime: Date;
@@ -323,9 +323,11 @@ async function rescheduleFollowCheck(params: {
   return rows.length > 0;
 }
 
-async function processInboundMessage(params: {
+export async function processInboundMessage(params: {
   account: Account;
   message: InboundMessage;
+  /** Conversa no provedor (Zernio). Necessária para a DM 2. */
+  conversationId?: string;
 }): Promise<"processed" | "ignored" | "failed"> {
   const { account, message } = params;
   const senderId = message.sender?.id;
@@ -345,7 +347,13 @@ async function processInboundMessage(params: {
   // conhecidas dele (não é necessário ser um toque em botão).
   await db
     .update(commentInteractions)
-    .set({ userLastMessageAt: receivedAt, updatedAt: new Date() })
+    .set({
+      userLastMessageAt: receivedAt,
+      ...(params.conversationId
+        ? { providerConversationId: params.conversationId }
+        : {}),
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(commentInteractions.accountId, account.id),

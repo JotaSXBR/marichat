@@ -43,11 +43,15 @@ export async function closeTestDatabase(): Promise<void> {
 export async function seedAccount(overrides?: {
   instagramUserId?: string;
   username?: string;
+  provider?: "meta" | "zernio";
+  providerAccountId?: string | null;
 }) {
   const db = getDb();
   const [account] = await db
     .insert(instagramAccounts)
     .values({
+      provider: overrides?.provider ?? "meta",
+      providerAccountId: overrides?.providerAccountId ?? null,
       instagramUserId: overrides?.instagramUserId ?? "17841400000000000",
       username: overrides?.username ?? "conta_teste",
       accessTokenEncrypted: encryptToken("IGQVJtoken-de-teste"),
