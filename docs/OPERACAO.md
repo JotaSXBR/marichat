@@ -88,3 +88,48 @@ para conversas em andamento.
 - Privacidade: `/privacidade` · Exclusão: `/exclusao-de-dados`.
 - Logs e variáveis: Coolify, na aplicação `marichat`.
 - Segredos: gerenciador de senhas da conta; não no código.
+
+## Limpeza de disco (builds e caches)
+
+Cada deploy guarda uma imagem Docker antiga para permitir rollback. Sem limpeza,
+o disco do servidor enche e o próximo deploy falha. São dois lugares diferentes:
+
+### 1. Servidor (Coolify) — limpeza automática
+
+Configurar uma vez, no painel do Coolify:
+
+1. Abra **Servers** na barra lateral e escolha o servidor.
+2. No menu do servidor, abra **Docker Cleanup**.
+3. Em **Cleanup frequency**, use `0 0 * * *` (todo dia à meia-noite).
+4. Em **Cleanup trigger**, escolha **Only above disk threshold** e deixe o
+   **Disk threshold** em `80` (só limpa quando o disco passar de 80%).
+5. Em **Advanced cleanup**, deixe:
+   - **Unused volumes** = *Keep unused volumes* (o banco usa volume; apagar
+     pode significar perda de dados);
+   - **Unused networks** = *Keep unused networks*;
+   - **Application images** = *Keep retained images* (mantém o rollback).
+6. Salve e clique em **Run cleanup** uma vez para conferir. Em **Recent
+   executions**, veja se terminou sem erro e quanto de disco foi liberado.
+
+Para o MARICHAT, deixe **Images to keep** em `2` na aplicação (aba
+**Rollback**). Assim existem a versão atual e a anterior para voltar atrás, e
+as mais antigas são removidas na limpeza.
+
+### 2. Computador local — comando `npm run clean`
+
+A pasta `.next` (resultado do build) e o cache do Next são descartáveis. Para
+limpar:
+
+```powershell
+cd C:\Projetos\marichat
+npm run clean
+```
+
+O comando apaga `.next`, `coverage`, `.turbo` e `tsconfig.tsbuildinfo`, mostra
+quanto liberou e não toca em código, banco nem `.env.local`. O próximo
+`npm run dev` ou `npm run build` recria tudo.
+
+Se quiser automatizar no Windows, crie uma tarefa no **Agendador de Tarefas**
+apontando para `npm` com os argumentos `run clean`, começando em
+`C:\Projetos\marichat`, uma vez por mês. Não é obrigatório: o comando pode ser
+rodado manualmente sempre que o disco apertar.

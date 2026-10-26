@@ -91,6 +91,7 @@ npm run lint     # eslint, sem informação de tipo
 npm run lint:ci  # eslint + tipos; falha se os avisos passarem do baseline
 npm run typecheck
 npm run build
+npm run clean    # apaga .next/caches regeneráveis (limpeza de disco)
 ```
 
 O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
