@@ -18,13 +18,22 @@
 5. DM 1: texto (até ~1.000 bytes). Termine pedindo que a pessoa responda:
    é a resposta que abre a janela de 24h e libera o link.
 6. DM 2: texto (até 80 caracteres), botão (até 20) e link **https://**.
-7. Opcional: ligue **Porta de seguidor** e ajuste a mensagem e os dois botões
-   ("Seguir agora" e "Já segui"). Desligada por padrão.
+7. Escolha o modo da **Porta de seguidor**:
+   - **Sem porta:** o link vai direto após a resposta.
+   - **Tolerante:** pede para seguir, faz até 2 checagens e libera mesmo sem
+     confirmação.
+   - **Travado:** só entrega o link com confirmação positiva da Meta.
+   - **Opcional:** uma mensagem com os botões "Seguir" e "Abrir link".
+   - **Direto:** só o link, com aviso de que seguir leva as próximas mensagens
+     à caixa principal.
+   Ajuste os textos e botões conforme o modo. Desligada/“sem porta” por padrão.
 8. Marque **Ativa** e salve.
 9. Teste com uma **conta secundária**: comente a palavra-chave, abra a DM,
-   responda e confirme o link (e a porta de seguidor, se estiver ligada).
+   responda e confirme o comportamento do modo escolhido.
 
-Editar uma automação **não** altera conversas já iniciadas.
+Editar uma automação **não** altera a primeira DM já agendada. O modo da porta
+e os textos da segunda mensagem são lidos no momento do envio e valem também
+para conversas em andamento.
 
 ## Situações no painel
 
@@ -32,7 +41,7 @@ Editar uma automação **não** altera conversas já iniciadas.
 | --- | --- | --- |
 | Na fila | Aguardando envio pelo cron | Nenhuma (roda a cada minuto) |
 | DM enviada (aceita) | Meta aceitou a requisição; não é confirmação de entrega | Nenhuma |
-| Aguardando confirmação | Porta de seguidor ativa; link retido até "Já segui" | Nenhuma (libera em até 2 checagens) |
+| Aguardando confirmação | Porta de seguidor travada/tolerante; link retido até a checagem | Nenhuma (tolerante libera em até 2 checagens; travado espera confirmação) |
 | Link enviado | Segunda mensagem aceita | Nenhuma |
 | Incerta | Não sabemos se a Meta recebeu | **Não reenviar**: pode duplicar |
 | Expirada | Passou de 7 dias (DM 1) ou 24h (link) | Nenhuma; prazo da Meta |
@@ -42,8 +51,8 @@ Editar uma automação **não** altera conversas já iniciadas.
 
 - **Token expirado/revogado:** Conexão → Reconectar. Envios ficam parados até lá.
 - **Webhooks não chegam:** Conexão → Reassinar webhooks; confira no painel da
-  Meta se a callback é `https://SEU_DOMINIO/api/webhook` e os campos `comments`
-  e `messages` estão assinados.
+  Meta se a callback é `https://SEU_DOMINIO/api/webhook` e os campos `comments`,
+  `messages` e `messaging_postbacks` estão assinados.
 - **Nada é enviado:** verifique a tarefa agendada no Coolify (a cada minuto) e
   os logs do container.
 - **Mensagem duplicada:** nunca "reprocessar" uma tarefa `uncertain` sem

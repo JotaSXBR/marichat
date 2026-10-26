@@ -22,6 +22,20 @@
       "when": 1792990838083,
       "tag": "0002_skinny_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793053360115,
+      "tag": "0003_chunky_beyonder",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793053375092,
+      "tag": "0004_thick_marvex",
+      "breakpoints": true
     }
   ]
 }

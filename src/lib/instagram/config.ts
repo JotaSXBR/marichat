@@ -33,7 +33,26 @@ export const IG = {
     "instagram_business_manage_messages",
   ],
 
-  webhookFields: ["comments", "messages"] as const,
+  webhookFields: ["comments", "messages", "messaging_postbacks"] as const,
+
+  /**
+   * Espera antes de reconsultar o perfil após o toque em "Já segui".
+   *
+   * A Meta demora alguns segundos para refletir um follow novo em
+   * `is_user_follow_business` (medido em projetos de referência: ~17s e ~68s).
+   * Consultar na hora devolveria "não segue" para quem acabou de seguir.
+   */
+  followCheckDelayMs: 20_000,
+
+  /**
+   * Teto de consultas ao perfil no modo "travado".
+   *
+   * O modo tolerante libera o link após 2 checagens. No travado não há
+   * liberação automática: cada toque em "Já segui" reconsulta o perfil, até
+   * este teto. Depois disso a conversa fica retida (expira com a janela de
+   * 24h), para não insistir indefinidamente com a Meta.
+   */
+  maxLockedFollowChecks: 6,
 
   /** Respostas privadas a comentários: 7 dias a partir do comentário. */
   privateReplyWindowMs: 7 * 24 * 60 * 60 * 1000,

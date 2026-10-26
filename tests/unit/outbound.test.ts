@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { automations } from "@/lib/db/schema";
 import {
+  buildDirectLinkPayload,
   buildGatePayload,
   buildLinkPayload,
+  buildOptionalLinkPayload,
   buildPrivateReplyPayload,
   truncateChars,
   truncateUtf8,
@@ -24,11 +26,15 @@ function settings(
     secondDmText: "Aqui está o link que você pediu",
     linkButtonTitle: "Abrir link",
     linkUrl: "https://www.exemplo.com/material",
-    requireFollow: false,
+    followMode: "off",
     followGateText:
       'Para liberar o link, siga o perfil e depois toque em "Já segui".',
     followGateFollowLabel: "Seguir agora",
     followGateConfirmLabel: "Já segui",
+    followOptionalText:
+      "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:",
+    followDirectText:
+      "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal.",
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -146,6 +152,48 @@ describe("outbound: corpos enviados à API", () => {
       title: "Já segui",
       payload: "gate:token-123",
     });
+  });
+
+  it("modo opcional entrega seguir + link na mesma mensagem", () => {
+    const payload = buildOptionalLinkPayload({
+      settings: settings(),
+      username: "conta_teste",
+      senderId: "user-1",
+    }) as GatePayload;
+    const { template_type, text, buttons } = payload.message.attachment.payload;
+
+    expect(template_type).toBe("button");
+    expect(text).toContain("caixa principal");
+    expect(buttons).toEqual([
+      {
+        type: "web_url",
+        url: "https://www.instagram.com/conta_teste/",
+        title: "Seguir agora",
+      },
+      {
+        type: "web_url",
+        url: "https://www.exemplo.com/material",
+        title: "Abrir link",
+      },
+    ]);
+  });
+
+  it("modo direto leva só o link e o aviso sobre a caixa principal", () => {
+    const payload = buildDirectLinkPayload({
+      settings: settings(),
+      senderId: "user-1",
+    }) as GatePayload;
+    const { template_type, text, buttons } = payload.message.attachment.payload;
+
+    expect(template_type).toBe("button");
+    expect(text).toContain("caixa principal");
+    expect(buttons).toEqual([
+      {
+        type: "web_url",
+        url: "https://www.exemplo.com/material",
+        title: "Abrir link",
+      },
+    ]);
   });
 
   it("trunca UTF-8 sem quebrar caracteres", () => {

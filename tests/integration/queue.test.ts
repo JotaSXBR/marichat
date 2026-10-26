@@ -63,11 +63,19 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
   });
 
   async function setup(
-    kind: "private_reply" | "followup_link" | "follow_gate" | "follow_check" | "follow_check_2" =
-      "private_reply",
+    kind:
+      | "private_reply"
+      | "followup_link"
+      | "link_optional"
+      | "link_direct"
+      | "follow_gate"
+      | "follow_check"
+      | "follow_check_2" = "private_reply",
+    followMode: "off" | "soft" | "locked" | "optional" | "direct" =
+      kind === "follow_check" || kind === "follow_check_2" ? "soft" : "off",
   ) {
     const account = await seedAccount();
-    const automation = await seedAutomation(account.id);
+    const automation = await seedAutomation(account.id, { followMode });
     const interaction = await seedInteraction({
       accountId: account.id,
       automationId: automation.id,
@@ -419,5 +427,101 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
       .where(eq(commentInteractions.id, interaction.id));
     expect(row!.state).toBe("accepted");
     expect(row!.followChecks).toBe(2);
+  });
+
+  it("modo travado: não segue → mantém a porta e não libera o link", async () => {
+    const { interaction } = await setup("follow_check", "locked");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).includes("is_user_follow_business")) {
+          return profileResponse(false);
+        }
+        return okResponse("mid-gate");
+      }),
+    );
+
+    const summary = await drainQueue(1);
+    expect(summary.accepted).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
+    expect(jobs.filter((job) => job.kind === "follow_gate")).toHaveLength(1);
+
+    const [row] = await db
+      .select()
+      .from(commentInteractions)
+      .where(eq(commentInteractions.id, interaction.id));
+    expect(row!.state).toBe("gate_pending");
+  });
+
+  it("modo travado: status desconhecido também mantém a porta", async () => {
+    await setup("follow_check", "locked");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => errorResponse(400, 100, "campo indisponível")),
+    );
+
+    await drainQueue(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
+    expect(jobs.filter((job) => job.kind === "follow_gate")).toHaveLength(1);
+  });
+
+  it("modo travado: segue → libera o link", async () => {
+    await setup("follow_check", "locked");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).includes("is_user_follow_business")) {
+          return profileResponse(true);
+        }
+        return okResponse("mid-link");
+      }),
+    );
+
+    await drainQueue(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
+    expect(jobs.filter((job) => job.kind === "follow_gate")).toHaveLength(0);
+  });
+
+  it("modo travado: nova checagem reenvia a porta", async () => {
+    const { interaction } = await setup("follow_check_2", "locked");
+    const db = getDb();
+    await db
+      .update(commentInteractions)
+      .set({ state: "gate_pending", followChecks: 2 })
+      .where(eq(commentInteractions.id, interaction.id));
+    // A porta já foi enviada uma vez; o reenvio precisa voltar para a fila.
+    await seedJob({
+      accountId: interaction.accountId,
+      interactionId: interaction.id,
+      kind: "follow_gate",
+      payload: { old: true },
+      nextAttemptAt: new Date(Date.now() + 3_600_000),
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).includes("is_user_follow_business")) {
+          return profileResponse(false);
+        }
+        return okResponse("mid-gate");
+      }),
+    );
+
+    await drainQueue(1);
+
+    const rows = await db.select().from(outboundMessages);
+    const gateJob = rows.find((job) => job.kind === "follow_gate");
+    expect(gateJob!.status).toBe("pending");
+    expect(gateJob!.payload).not.toEqual({ old: true });
   });
 });

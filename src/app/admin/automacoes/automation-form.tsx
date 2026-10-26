@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { saveAutomation, type AutomationFormState } from "@/app/admin/actions";
+import {
+  FOLLOW_MODES,
+  FOLLOW_MODE_LABELS,
+  type FollowMode,
+} from "@/lib/follow-mode";
 
 export type MediaOption = {
   id: string;
@@ -21,10 +26,12 @@ export type AutomationInitialValues = {
   secondDmText: string;
   linkButtonTitle: string;
   linkUrl: string;
-  requireFollow: boolean;
+  followMode: FollowMode;
   followGateText: string;
   followGateFollowLabel: string;
   followGateConfirmLabel: string;
+  followOptionalText: string;
+  followDirectText: string;
   isActive: boolean;
 };
 
@@ -67,6 +74,12 @@ export function AutomationForm({
   >(saveAutomation, undefined);
 
   const errors = state?.fieldErrors ?? {};
+  const [followMode, setFollowMode] = useState<FollowMode>(
+    initial?.followMode ?? "off",
+  );
+  const needsCheck = followMode === "soft" || followMode === "locked";
+  const needsFollowButton =
+    needsCheck || followMode === "optional";
 
   return (
     <form action={formAction} className="space-y-8">
@@ -249,77 +262,204 @@ export function AutomationForm({
 
       <section className="space-y-5 rounded-lg border border-zinc-200 bg-white p-5">
         <div>
-          <h2 className="text-sm font-semibold">Porta de seguidor (opcional)</h2>
+          <h2 className="text-sm font-semibold">Porta de seguidor</h2>
           <p className="text-xs text-zinc-500">
-            Quando ligada, o link só é liberado depois que a pessoa envia uma
-            mensagem. Aí o MARICHAT consulta se ela segue o perfil. São no máximo
-            duas checagens; se a Meta não informar, o link é liberado mesmo assim.
+            Escolha como o link é entregue depois que a pessoa responde à
+            primeira mensagem. A consulta ao perfil só acontece depois que ela
+            envia uma mensagem, como a Meta exige.
           </p>
         </div>
 
-        <label className="flex items-start gap-3 rounded-md border border-zinc-200 p-3 text-sm">
-          <input
-            type="checkbox"
-            name="requireFollow"
-            defaultChecked={initial?.requireFollow ?? false}
-            className="mt-0.5 h-4 w-4"
-          />
-          <span>
-            <span className="block font-medium">Exigir que a pessoa siga o perfil</span>
-            <span className="block text-xs text-zinc-500">
-              Vale para comentários novos. Desligado por padrão.
-            </span>
-          </span>
-        </label>
-
-        <div>
-          <Label
-            htmlFor="followGateText"
-            hint="Até 640 bytes. Mensagem com os botões “Seguir agora” e “Já segui”."
-          >
-            Mensagem da porta de seguidor
-          </Label>
-          <textarea
-            id="followGateText"
-            name="followGateText"
-            rows={3}
-            defaultValue={
-              initial?.followGateText ??
-              'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".'
-            }
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-          />
-          <FieldError message={errors.followGateText} />
+        <div className="space-y-2">
+          {FOLLOW_MODES.map((mode) => {
+            const option = FOLLOW_MODE_LABELS[mode];
+            const selected = followMode === mode;
+            return (
+              <label
+                key={mode}
+                className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm ${
+                  selected
+                    ? "border-zinc-900 bg-zinc-50"
+                    : "border-zinc-200 hover:bg-zinc-50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="followMode"
+                  value={mode}
+                  checked={selected}
+                  onChange={() => setFollowMode(mode)}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="block font-medium">{option.title}</span>
+                  <span className="block text-xs text-zinc-500">
+                    {option.description}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="followGateFollowLabel" hint="Até 20 caracteres.">
-              Botão para seguir
-            </Label>
+        {/* Campos dos outros modos continuam sendo enviados para não perder
+            o texto já personalizado ao trocar de modo. */}
+        {!needsCheck ? (
+          <>
             <input
-              id="followGateFollowLabel"
-              name="followGateFollowLabel"
-              maxLength={20}
-              defaultValue={initial?.followGateFollowLabel ?? "Seguir agora"}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              type="hidden"
+              name="followGateText"
+              defaultValue={
+                initial?.followGateText ??
+                'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".'
+              }
             />
-            <FieldError message={errors.followGateFollowLabel} />
-          </div>
-          <div>
-            <Label htmlFor="followGateConfirmLabel" hint="Até 20 caracteres.">
-              Botão de confirmação
-            </Label>
             <input
-              id="followGateConfirmLabel"
+              type="hidden"
               name="followGateConfirmLabel"
-              maxLength={20}
               defaultValue={initial?.followGateConfirmLabel ?? "Já segui"}
+            />
+          </>
+        ) : null}
+        {followMode !== "optional" ? (
+          <input
+            type="hidden"
+            name="followOptionalText"
+            defaultValue={
+              initial?.followOptionalText ??
+              "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:"
+            }
+          />
+        ) : null}
+        {followMode !== "direct" ? (
+          <input
+            type="hidden"
+            name="followDirectText"
+            defaultValue={
+              initial?.followDirectText ??
+              "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal."
+            }
+          />
+        ) : null}
+        {!needsFollowButton ? (
+          <input
+            type="hidden"
+            name="followGateFollowLabel"
+            defaultValue={initial?.followGateFollowLabel ?? "Seguir agora"}
+          />
+        ) : null}
+
+        {needsCheck ? (
+          <div>
+            <Label
+              htmlFor="followGateText"
+              hint={
+                followMode === "locked"
+                  ? "Até 640 bytes. A mensagem continua sendo reenviada enquanto a Meta não confirmar o follow."
+                  : "Até 640 bytes. Mensagem com os botões “Seguir agora” e “Já segui”."
+              }
+            >
+              Mensagem do pedido para seguir
+            </Label>
+            <textarea
+              id="followGateText"
+              name="followGateText"
+              rows={3}
+              defaultValue={
+                initial?.followGateText ??
+                'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".'
+              }
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
             />
-            <FieldError message={errors.followGateConfirmLabel} />
+            <FieldError message={errors.followGateText} />
           </div>
-        </div>
+        ) : null}
+
+        {followMode === "optional" ? (
+          <div>
+            <Label
+              htmlFor="followOptionalText"
+              hint="Até 640 bytes. A mensagem tem dois botões: seguir o perfil e abrir o link."
+            >
+              Mensagem do convite (com o link)
+            </Label>
+            <textarea
+              id="followOptionalText"
+              name="followOptionalText"
+              rows={3}
+              defaultValue={
+                initial?.followOptionalText ??
+                "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:"
+              }
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <FieldError message={errors.followOptionalText} />
+          </div>
+        ) : null}
+
+        {followMode === "direct" ? (
+          <div>
+            <Label
+              htmlFor="followDirectText"
+              hint="Até 640 bytes. O texto acompanha o único botão do link."
+            >
+              Mensagem com o link e o aviso
+            </Label>
+            <textarea
+              id="followDirectText"
+              name="followDirectText"
+              rows={3}
+              defaultValue={
+                initial?.followDirectText ??
+                "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal."
+              }
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <FieldError message={errors.followDirectText} />
+          </div>
+        ) : null}
+
+        {needsFollowButton ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="followGateFollowLabel" hint="Até 20 caracteres.">
+                Botão para seguir
+              </Label>
+              <input
+                id="followGateFollowLabel"
+                name="followGateFollowLabel"
+                maxLength={20}
+                defaultValue={initial?.followGateFollowLabel ?? "Seguir agora"}
+                className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              />
+              <FieldError message={errors.followGateFollowLabel} />
+            </div>
+            {needsCheck ? (
+              <div>
+                <Label htmlFor="followGateConfirmLabel" hint="Até 20 caracteres.">
+                  Botão de confirmação
+                </Label>
+                <input
+                  id="followGateConfirmLabel"
+                  name="followGateConfirmLabel"
+                  maxLength={20}
+                  defaultValue={initial?.followGateConfirmLabel ?? "Já segui"}
+                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+                />
+                <FieldError message={errors.followGateConfirmLabel} />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {followMode === "locked" ? (
+          <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+            No modo travado, quem não for confirmado como seguidor não recebe o
+            link. Se a Meta não informar o status (por exemplo, por falta de
+            consentimento), a conversa permanece retida até a janela de 24h
+            expirar. As checagens são limitadas para não insistir com a Meta.
+          </p>
+        ) : null}
       </section>
 
       <section className="space-y-5 rounded-lg border border-zinc-200 bg-white p-5">

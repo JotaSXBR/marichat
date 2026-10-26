@@ -25,6 +25,7 @@ import {
   sendMessage,
 } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
+import { isFollowMode } from "@/lib/follow-mode";
 import { buildGatePayload, buildLinkPayload } from "@/lib/outbound";
 
 type JobRow = typeof outboundMessages.$inferSelect;
@@ -100,7 +101,14 @@ export async function expireOverdueJobs(): Promise<number> {
       AND (
         (om.kind = 'private_reply' AND ci.reply_deadline_at <= now())
         OR (
-          om.kind IN ('followup_link', 'follow_gate', 'follow_check', 'follow_check_2')
+          om.kind IN (
+            'followup_link',
+            'link_optional',
+            'link_direct',
+            'follow_gate',
+            'follow_check',
+            'follow_check_2'
+          )
           AND ci.user_last_message_at IS NOT NULL
           AND ci.user_last_message_at <= now() - interval '24 hours'
         )
@@ -230,7 +238,7 @@ async function markAccepted(
       return;
     }
 
-    if (job.kind === "followup_link") {
+    if (job.kind === "followup_link" || job.kind === "link_optional" || job.kind === "link_direct") {
       await tx
         .update(commentInteractions)
         .set({
@@ -502,8 +510,17 @@ async function processFollowCheck(
   });
 
   const checks = interaction.followChecks + 1;
-  // false = a Meta disse que não segue; true ou null (desconhecido) liberam.
-  const releaseLink = profile.isFollowing !== false || checks >= 2;
+  const mode = isFollowMode(settings.followMode) ? settings.followMode : "off";
+  // "soft" libera em true, false (já tentou duas vezes) ou null (desconhecido).
+  // "locked" só libera quando a Meta confirma o follow (true); null e false
+  // mantêm o pedido — é o que "travado" significa.
+  const releaseLink =
+    mode === "locked"
+      ? profile.isFollowing === true
+      : mode === "soft"
+        ? profile.isFollowing !== false || checks >= 2
+        : // Modo alterado depois que a checagem foi agendada: não retém ninguém.
+          true;
   const now = new Date();
 
   await db.transaction(async (tx) => {
@@ -544,39 +561,70 @@ async function processFollowCheck(
       })
       .where(eq(commentInteractions.id, interaction.id));
 
-    const nextKind = releaseLink ? "followup_link" : "follow_gate";
-    const payload = releaseLink
-      ? buildLinkPayload(settings, interaction.commenterIgsid)
-      : buildGatePayload({
-          settings,
-          username: account.username,
-          senderId: interaction.commenterIgsid,
-          token: interaction.token,
+    if (releaseLink) {
+      const payload = buildLinkPayload(settings, interaction.commenterIgsid);
+
+      await tx
+        .insert(outboundMessages)
+        .values({
+          accountId: account.id,
+          interactionId: interaction.id,
+          kind: "followup_link",
+          status: "pending",
+          payload,
+        })
+        .onConflictDoNothing({
+          target: [outboundMessages.interactionId, outboundMessages.kind],
         });
+
+      await tx
+        .update(outboundMessages)
+        .set({ nextAttemptAt: now, updatedAt: now })
+        .where(
+          and(
+            eq(outboundMessages.interactionId, interaction.id),
+            eq(outboundMessages.kind, "followup_link"),
+            eq(outboundMessages.status, "pending"),
+          ),
+        );
+      return;
+    }
+
+    // Ainda não é seguidor confirmado: (re)apresenta a porta. O upsert é
+    // necessário no modo "travado", em que o mesmo aviso pode ser reenviado
+    // após cada nova checagem.
+    const gatePayload = buildGatePayload({
+      settings,
+      username: account.username,
+      senderId: interaction.commenterIgsid,
+      token: interaction.token,
+    });
 
     await tx
       .insert(outboundMessages)
       .values({
         accountId: account.id,
         interactionId: interaction.id,
-        kind: nextKind,
+        kind: "follow_gate",
         status: "pending",
-        payload,
+        payload: gatePayload,
       })
-      .onConflictDoNothing({
+      .onConflictDoUpdate({
         target: [outboundMessages.interactionId, outboundMessages.kind],
+        set: {
+          status: "pending",
+          attempts: 0,
+          payload: gatePayload,
+          nextAttemptAt: now,
+          acceptedAt: null,
+          externalMessageId: null,
+          errorCode: null,
+          errorMessage: null,
+          lockedAt: null,
+          lockToken: null,
+          updatedAt: now,
+        },
       });
-
-    await tx
-      .update(outboundMessages)
-      .set({ nextAttemptAt: now, updatedAt: now })
-      .where(
-        and(
-          eq(outboundMessages.interactionId, interaction.id),
-          eq(outboundMessages.kind, nextKind),
-          eq(outboundMessages.status, "pending"),
-        ),
-      );
   });
 
   return "accepted";

@@ -77,6 +77,7 @@ export async function seedAutomation(
       secondDmText: "Aqui está o link que você pediu",
       linkButtonTitle: "Abrir link",
       linkUrl: "https://www.exemplo.com/material",
+      followMode: "off",
       isActive: true,
       ...overrides,
     })
@@ -121,6 +122,8 @@ export async function seedJob(params: {
   kind?:
     | "private_reply"
     | "followup_link"
+    | "link_optional"
+    | "link_direct"
     | "follow_gate"
     | "follow_check"
     | "follow_check_2";

@@ -11,12 +11,15 @@ import {
   webhookEvents,
 } from "@/lib/db/schema";
 import { IG } from "@/lib/instagram/config";
+import { isFollowMode, type FollowMode } from "@/lib/follow-mode";
 import {
   commentMatchesKeyword,
   pickAutomation,
 } from "@/lib/matching";
 import {
+  buildDirectLinkPayload,
   buildLinkPayload,
+  buildOptionalLinkPayload,
   buildPrivateReplyPayload,
 } from "@/lib/outbound";
 
@@ -241,8 +244,15 @@ async function processComment(params: {
 async function enqueueOutbound(params: {
   accountId: string;
   interactionId: string;
-  kind: "followup_link" | "follow_check" | "follow_check_2" | "follow_gate";
+  kind:
+    | "followup_link"
+    | "link_optional"
+    | "link_direct"
+    | "follow_check"
+    | "follow_check_2"
+    | "follow_gate";
   payload: unknown;
+  delayMs?: number;
 }): Promise<boolean> {
   const db = getDb();
   const inserted = await db
@@ -255,6 +265,9 @@ async function enqueueOutbound(params: {
       // Tarefas de checagem não têm conteúdo de mensagem; o payload guarda
       // apenas o contexto necessário para a auditoria.
       payload: params.payload,
+      ...(params.delayMs
+        ? { nextAttemptAt: new Date(Date.now() + params.delayMs) }
+        : {}),
     })
     .onConflictDoNothing({
       target: [outboundMessages.interactionId, outboundMessages.kind],
@@ -262,6 +275,52 @@ async function enqueueOutbound(params: {
     .returning({ id: outboundMessages.id });
 
   return inserted.length > 0;
+}
+
+/**
+ * Reagenda a segunda checagem. No modo "travado" a mesma tarefa pode ser
+ * reaproveitada a cada toque em "Já segui": em vez de criar outra linha (o
+ * índice lógico é por interação + tipo), a existente volta para "pending".
+ */
+async function rescheduleFollowCheck(params: {
+  accountId: string;
+  interactionId: string;
+  payload: unknown;
+  delayMs?: number;
+}): Promise<boolean> {
+  const db = getDb();
+  const now = new Date();
+  const nextAttemptAt = new Date(Date.now() + (params.delayMs ?? 0));
+
+  const rows = await db
+    .insert(outboundMessages)
+    .values({
+      accountId: params.accountId,
+      interactionId: params.interactionId,
+      kind: "follow_check_2",
+      status: "pending",
+      payload: params.payload,
+      nextAttemptAt,
+    })
+    .onConflictDoUpdate({
+      target: [outboundMessages.interactionId, outboundMessages.kind],
+      set: {
+        status: "pending",
+        attempts: 0,
+        payload: params.payload,
+        nextAttemptAt,
+        acceptedAt: null,
+        externalMessageId: null,
+        errorCode: null,
+        errorMessage: null,
+        lockedAt: null,
+        lockToken: null,
+        updatedAt: now,
+      },
+    })
+    .returning({ id: outboundMessages.id });
+
+  return rows.length > 0;
 }
 
 async function processInboundMessage(params: {
@@ -356,9 +415,12 @@ async function processInboundMessage(params: {
   if (!settings) return "ignored";
 
   const isGateTap = postbackPayload === `gate:${interaction.token}`;
+  const mode: FollowMode = isFollowMode(settings.followMode)
+    ? settings.followMode
+    : "off";
 
   try {
-    if (!settings.requireFollow) {
+    if (mode === "off") {
       const created = await enqueueOutbound({
         accountId: account.id,
         interactionId: interaction.id,
@@ -368,9 +430,34 @@ async function processInboundMessage(params: {
       return created ? "processed" : "ignored";
     }
 
+    if (mode === "optional") {
+      const created = await enqueueOutbound({
+        accountId: account.id,
+        interactionId: interaction.id,
+        kind: "link_optional",
+        payload: buildOptionalLinkPayload({
+          settings,
+          username: account.username,
+          senderId,
+        }),
+      });
+      return created ? "processed" : "ignored";
+    }
+
+    if (mode === "direct") {
+      const created = await enqueueOutbound({
+        accountId: account.id,
+        interactionId: interaction.id,
+        kind: "link_direct",
+        payload: buildDirectLinkPayload({ settings, senderId }),
+      });
+      return created ? "processed" : "ignored";
+    }
+
+    // Modos com checagem de perfil (soft e locked).
     if (isGateTap) {
-      if (interaction.followChecks >= 2) {
-        // Limite de checagens atingido: libera o link de qualquer forma.
+      if (mode === "soft" && interaction.followChecks >= 2) {
+        // No modo tolerante o limite libera o link de qualquer forma.
         const created = await enqueueOutbound({
           accountId: account.id,
           interactionId: interaction.id,
@@ -380,11 +467,20 @@ async function processInboundMessage(params: {
         return created ? "processed" : "ignored";
       }
 
-      const created = await enqueueOutbound({
+      if (
+        mode === "locked" &&
+        interaction.followChecks >= IG.maxLockedFollowChecks
+      ) {
+        // "Travado" é travado: depois do limite não insistimos com a Meta.
+        return "ignored";
+      }
+
+      const created = await rescheduleFollowCheck({
         accountId: account.id,
         interactionId: interaction.id,
-        kind: "follow_check_2",
-        payload: { check: 2, senderId },
+        payload: { check: interaction.followChecks + 1, senderId },
+        // Dá tempo para a Meta refletir o follow recém-feito.
+        delayMs: IG.followCheckDelayMs,
       });
       return created ? "processed" : "ignored";
     }
@@ -400,7 +496,7 @@ async function processInboundMessage(params: {
     }
 
     // Ainda aguardando o toque em "Já segui": mensagens livres não geram
-    // novas checagens (o limite é duas).
+    // novas checagens.
     return "ignored";
   } catch (error) {
     console.error("[webhook] falha ao agendar a continuação:", error);
@@ -438,18 +534,31 @@ export async function handleWebhookPayload(
 
     const changes = Array.isArray(entry.changes) ? entry.changes : [];
     for (const change of changes) {
-      if (change.field !== "comments" && change.field !== "messages") continue;
+      const field = change.field;
+      if (
+        field !== "comments" &&
+        field !== "messages" &&
+        field !== "messaging_postbacks"
+      ) {
+        continue;
+      }
+      const isComment = field === "comments";
+      // O toque em botão pode chegar neste campo, dependendo do app da Meta.
       const value = (change.value ?? {}) as CommentValue & InboundMessage;
 
-      const eventKey =
-        change.field === "comments"
-          ? `comment:${value.id ?? "unknown"}`
-          : `message:${value.message?.mid ?? value.id ?? crypto.randomUUID()}`;
+      const eventKey = isComment
+        ? `comment:${value.id ?? "unknown"}`
+        : `message:${
+            value.message?.mid ??
+            value.postback?.mid ??
+            value.id ??
+            crypto.randomUUID()
+          }`;
 
       summary.received += 1;
       const claimed = await claimEvent({
         eventKey,
-        field: change.field,
+        field,
         instagramUserId,
         payload: { entryTime: entry.time ?? null, change },
       });
@@ -464,16 +573,15 @@ export async function handleWebhookPayload(
         continue;
       }
 
-      let outcome: "processed" | "ignored" | "failed" =
-        change.field === "comments"
-          ? await processComment({
-              account,
-              value,
-              notificationTime,
-            })
-          : await processInboundMessage({ account, message: value });
+      let outcome: "processed" | "ignored" | "failed" = isComment
+        ? await processComment({
+            account,
+            value,
+            notificationTime,
+          })
+        : await processInboundMessage({ account, message: value });
 
-      if (change.field === "comments" && !value.id) outcome = "ignored";
+      if (isComment && !value.id) outcome = "ignored";
 
       await finishEvent(eventKey, outcome);
       summary[outcome] += 1;

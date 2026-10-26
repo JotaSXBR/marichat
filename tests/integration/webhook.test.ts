@@ -85,6 +85,7 @@ function gateTapPayload(params: {
   mid: string;
   payload: string;
   senderId?: string;
+  field?: string;
 }) {
   return {
     object: "instagram",
@@ -94,7 +95,7 @@ function gateTapPayload(params: {
         time: Math.floor(Date.now() / 1000),
         changes: [
           {
-            field: "messages",
+            field: params.field ?? "messages",
             value: {
               sender: { id: params.senderId ?? "user-123" },
               recipient: { id: params.igUserId },
@@ -322,7 +323,7 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
 
   it("com a porta ligada, a resposta agenda só a checagem (sem link)", async () => {
     const account = await seedAccount();
-    await seedAutomation(account.id, { requireFollow: true });
+    await seedAutomation(account.id, { followMode: "soft" });
 
     await handleWebhookPayload(
       commentPayload({
@@ -345,9 +346,122 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
   });
 
+  it("modo opcional envia seguir + link sem consultar o perfil", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { followMode: "optional" });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const summary = await handleWebhookPayload(
+      textReplyPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-1",
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    const optional = jobs.find((job) => job.kind === "link_optional");
+    expect(optional).toBeDefined();
+    expect(jobs.filter((job) => job.kind === "follow_check")).toHaveLength(0);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
+
+    const payload = optional!.payload as {
+      message: {
+        attachment: {
+          payload: { buttons: Array<{ type: string; url: string }> };
+        };
+      };
+    };
+    const buttons = payload.message.attachment.payload.buttons;
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]!.url).toBe("https://www.instagram.com/conta_teste/");
+    expect(buttons[1]!.url).toBe("https://www.exemplo.com/material");
+  });
+
+  it("modo direto envia o link com o aviso, sem consultar o perfil", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { followMode: "direct" });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const summary = await handleWebhookPayload(
+      textReplyPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-1",
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    const direct = jobs.find((job) => job.kind === "link_direct");
+    expect(direct).toBeDefined();
+    expect(jobs.filter((job) => job.kind === "follow_check")).toHaveLength(0);
+
+    const payload = direct!.payload as {
+      message: {
+        attachment: {
+          payload: {
+            text: string;
+            buttons: Array<{ type: string; url: string }>;
+          };
+        };
+      };
+    };
+    expect(payload.message.attachment.payload.text).toContain("caixa principal");
+    expect(payload.message.attachment.payload.buttons).toHaveLength(1);
+    expect(payload.message.attachment.payload.buttons[0]!.url).toBe(
+      "https://www.exemplo.com/material",
+    );
+  });
+
+  it("modo travado não libera o link quando o limite de checagens acaba", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { followMode: "locked" });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const db = getDb();
+    const [interaction] = await db.select().from(commentInteractions);
+    await db
+      .update(commentInteractions)
+      .set({ followChecks: 6 })
+      .where(eq(commentInteractions.id, interaction!.id));
+
+    const summary = await handleWebhookPayload(
+      gateTapPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-tap",
+        payload: `gate:${interaction!.token}`,
+      }),
+    );
+    expect(summary.ignored).toBe(1);
+
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
+    expect(jobs.filter((job) => job.kind === "follow_check_2")).toHaveLength(0);
+  });
+
   it("o toque em 'Já segui' agenda uma nova checagem", async () => {
     const account = await seedAccount();
-    await seedAutomation(account.id, { requireFollow: true });
+    await seedAutomation(account.id, { followMode: "soft" });
 
     await handleWebhookPayload(
       commentPayload({
@@ -369,13 +483,16 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     expect(summary.processed).toBe(1);
 
     const jobs = await db.select().from(outboundMessages);
-    expect(jobs.filter((job) => job.kind === "follow_check_2")).toHaveLength(1);
+    const check = jobs.find((job) => job.kind === "follow_check_2");
+    expect(check).toBeDefined();
+    // A checagem é adiada para a Meta refletir o follow recém-feito.
+    expect(check!.nextAttemptAt.getTime()).toBeGreaterThan(Date.now() + 15_000);
     expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
   });
 
   it("libera o link no toque quando o limite de checagens acabou", async () => {
     const account = await seedAccount();
-    await seedAutomation(account.id, { requireFollow: true });
+    await seedAutomation(account.id, { followMode: "soft" });
 
     await handleWebhookPayload(
       commentPayload({
@@ -404,9 +521,37 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
   });
 
+  it("aceita postback no campo messaging_postbacks", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { followMode: "soft" });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const db = getDb();
+    const [interaction] = await db.select().from(commentInteractions);
+
+    const summary = await handleWebhookPayload(
+      gateTapPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-postback-field",
+        payload: `gate:${interaction!.token}`,
+        field: "messaging_postbacks",
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "follow_check_2")).toHaveLength(1);
+  });
+
   it("ignora postback de token que não pertence a quem enviou", async () => {
     const account = await seedAccount();
-    await seedAutomation(account.id, { requireFollow: true });
+    await seedAutomation(account.id, { followMode: "soft" });
 
     await handleWebhookPayload(
       commentPayload({

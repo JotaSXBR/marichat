@@ -7,6 +7,7 @@ import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations } from "@/lib/db/schema";
+import { FOLLOW_MODE_LABELS, isFollowMode } from "@/lib/follow-mode";
 
 export const instant = false;
 
@@ -49,7 +50,8 @@ export default async function AutomationsPage({
 
       {saved ? (
         <div className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">
-          Automação salva. Alterações valem apenas para comentários novos.
+          Automação salva. A primeira DM já agendada mantém o texto antigo; os
+          demais textos valem para os próximos envios.
         </div>
       ) : null}
 
@@ -105,6 +107,12 @@ export default async function AutomationsPage({
                     {automation.mediaId
                       ? `específica (${automation.mediaId})`
                       : "qualquer publicação"}
+                  </p>
+                  <p className="text-sm text-zinc-500">
+                    Porta de seguidor:{" "}
+                    {isFollowMode(automation.followMode)
+                      ? FOLLOW_MODE_LABELS[automation.followMode].title
+                      : "Sem porta de seguidor"}
                   </p>
                   <p className="mt-1 truncate text-xs text-zinc-500">
                     Link: {automation.linkUrl}

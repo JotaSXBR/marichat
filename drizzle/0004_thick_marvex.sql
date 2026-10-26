@@ -1,0 +1,1 @@
+ALTER TABLE "automations" DROP COLUMN "require_follow";

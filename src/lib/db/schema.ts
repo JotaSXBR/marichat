@@ -67,8 +67,16 @@ export const automations = pgTable(
     secondDmText: text("second_dm_text").notNull(),
     linkButtonTitle: text("link_button_title").notNull(),
     linkUrl: text("link_url").notNull(),
-    /** Porta de seguidor opcional, desligada por padrão. */
-    requireFollow: boolean("require_follow").notNull().default(false),
+    /**
+     * Como o link é entregue depois que a pessoa responde à primeira DM:
+     * off      = direto, sem porta de seguidor;
+     * soft     = consulta o perfil até 2 vezes e libera mesmo sem confirmação;
+     * locked   = só libera quando a Meta confirma que a pessoa segue;
+     * optional = uma mensagem com os botões "Seguir" e "Abrir link", sem checagem;
+     * direct   = só o link, com aviso de que seguir leva as próximas mensagens
+     *            à caixa principal.
+     */
+    followMode: text("follow_mode").notNull().default("off"),
     followGateText: text("follow_gate_text")
       .notNull()
       .default(
@@ -80,6 +88,18 @@ export const automations = pgTable(
     followGateConfirmLabel: text("follow_gate_confirm_label")
       .notNull()
       .default("Já segui"),
+    /** Texto da mensagem única do modo "opcional" (Seguir + link). */
+    followOptionalText: text("follow_optional_text")
+      .notNull()
+      .default(
+        "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:",
+      ),
+    /** Texto do modo "direto", com o aviso sobre a caixa principal. */
+    followDirectText: text("follow_direct_text")
+      .notNull()
+      .default(
+        "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal.",
+      ),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -197,6 +217,7 @@ export const outboundMessages = pgTable(
       .references(() => commentInteractions.id, { onDelete: "restrict" }),
     /**
      * private_reply (primeira DM) | followup_link (segunda mensagem) |
+     * link_optional (botões Seguir + link) | link_direct (só o link) |
      * follow_gate (mensagem com os botões de seguidor) |
      * follow_check / follow_check_2 (consultas ao perfil; não enviam nada).
      */

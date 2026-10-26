@@ -119,3 +119,81 @@ export function buildGatePayload(params: {
     },
   };
 }
+
+/**
+ * Modo opcional ("fala uma vez"): pede para seguir e já entrega o link, sem
+ * consultar o perfil. Dois botões de URL — o primeiro abre o perfil, o segundo
+ * abre o link.
+ */
+export function buildOptionalLinkPayload(params: {
+  settings: AutomationSettings;
+  username: string;
+  senderId: string;
+}): unknown {
+  const { settings, username, senderId } = params;
+
+  return {
+    recipient: { id: senderId },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: truncateUtf8(settings.followOptionalText, MAX_BUTTON_TEXT_BYTES),
+          buttons: [
+            {
+              type: "web_url",
+              url: `https://www.instagram.com/${username}/`,
+              title: truncateChars(
+                settings.followGateFollowLabel,
+                MAX_BUTTON_TITLE_CHARS,
+              ),
+            },
+            {
+              type: "web_url",
+              url: settings.linkUrl,
+              title: truncateChars(
+                settings.linkButtonTitle,
+                MAX_BUTTON_TITLE_CHARS,
+              ),
+            },
+          ],
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Modo direto: só o link, com o aviso de que seguir o perfil muda a caixa em
+ * que as próximas mensagens aparecem. Um único botão de URL.
+ */
+export function buildDirectLinkPayload(params: {
+  settings: AutomationSettings;
+  senderId: string;
+}): unknown {
+  const { settings, senderId } = params;
+
+  return {
+    recipient: { id: senderId },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: truncateUtf8(settings.followDirectText, MAX_BUTTON_TEXT_BYTES),
+          buttons: [
+            {
+              type: "web_url",
+              url: settings.linkUrl,
+              title: truncateChars(
+                settings.linkButtonTitle,
+                MAX_BUTTON_TITLE_CHARS,
+              ),
+            },
+          ],
+        },
+      },
+    },
+  };
+}

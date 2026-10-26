@@ -35,9 +35,9 @@ Tailwind, Docker. Sem Supabase, sem serviços pagos, sem `pg_cron`.
   deduplicação de eventos e resposta rápida.
 - Fila em PostgreSQL com `FOR UPDATE SKIP LOCKED`, 3 tentativas com espera
   progressiva, expiração pelos prazos da Meta e estado "incerto" sem reenvio.
-- Porta de seguidor opcional: consulta o perfil somente depois que a pessoa
-  envia uma mensagem, com no máximo duas checagens e liberação do link quando a
-  Meta não informa o status.
+- Porta de seguidor com cinco modos: direta, tolerante (até 2 checagens),
+  travada (só entrega a seguidor confirmado), opcional (Seguir + link na mesma
+  mensagem) e direta com aviso sobre a caixa principal.
 - Tarefa agendada protegida por segredo (`/api/cron/tick`).
 - Páginas públicas `/privacidade` e `/exclusao-de-dados` e callback de exclusão
   de dados da Meta (`/api/data-deletion`).
@@ -151,7 +151,8 @@ O app precisa ser do tipo **Business**.
 5. Em **Webhooks**, configure:
    - Callback URL: `https://SEU_DOMINIO/api/webhook`
    - Verify token: o mesmo valor de `META_WEBHOOK_VERIFY_TOKEN`
-   - Campos assinados: `comments` e `messages`
+   - Campos assinados: `comments`, `messages` e `messaging_postbacks` (o
+     postback é o toque em "Já segui")
 6. Enquanto o app estiver em modo de desenvolvimento, adicione sua conta do
    Instagram em **Funções / Testadores** para conseguir autorizar.
 7. Para uso por qualquer pessoa, o app precisa ficar **Live**, com **Advanced
@@ -187,7 +188,9 @@ aditivas até aqui; antes de qualquer migration destrutiva, faça backup.
 
 ## Operação
 
-O resumo de uma página está em [`docs/OPERACAO.md`](docs/OPERACAO.md).
+O resumo de uma página está em [`docs/OPERACAO.md`](docs/OPERACAO.md). As
+referências e decisões da porta de seguidor estão em
+[`docs/REFERENCIAS.md`](docs/REFERENCIAS.md).
 Pontos que não podem ser esquecidos:
 
 - **"Aceita" não é "entregue".** A Meta não informa confirmação de entrega nem
@@ -197,8 +200,15 @@ Pontos que não podem ser esquecidos:
   duplicada.
 - **Prazos da Meta:** resposta privada ao comentário em até 7 dias (usamos
   2 minutos de margem) e link somente dentro de 24h após a resposta da pessoa.
-- **Porta de seguidor é opcional e não bloqueia para sempre:** no máximo duas
-  checagens; sem resposta da Meta, o link é liberado.
+- **A porta de seguidor tem modos com regras explícitas:** o modo tolerante
+  libera após no máximo duas checagens ou quando a Meta não informa o status; o
+  modo travado só libera com confirmação positiva (`is_user_follow_business =
+  true`) e mantém o pedido enquanto não houver confirmação. Os modos opcional e
+  direto já entregam o link e não consultam o perfil.
+- **Mensagens de quem não segue podem cair em Requests.** A documentação da Meta
+  confirma que conversas de não seguidores ficam em Requests até serem
+  aceitas/respondidas; depois disso, as próximas mensagens vão para a caixa
+  principal. É isso que o aviso do modo direto informa.
 - **Conteúdo congelado:** editar uma automação só afeta comentários novos.
 - **Uma conta por instalação** no MVP.
 - **Sem `pg_cron`/`pg_net`:** a fila anda pela tarefa agendada do Coolify.
@@ -232,8 +242,9 @@ tests/                    unitários e integração
 ## Pendências antes de produção
 
 - Validar em conta real se a Meta devolve `is_user_follow_business` no perfil de
-  quem conversa. Se o campo não vier, a porta de seguidor libera o link (nunca
-  bloqueia), mas a confirmação deixa de ser efetiva.
+  quem conversa. No modo travado, a ausência do campo mantém a conversa retida
+  (por definição, não há como confirmar o follow); nos demais modos o link é
+  liberado ou entregue sem checagem.
 - Criar o app Meta, obter credenciais, revisar permissões e publicar o app.
 - Definir o e-mail de privacidade (`PRIVACY_CONTACT_EMAIL`).
 - Revisar a política de privacidade com quem for responsável pelo perfil.

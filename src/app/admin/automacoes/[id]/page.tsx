@@ -9,6 +9,7 @@ import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations } from "@/lib/db/schema";
+import { isFollowMode } from "@/lib/follow-mode";
 
 export const instant = false;
 
@@ -50,8 +51,9 @@ export default async function EditAutomationPage({
       <div>
         <h1 className="text-2xl font-semibold">Editar automação</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Alterações valem somente para comentários novos. Conversas já iniciadas
-          mantêm o texto do momento em que foram criadas.
+          O texto da primeira DM fica congelado no comentário. O modo da porta e
+          os textos da segunda mensagem valem para os próximos envios, inclusive
+          de conversas em andamento.
         </p>
       </div>
 
@@ -65,10 +67,14 @@ export default async function EditAutomationPage({
           secondDmText: automation.secondDmText,
           linkButtonTitle: automation.linkButtonTitle,
           linkUrl: automation.linkUrl,
-          requireFollow: automation.requireFollow,
+          followMode: isFollowMode(automation.followMode)
+            ? automation.followMode
+            : "off",
           followGateText: automation.followGateText,
           followGateFollowLabel: automation.followGateFollowLabel,
           followGateConfirmLabel: automation.followGateConfirmLabel,
+          followOptionalText: automation.followOptionalText,
+          followDirectText: automation.followDirectText,
           isActive: automation.isActive,
         }}
         mediaOptions={media.options}

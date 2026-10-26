@@ -137,8 +137,8 @@ export default async function AdminDashboard() {
           <h1 className="text-2xl font-semibold">Visão geral</h1>
           <p className="mt-1 text-sm text-zinc-600">
             Fluxo: comentário com a palavra-chave → DM pedindo uma resposta →
-            resposta da pessoa → mensagem com o link (opcionalmente após
-            confirmar que ela segue o perfil).
+            resposta da pessoa → mensagem com o link, conforme a porta de
+            seguidor escolhida em cada automação.
           </p>
         </div>
         <Link

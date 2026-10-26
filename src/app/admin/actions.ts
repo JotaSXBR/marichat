@@ -9,6 +9,7 @@ import { getActiveAccount, getAccountToken, setAppStateValue } from "@/lib/accou
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations, instagramAccounts } from "@/lib/db/schema";
+import { FOLLOW_MODES } from "@/lib/follow-mode";
 import { subscribeWebhooks } from "@/lib/instagram/client";
 import { normalizeKeyword } from "@/lib/matching";
 
@@ -80,7 +81,7 @@ const automationSchema = z.object({
       message: "O texto do botão do link pode ter no máximo 20 caracteres.",
     }),
   linkUrl: httpsUrl,
-  requireFollow: z.boolean(),
+  followMode: z.enum(FOLLOW_MODES),
   followGateText: z
     .string()
     .trim()
@@ -102,11 +103,29 @@ const automationSchema = z.object({
     .refine((value) => countChars(value) <= 20, {
       message: "O texto do botão pode ter no máximo 20 caracteres.",
     }),
+  followOptionalText: z
+    .string()
+    .trim()
+    .min(1, "Escreva a mensagem do modo opcional.")
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 640, {
+      message: "A mensagem do modo opcional pode ter no máximo 640 bytes.",
+    }),
+  followDirectText: z
+    .string()
+    .trim()
+    .min(1, "Escreva a mensagem do modo direto.")
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 640, {
+      message: "A mensagem do modo direto pode ter no máximo 640 bytes.",
+    }),
   isActive: z.boolean(),
 });
 
 const DEFAULT_GATE_TEXT =
   'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".';
+const DEFAULT_OPTIONAL_TEXT =
+  "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:";
+const DEFAULT_DIRECT_TEXT =
+  "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal.";
 
 function readForm(formData: FormData) {
   return {
@@ -117,7 +136,7 @@ function readForm(formData: FormData) {
     secondDmText: String(formData.get("secondDmText") ?? ""),
     linkButtonTitle: String(formData.get("linkButtonTitle") ?? ""),
     linkUrl: String(formData.get("linkUrl") ?? ""),
-    requireFollow: formData.get("requireFollow") === "on",
+    followMode: String(formData.get("followMode") ?? "off"),
     followGateText: String(formData.get("followGateText") ?? "").trim()
       ? String(formData.get("followGateText") ?? "")
       : DEFAULT_GATE_TEXT,
@@ -125,6 +144,12 @@ function readForm(formData: FormData) {
       String(formData.get("followGateFollowLabel") ?? "").trim() || "Seguir agora",
     followGateConfirmLabel:
       String(formData.get("followGateConfirmLabel") ?? "").trim() || "Já segui",
+    followOptionalText: String(formData.get("followOptionalText") ?? "").trim()
+      ? String(formData.get("followOptionalText") ?? "")
+      : DEFAULT_OPTIONAL_TEXT,
+    followDirectText: String(formData.get("followDirectText") ?? "").trim()
+      ? String(formData.get("followDirectText") ?? "")
+      : DEFAULT_DIRECT_TEXT,
     isActive: formData.get("isActive") === "on",
   };
 }
@@ -168,10 +193,12 @@ export async function saveAutomation(
         secondDmText: values.secondDmText,
         linkButtonTitle: values.linkButtonTitle,
         linkUrl: values.linkUrl,
-        requireFollow: values.requireFollow,
+        followMode: values.followMode,
         followGateText: values.followGateText,
         followGateFollowLabel: values.followGateFollowLabel,
         followGateConfirmLabel: values.followGateConfirmLabel,
+        followOptionalText: values.followOptionalText,
+        followDirectText: values.followDirectText,
         isActive: values.isActive,
         updatedAt: new Date(),
       })
@@ -194,10 +221,12 @@ export async function saveAutomation(
       secondDmText: values.secondDmText,
       linkButtonTitle: values.linkButtonTitle,
       linkUrl: values.linkUrl,
-      requireFollow: values.requireFollow,
+      followMode: values.followMode,
       followGateText: values.followGateText,
       followGateFollowLabel: values.followGateFollowLabel,
       followGateConfirmLabel: values.followGateConfirmLabel,
+      followOptionalText: values.followOptionalText,
+      followDirectText: values.followDirectText,
       isActive: values.isActive,
     });
   }
