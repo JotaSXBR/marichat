@@ -11,17 +11,17 @@ TypeScript, zero `any` explícito e zero asserções `!` no código de produçã
 Os testes cobrem o motor, o webhook, a fila, as rotas, o cliente da Meta e o
 tradutor da Zernio.
 
-O que falta não é “mais lint”: é **lint com tipos**, **orçamentos de tamanho e
-complexidade** e **um portão automático (CI)**. Hoje o lint só falha em erro de
-sintaxe/regra básica, aceita avisos e não roda em Pull Request.
+O lint com tipos foi **aplicado na Fase 1** (ver plano no fim). O que falta
+agora é **orçamentos de tamanho e complexidade** e **um portão automático
+(CI)**.
 
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
-| Regras efetivas no lint | 113 | ~150, com tipos |
+| Regras efetivas no lint | 113 + preset tipado | ~150, com tipos |
 | Arquivos `src` acima de 400 linhas | 5 | 0 (avisos) |
 | Funções acima de 80 linhas | 10 | 0 (avisos) |
 | Funções com complexidade > 12 | 19 | 0 (avisos) |
-| Erros de lint tipado (medido) | 22 em 4 arquivos | 0 |
+| Erros de lint tipado (medido) | 0 (Fase 1 aplicada) | 0 |
 | CI / GitHub Actions | não existe | lint + tipos + testes + build |
 
 ## O que já está bom
@@ -60,22 +60,11 @@ sintaxe/regra básica, aceita avisos e não roda em Pull Request.
 
 ## Regras propostas
 
-### 1. Lint com tipos (maior ganho, menor risco)
+### 1. Lint com tipos (aplicado)
 
-O preset atual é o `recommended` sem tipos. Ativar
-`recommendedTypeChecked` com `parserOptions.projectService: true` para
-`src/**/*.{ts,tsx}` e `tests/**/*.ts` encontrou **22 problemas reais** já
-existentes:
-
-- 19 × `no-base-to-string` em `src/app/admin/actions.ts`: `String(formData.get(...))`
-  pode transformar um `File` em `"[object File]"`. É um bug de entrada, não só
-  estilo. A correção é um helper `readText(formData, name)` que só aceita
-  `string`.
-- 1 × `require-await` em `src/app/api/webhook/route.ts` (GET `async` sem
-  `await`).
-- 2 × `no-unnecessary-type-assertion` (`matching.ts` e `outbound.ts`).
-
-Regras tipadas que valem ligar além do preset:
+O preset antigo era o `recommended` sem tipos. Agora o `recommendedTypeChecked`
+com `parserOptions.projectService: true` roda em `src/**/*.{ts,tsx}` e
+`tests/**/*.ts`, mais as regras:
 
 ```js
 "@typescript-eslint/no-floating-promises": "error",
@@ -83,6 +72,25 @@ Regras tipadas que valem ligar além do preset:
 "@typescript-eslint/consistent-type-imports": "warn",
 "@typescript-eslint/switch-exhaustiveness-check": "error",
 ```
+
+A medição inicial encontrou **22 problemas reais** em `src`:
+
+- 19 × `no-base-to-string` em `src/app/admin/actions.ts`: `String(formData.get(...))`
+  podia transformar um `File` em `"[object File]"`. É um bug de entrada, não só
+  estilo. Corrigido com o helper `readText(formData, name)` em
+  `src/lib/form-data.ts` (só aceita `string`) e com teste próprio.
+- 1 × `require-await` em `src/app/api/webhook/route.ts` (GET `async` sem
+  `await`). O GET virou síncrono.
+- 2 × `no-unnecessary-type-assertion` (`matching.ts` e `outbound.ts`).
+  Removidas; de quebra, `toZernioMessage` ganhou tipos nomeados
+  (`RawButton`, `TemplatePayload`) em vez de uma asserção inline.
+
+Nos testes, três regras ficam desligadas de propósito: os mocks de `fetch` são
+`async` para imitar a API real, as fixtures passam por asserções para virar
+linhas do banco e `String(input)` é usado para inspecionar a URL chamada.
+
+O comando `npm run lint:ci` roda `eslint . --max-warnings=0` e é o que o CI
+deve usar. O `npm run lint` continua permissivo para o dia a dia.
 
 `strict-boolean-expressions` e `no-unnecessary-condition` ficam para uma
 segunda fase: são úteis, mas geram muito ruído em código que já funciona.
@@ -256,8 +264,9 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
 
 ## Plano de adoção (em commits separados)
 
-1. **Fase 1 — lint tipado + correções**: adicionar `recommendedTypeChecked`,
-   corrigir os 22 achados, `lint:ci` com `--max-warnings=0`.
+1. **Fase 1 — lint tipado + correções** ✅ **concluída**: `recommendedTypeChecked`
+   ativo em `src` e `tests`, 22 achados corrigidos, `npm run lint:ci` com
+   `--max-warnings=0` sem erros nem avisos.
 2. **Fase 2 — orçamentos como aviso**: `max-lines`, `max-lines-per-function`,
    `complexity`, `max-depth`, `max-params`, SonarJS selecionado. Nenhuma
    refatoração grande ainda.
@@ -272,10 +281,13 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
 
 ## Comandos usados na medição
 
+Com o lint tipado já no projeto, a medição é direta:
+
 ```powershell
-npx eslint src scripts --config eslint.metrics.mjs --format json --output-file eslint-metrics.json
-npx eslint src --config eslint.typed.mjs --format json --output-file eslint-typed.json
-npx eslint --print-config src/lib/outbound.ts | Out-File eslint-effective.json -Encoding utf8
+npm run lint:ci                     # eslint . --max-warnings=0
+npx eslint src --format json -o eslint-typed.json   # inventário por regra
 ```
 
-As configurações temporárias de medição não fazem parte do projeto.
+As configurações temporárias usadas para medir `max-lines`/`complexity`
+(`eslint.metrics.mjs`) e o lint tipado antes de adotá-lo (`eslint.typed.mjs`)
+foram removidas; elas não fazem parte do projeto.

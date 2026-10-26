@@ -16,6 +16,7 @@ import { encryptToken } from "@/lib/crypto";
 import { getDb } from "@/lib/db/client";
 import { automations, instagramAccounts } from "@/lib/db/schema";
 import { FOLLOW_MODES } from "@/lib/follow-mode";
+import { readText } from "@/lib/form-data";
 import { getSubscribedApps, subscribeWebhooks } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
 import {
@@ -146,27 +147,24 @@ const DEFAULT_DIRECT_TEXT =
 
 function readForm(formData: FormData) {
   return {
-    name: String(formData.get("name") ?? ""),
-    keyword: String(formData.get("keyword") ?? ""),
-    mediaId: String(formData.get("mediaId") ?? ""),
-    firstDmText: String(formData.get("firstDmText") ?? ""),
-    secondDmText: String(formData.get("secondDmText") ?? ""),
-    linkButtonTitle: String(formData.get("linkButtonTitle") ?? ""),
-    linkUrl: String(formData.get("linkUrl") ?? ""),
-    followMode: String(formData.get("followMode") ?? "off"),
-    followGateText: String(formData.get("followGateText") ?? "").trim()
-      ? String(formData.get("followGateText") ?? "")
-      : DEFAULT_GATE_TEXT,
+    name: readText(formData, "name"),
+    keyword: readText(formData, "keyword"),
+    mediaId: readText(formData, "mediaId"),
+    firstDmText: readText(formData, "firstDmText"),
+    secondDmText: readText(formData, "secondDmText"),
+    linkButtonTitle: readText(formData, "linkButtonTitle"),
+    linkUrl: readText(formData, "linkUrl"),
+    followMode: readText(formData, "followMode") || "off",
+    followGateText:
+      readText(formData, "followGateText").trim() || DEFAULT_GATE_TEXT,
     followGateFollowLabel:
-      String(formData.get("followGateFollowLabel") ?? "").trim() || "Seguir agora",
+      readText(formData, "followGateFollowLabel").trim() || "Seguir agora",
     followGateConfirmLabel:
-      String(formData.get("followGateConfirmLabel") ?? "").trim() || "Já segui",
-    followOptionalText: String(formData.get("followOptionalText") ?? "").trim()
-      ? String(formData.get("followOptionalText") ?? "")
-      : DEFAULT_OPTIONAL_TEXT,
-    followDirectText: String(formData.get("followDirectText") ?? "").trim()
-      ? String(formData.get("followDirectText") ?? "")
-      : DEFAULT_DIRECT_TEXT,
+      readText(formData, "followGateConfirmLabel").trim() || "Já segui",
+    followOptionalText:
+      readText(formData, "followOptionalText").trim() || DEFAULT_OPTIONAL_TEXT,
+    followDirectText:
+      readText(formData, "followDirectText").trim() || DEFAULT_DIRECT_TEXT,
     isActive: formData.get("isActive") === "on",
   };
 }
@@ -195,7 +193,7 @@ export async function saveAutomation(
 
   const values = parsed.data;
   const db = getDb();
-  const id = String(formData.get("id") ?? "").trim();
+  const id = readText(formData, "id").trim();
   const mediaId = values.mediaId && values.mediaId.length > 0 ? values.mediaId : null;
 
   if (id) {
@@ -255,7 +253,7 @@ export async function saveAutomation(
 
 export async function toggleAutomation(formData: FormData): Promise<void> {
   await requireAdmin();
-  const id = String(formData.get("id") ?? "");
+  const id = readText(formData, "id");
   const activate = formData.get("activate") === "1";
   if (!id) return;
 
@@ -384,7 +382,7 @@ export async function connectZernio(formData: FormData): Promise<void> {
     redirect("/admin/conexao?erro=zernio-conta");
   }
 
-  const requestedId = String(formData.get("accountId") ?? "").trim();
+  const requestedId = readText(formData, "accountId").trim();
   const chosen = requestedId
     ? accounts.find((item) => item.id === requestedId)
     : accounts.length === 1

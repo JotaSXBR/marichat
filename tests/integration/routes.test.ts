@@ -60,7 +60,7 @@ suite("rotas HTTP", () => {
   });
 
   it("valida a verificação GET do webhook", async () => {
-    const ok = await webhookGet(
+    const ok = webhookGet(
       new Request(
         `http://localhost/api/webhook?hub.mode=subscribe&hub.verify_token=${VERIFY_TOKEN}&hub.challenge=desafio-123`,
       ),
@@ -68,7 +68,7 @@ suite("rotas HTTP", () => {
     expect(ok.status).toBe(200);
     expect(await ok.text()).toBe("desafio-123");
 
-    const wrong = await webhookGet(
+    const wrong = webhookGet(
       new Request(
         "http://localhost/api/webhook?hub.mode=subscribe&hub.verify_token=errado&hub.challenge=x",
       ),

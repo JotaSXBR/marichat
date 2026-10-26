@@ -26,25 +26,27 @@ export type ZernioButton =
 
 export type ZernioMessage = { message: string; buttons?: ZernioButton[] };
 
+type RawButton = {
+  type?: unknown;
+  title?: unknown;
+  url?: unknown;
+  payload?: unknown;
+};
+
+type TemplatePayload = {
+  template_type?: unknown;
+  text?: unknown;
+  buttons?: RawButton[];
+  elements?: Array<{ title?: unknown; buttons?: RawButton[] }>;
+};
+
 export function toZernioMessage(payload: unknown): ZernioMessage {
   const root = payload as {
     message?: {
       text?: unknown;
       attachment?: {
         type?: unknown;
-        payload?: {
-          template_type?: unknown;
-          text?: unknown;
-          elements?: Array<{
-            title?: unknown;
-            buttons?: Array<{
-              type?: unknown;
-              title?: unknown;
-              url?: unknown;
-              payload?: unknown;
-            }>;
-          }>;
-        };
+        payload?: TemplatePayload;
       };
     };
   } | null;
@@ -54,21 +56,7 @@ export function toZernioMessage(payload: unknown): ZernioMessage {
     return { message: message.text };
   }
 
-  type RawButton = {
-    type?: unknown;
-    title?: unknown;
-    url?: unknown;
-    payload?: unknown;
-  };
-
-  const template = message?.attachment?.payload as
-    | {
-        template_type?: unknown;
-        text?: unknown;
-        buttons?: RawButton[];
-        elements?: Array<{ title?: unknown; buttons?: RawButton[] }>;
-      }
-    | undefined;
+  const template = message?.attachment?.payload;
 
   if (message?.attachment?.type !== "template" || !template) {
     throw new Error("Formato de mensagem não suportado pela Zernio.");
@@ -81,10 +69,9 @@ export function toZernioMessage(payload: unknown): ZernioMessage {
         ? template.elements[0].title
         : null;
 
-  const rawButtons: RawButton[] = Array.isArray(
-    template.elements?.[0]?.buttons,
-  )
-    ? template.elements[0].buttons
+  const elementButtons = template.elements?.[0]?.buttons;
+  const rawButtons: RawButton[] = Array.isArray(elementButtons)
+    ? elementButtons
     : Array.isArray(template.buttons)
       ? template.buttons
       : [];

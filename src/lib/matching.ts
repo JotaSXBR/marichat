@@ -65,5 +65,5 @@ export function pickAutomation<T extends AutomationCandidate>(
     const bSpecific = b.mediaId === commentMediaId ? 1 : 0;
     if (aSpecific !== bSpecific) return bSpecific - aSpecific;
     return a.createdAt.getTime() - b.createdAt.getTime();
-  })[0]!;
+  })[0];
 }

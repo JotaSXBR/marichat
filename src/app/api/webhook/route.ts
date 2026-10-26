@@ -16,7 +16,7 @@ import { handleWebhookPayload, type WebhookPayload } from "@/lib/webhook/process
  * O envio real acontece no drenador da fila, executado após a resposta.
  */
 
-export async function GET(request: Request) {
+export function GET(request: Request) {
   const url = new URL(request.url);
   const mode = url.searchParams.get("hub.mode");
   const token = url.searchParams.get("hub.verify_token");

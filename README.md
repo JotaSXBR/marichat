@@ -85,10 +85,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"     # C
 
 ```powershell
 npm test        # unitários + integração no PostgreSQL de teste (porta 5433)
-npm run lint
+npm run lint     # eslint, sem informação de tipo
+npm run lint:ci  # eslint + tipos, falha com qualquer aviso (usar no CI)
 npm run typecheck
 npm run build
 ```
+
+O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
+`tests`. As escolhas de regras e a dívida de refatoração estão em
+`docs/QUALIDADE.md`.
 
 Os testes de integração só rodam quando `DATABASE_URL` aponta para
 `127.0.0.1:5433` ou `localhost:5433`. Eles limpam as tabelas antes de cada caso.
