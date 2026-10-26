@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeAll, beforeEach, afterAll } from "vitest";
+import { eq } from "drizzle-orm";
 
 import { getDb } from "@/lib/db/client";
 import { commentInteractions, outboundMessages } from "@/lib/db/schema";
@@ -45,12 +46,13 @@ function commentPayload(params: {
   };
 }
 
-function quickReplyPayload(params: {
+/** Mensagem livre: é assim que a pessoa abre a janela de 24h. */
+function textReplyPayload(params: {
   igUserId: string;
   mid: string;
-  payload: string;
   senderId?: string;
   timestamp?: number;
+  text?: string;
 }) {
   return {
     object: "instagram",
@@ -67,8 +69,7 @@ function quickReplyPayload(params: {
               timestamp: params.timestamp ?? Math.floor(Date.now() / 1000),
               message: {
                 mid: params.mid,
-                text: "Quero o link",
-                quick_reply: { payload: params.payload },
+                text: params.text ?? "Quero o link",
               },
             },
           },
@@ -78,7 +79,40 @@ function quickReplyPayload(params: {
   };
 }
 
-suite("webhook: comentário e toque no botão", () => {
+/** Toque no botão "Já segui" (postback com token da interação). */
+function gateTapPayload(params: {
+  igUserId: string;
+  mid: string;
+  payload: string;
+  senderId?: string;
+}) {
+  return {
+    object: "instagram",
+    entry: [
+      {
+        id: params.igUserId,
+        time: Math.floor(Date.now() / 1000),
+        changes: [
+          {
+            field: "messages",
+            value: {
+              sender: { id: params.senderId ?? "user-123" },
+              recipient: { id: params.igUserId },
+              timestamp: Math.floor(Date.now() / 1000),
+              postback: {
+                mid: params.mid,
+                title: "Já segui",
+                payload: params.payload,
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+suite("webhook: comentário, resposta e porta de seguidor", () => {
   beforeAll(() => {
     expect(hasTestDatabase).toBe(true);
   });
@@ -91,7 +125,7 @@ suite("webhook: comentário e toque no botão", () => {
     await closeTestDatabase();
   });
 
-  it("cria interação e primeira DM com quick reply ao casar a palavra-chave", async () => {
+  it("cria interação e primeira DM em texto puro ao casar a palavra-chave", async () => {
     const account = await seedAccount();
     const automation = await seedAutomation(account.id);
     const time = Math.floor(Date.now() / 1000) - 60;
@@ -129,11 +163,12 @@ suite("webhook: comentário e toque no botão", () => {
 
     const payload = job.payload as {
       recipient: { comment_id: string };
-      message: { text: string; quick_replies: Array<{ payload: string }> };
+      message: { text: string; quick_replies?: unknown };
     };
     expect(payload.recipient.comment_id).toBe("comment-1");
-    expect(payload.message.text).toContain("botão");
-    expect(payload.message.quick_replies[0]!.payload).toBe(interaction.token);
+    expect(payload.message.text).toContain("Responda");
+    // A primeira DM não tem botão: a pessoa responde para abrir a janela.
+    expect(payload.message).not.toHaveProperty("quick_replies");
   });
 
   it("ignora evento repetido (dedupe) e comentários sem correspondência", async () => {
@@ -217,7 +252,7 @@ suite("webhook: comentário e toque no botão", () => {
     expect(interaction?.automationId).toBe(specific.id);
   });
 
-  it("agenda a segunda mensagem somente após o toque no botão", async () => {
+  it("agenda o link quando a pessoa responde (porta de seguidor desligada)", async () => {
     const account = await seedAccount();
     await seedAutomation(account.id);
 
@@ -234,10 +269,9 @@ suite("webhook: comentário e toque no botão", () => {
     expect(interaction).toBeDefined();
 
     const summary = await handleWebhookPayload(
-      quickReplyPayload({
+      textReplyPayload({
         igUserId: account.instagramUserId,
         mid: "mid-1",
-        payload: interaction!.token,
       }),
     );
     expect(summary.processed).toBe(1);
@@ -273,18 +307,129 @@ suite("webhook: comentário e toque no botão", () => {
     const [updated] = await db.select().from(commentInteractions);
     expect(updated!.userLastMessageAt).not.toBeNull();
 
-    // O mesmo toque reenviado não cria segunda tarefa.
+    // O mesmo evento reenviado não cria segunda tarefa.
     await handleWebhookPayload(
-      quickReplyPayload({
+      textReplyPayload({
         igUserId: account.instagramUserId,
         mid: "mid-1",
-        payload: interaction!.token,
       }),
     );
     const afterDuplicate = await db.select().from(outboundMessages);
     expect(afterDuplicate.filter((job) => job.kind === "followup_link")).toHaveLength(
       1,
     );
+  });
+
+  it("com a porta ligada, a resposta agenda só a checagem (sem link)", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { requireFollow: true });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const summary = await handleWebhookPayload(
+      textReplyPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-1",
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "follow_check")).toHaveLength(1);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
+  });
+
+  it("o toque em 'Já segui' agenda uma nova checagem", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { requireFollow: true });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const db = getDb();
+    const [interaction] = await db.select().from(commentInteractions);
+
+    const summary = await handleWebhookPayload(
+      gateTapPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-tap",
+        payload: `gate:${interaction!.token}`,
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "follow_check_2")).toHaveLength(1);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(0);
+  });
+
+  it("libera o link no toque quando o limite de checagens acabou", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { requireFollow: true });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const db = getDb();
+    const [interaction] = await db.select().from(commentInteractions);
+    await db
+      .update(commentInteractions)
+      .set({ followChecks: 2 })
+      .where(eq(commentInteractions.id, interaction!.id));
+
+    const summary = await handleWebhookPayload(
+      gateTapPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-tap",
+        payload: `gate:${interaction!.token}`,
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
+  });
+
+  it("ignora postback de token que não pertence a quem enviou", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, { requireFollow: true });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+      }),
+    );
+    const db = getDb();
+    const [interaction] = await db.select().from(commentInteractions);
+
+    const summary = await handleWebhookPayload(
+      gateTapPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-tap",
+        payload: `gate:${interaction!.token}`,
+        senderId: "outra-pessoa",
+      }),
+    );
+    expect(summary.processed).toBe(0);
+
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "follow_check_2")).toHaveLength(0);
   });
 
   it("não agenda link quando a janela de 24h já fechou", async () => {
@@ -299,14 +444,12 @@ suite("webhook: comentário e toque no botão", () => {
       }),
     );
     const db = getDb();
-    const [interaction] = await db.select().from(commentInteractions);
 
-    const oldTimestamp = Math.floor((Date.now() - 25 * 3600 * 1000) / 1000);
+    const oldTimestamp = Math.floor((Date.now() - 26 * 3600 * 1000) / 1000);
     await handleWebhookPayload(
-      quickReplyPayload({
+      textReplyPayload({
         igUserId: account.instagramUserId,
         mid: "mid-old",
-        payload: interaction!.token,
         timestamp: oldTimestamp,
       }),
     );
@@ -326,8 +469,6 @@ suite("webhook: comentário e toque no botão", () => {
         text: "quero",
       }),
     );
-    const db = getDb();
-    const [interaction] = await db.select().from(commentInteractions);
 
     const summary = await handleWebhookPayload({
       object: "instagram",
@@ -343,7 +484,6 @@ suite("webhook: comentário e toque no botão", () => {
               message: {
                 mid: "mid-messaging",
                 text: "Quero o link",
-                quick_reply: { payload: interaction!.token },
               },
             },
           ],
@@ -352,6 +492,7 @@ suite("webhook: comentário e toque no botão", () => {
     });
 
     expect(summary.processed).toBe(1);
+    const db = getDb();
     const jobs = await db.select().from(outboundMessages);
     expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
   });

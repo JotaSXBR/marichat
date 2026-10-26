@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { findAccountByInstagramUserId, type Account } from "@/lib/accounts";
 import { getDb } from "@/lib/db/client";
@@ -15,6 +15,10 @@ import {
   commentMatchesKeyword,
   pickAutomation,
 } from "@/lib/matching";
+import {
+  buildLinkPayload,
+  buildPrivateReplyPayload,
+} from "@/lib/outbound";
 
 /**
  * Processamento dos eventos de webhook.
@@ -24,8 +28,11 @@ import {
  * - a interação e a primeira DM são gravadas na mesma transação;
  * - o conteúdo da mensagem é congelado no momento da criação da tarefa
  *   (editar a automação depois não altera envios já agendados);
- * - só a segunda DM é agendada quando o usuário toca no botão do quick reply
- *   (o payload opaco é a prova de que houve o toque).
+ * - a primeira DM é sempre texto puro (sem botão): a pessoa responde para
+ *   abrir a janela de 24h e o link é enviado depois;
+ * - a porta de seguidor, quando ligada, consulta o perfil somente depois que a
+ *   pessoa envia uma mensagem (consentimento) e nunca bloqueia o link para
+ *   sempre: no máximo duas checagens e, se a Meta não informar, libera.
  */
 
 type CommentValue = {
@@ -46,6 +53,11 @@ type InboundMessage = {
     is_echo?: boolean;
     quick_reply?: { payload?: string };
     reply_to?: { mid?: string };
+  };
+  postback?: {
+    mid?: string;
+    title?: string;
+    payload?: string;
   };
 };
 
@@ -68,21 +80,7 @@ export type WebhookSummary = {
   failed: number;
 };
 
-const MAX_TEXT_BYTES = 1000;
-
-function truncateUtf8(text: string, maxBytes: number): string {
-  if (Buffer.byteLength(text, "utf8") <= maxBytes) return text;
-  let result = "";
-  for (const char of text) {
-    if (Buffer.byteLength(result + char, "utf8") > maxBytes) break;
-    result += char;
-  }
-  return result;
-}
-
-function truncateChars(text: string, maxChars: number): string {
-  return [...text].slice(0, maxChars).join("");
-}
+type InteractionRow = typeof commentInteractions.$inferSelect;
 
 function opaqueToken(): string {
   return crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
@@ -222,27 +220,15 @@ async function processComment(params: {
 
       if (!interaction) return;
 
-      const firstDmText = truncateUtf8(settings.firstDmText, MAX_TEXT_BYTES);
-      const quickReplyTitle = truncateChars(settings.quickReplyTitle, 20);
-
+      // Primeira DM em texto puro, conforme a documentação da Meta para
+      // respostas privadas. O botão deixaria de ser garantido e a pessoa
+      // responde livremente para abrir a janela de 24h.
       await tx.insert(outboundMessages).values({
         accountId: account.id,
         interactionId: interaction.id,
         kind: "private_reply",
         status: "pending",
-        payload: {
-          recipient: { comment_id: commentId },
-          message: {
-            text: firstDmText,
-            quick_replies: [
-              {
-                content_type: "text",
-                title: quickReplyTitle,
-                payload: token,
-              },
-            ],
-          },
-        },
+        payload: buildPrivateReplyPayload(settings, commentId),
       });
     });
     return "processed";
@@ -252,13 +238,40 @@ async function processComment(params: {
   }
 }
 
+async function enqueueOutbound(params: {
+  accountId: string;
+  interactionId: string;
+  kind: "followup_link" | "follow_check" | "follow_check_2" | "follow_gate";
+  payload: unknown;
+}): Promise<boolean> {
+  const db = getDb();
+  const inserted = await db
+    .insert(outboundMessages)
+    .values({
+      accountId: params.accountId,
+      interactionId: params.interactionId,
+      kind: params.kind,
+      status: "pending",
+      // Tarefas de checagem não têm conteúdo de mensagem; o payload guarda
+      // apenas o contexto necessário para a auditoria.
+      payload: params.payload,
+    })
+    .onConflictDoNothing({
+      target: [outboundMessages.interactionId, outboundMessages.kind],
+    })
+    .returning({ id: outboundMessages.id });
+
+  return inserted.length > 0;
+}
+
 async function processInboundMessage(params: {
   account: Account;
   message: InboundMessage;
 }): Promise<"processed" | "ignored" | "failed"> {
   const { account, message } = params;
   const senderId = message.sender?.id;
-  const mid = message.message?.mid;
+  const postback = message.postback;
+  const mid = message.message?.mid ?? postback?.mid;
 
   if (!senderId || senderId === account.instagramUserId) return "ignored";
   if (message.message?.is_echo) return "ignored";
@@ -270,7 +283,7 @@ async function processInboundMessage(params: {
     : new Date();
 
   // Qualquer mensagem do usuário atualiza a janela de 24h das interações
-  // conhecidas dele (não é necessário ser o toque no botão).
+  // conhecidas dele (não é necessário ser um toque em botão).
   await db
     .update(commentInteractions)
     .set({ userLastMessageAt: receivedAt, updatedAt: new Date() })
@@ -281,23 +294,53 @@ async function processInboundMessage(params: {
       ),
     );
 
+  // O botão "Já segui" chega como postback; o formato antigo de quick reply
+  // também continua aceito para não quebrar conversas em andamento.
   const quickReplyPayload = message.message?.quick_reply?.payload;
-  if (!quickReplyPayload) return "ignored";
+  const postbackPayload = postback?.payload;
+  const tokenFromPayload = quickReplyPayload
+    ? quickReplyPayload
+    : postbackPayload?.startsWith("gate:")
+      ? postbackPayload.slice("gate:".length)
+      : null;
 
-  const [interaction] = await db
-    .select()
-    .from(commentInteractions)
-    .where(
-      and(
-        eq(commentInteractions.accountId, account.id),
-        eq(commentInteractions.token, quickReplyPayload),
-        eq(commentInteractions.commenterIgsid, senderId),
-      ),
-    )
-    .limit(1);
+  let interaction: InteractionRow | undefined;
+  if (tokenFromPayload) {
+    [interaction] = await db
+      .select()
+      .from(commentInteractions)
+      .where(
+        and(
+          eq(commentInteractions.accountId, account.id),
+          eq(commentInteractions.token, tokenFromPayload),
+          eq(commentInteractions.commenterIgsid, senderId),
+        ),
+      )
+      .limit(1);
+  } else {
+    // Texto livre: a interação mais recente desta pessoa nesta conta.
+    [interaction] = await db
+      .select()
+      .from(commentInteractions)
+      .where(
+        and(
+          eq(commentInteractions.accountId, account.id),
+          eq(commentInteractions.commenterIgsid, senderId),
+        ),
+      )
+      .orderBy(desc(commentInteractions.createdAt))
+      .limit(1);
+  }
 
   if (!interaction) return "ignored";
-  if (interaction.state === "link_sent") return "ignored";
+  if (
+    interaction.state === "link_sent" ||
+    interaction.state === "expired" ||
+    interaction.state === "failed" ||
+    interaction.state === "canceled"
+  ) {
+    return "ignored";
+  }
 
   const deadline =
     (interaction.userLastMessageAt ?? receivedAt).getTime() +
@@ -312,56 +355,55 @@ async function processInboundMessage(params: {
 
   if (!settings) return "ignored";
 
-  const title = truncateChars(settings.secondDmText, 80);
-  const buttonTitle = truncateChars(settings.linkButtonTitle, 20);
+  const isGateTap = postbackPayload === `gate:${interaction.token}`;
 
   try {
-    const inserted = await db
-      .insert(outboundMessages)
-      .values({
+    if (!settings.requireFollow) {
+      const created = await enqueueOutbound({
         accountId: account.id,
         interactionId: interaction.id,
         kind: "followup_link",
-        status: "pending",
-        payload: {
-          recipient: { id: senderId },
-          message: {
-            attachment: {
-              type: "template",
-              payload: {
-                template_type: "generic",
-                elements: [
-                  {
-                    title,
-                    buttons: [
-                      {
-                        type: "web_url",
-                        url: settings.linkUrl,
-                        title: buttonTitle,
-                      },
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-        },
-      })
-      .onConflictDoNothing({
-        target: [outboundMessages.interactionId, outboundMessages.kind],
-      })
-      .returning({ id: outboundMessages.id });
+        payload: buildLinkPayload(settings, senderId),
+      });
+      return created ? "processed" : "ignored";
+    }
 
-    if (inserted.length === 0) return "ignored";
+    if (isGateTap) {
+      if (interaction.followChecks >= 2) {
+        // Limite de checagens atingido: libera o link de qualquer forma.
+        const created = await enqueueOutbound({
+          accountId: account.id,
+          interactionId: interaction.id,
+          kind: "followup_link",
+          payload: buildLinkPayload(settings, senderId),
+        });
+        return created ? "processed" : "ignored";
+      }
 
-    await db
-      .update(commentInteractions)
-      .set({ userLastMessageAt: receivedAt, updatedAt: new Date() })
-      .where(eq(commentInteractions.id, interaction.id));
+      const created = await enqueueOutbound({
+        accountId: account.id,
+        interactionId: interaction.id,
+        kind: "follow_check_2",
+        payload: { check: 2, senderId },
+      });
+      return created ? "processed" : "ignored";
+    }
 
-    return "processed";
+    if (interaction.state === "accepted" || interaction.state === "queued") {
+      const created = await enqueueOutbound({
+        accountId: account.id,
+        interactionId: interaction.id,
+        kind: "follow_check",
+        payload: { check: 1, senderId },
+      });
+      return created ? "processed" : "ignored";
+    }
+
+    // Ainda aguardando o toque em "Já segui": mensagens livres não geram
+    // novas checagens (o limite é duas).
+    return "ignored";
   } catch (error) {
-    console.error("[webhook] falha ao agendar o link:", error);
+    console.error("[webhook] falha ao agendar a continuação:", error);
     return "failed";
   }
 }
@@ -440,7 +482,7 @@ export async function handleWebhookPayload(
     // Alguns setups entregam mensagens em `entry.messaging` (estilo Messenger).
     const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
     for (const message of messaging) {
-      const mid = message.message?.mid;
+      const mid = message.message?.mid ?? message.postback?.mid;
       if (!mid) continue;
       const eventKey = `message:${mid}`;
 

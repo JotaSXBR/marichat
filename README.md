@@ -1,8 +1,10 @@
 # MARICHAT
 
 Automação oficial de comentários do Instagram: quando alguém comenta uma
-palavra-chave, o perfil envia uma DM privada com um botão. Ao tocar no botão, a
-pessoa recebe uma segunda mensagem com o link.
+palavra-chave, o perfil envia uma DM privada pedindo uma resposta. Quando a
+pessoa responde (abre a janela de 24h), ela recebe uma segunda mensagem com o
+link. Opcionalmente, o link só é liberado depois de confirmar que ela segue o
+perfil.
 
 ```
 comentário com a palavra-chave
@@ -13,8 +15,11 @@ webhook assinado da Meta ──► PostgreSQL (interação + tarefa)
         ▼                                 ▼
 resposta privada (DM 1)  ◄──── fila com retentativas (cron)
         │
-        ▼  pessoa toca em "Quero o link"
-webhook de mensagem ──► segunda mensagem com botão de link HTTPS
+        ▼  pessoa responde à DM
+webhook de mensagem ──► consulta opcional "segue o perfil?"
+        │
+        ▼
+segunda mensagem com botão de link HTTPS
 ```
 
 Stack: Next.js 16.4.1 (App Router), TypeScript, Drizzle ORM, PostgreSQL,
@@ -30,6 +35,9 @@ Tailwind, Docker. Sem Supabase, sem serviços pagos, sem `pg_cron`.
   deduplicação de eventos e resposta rápida.
 - Fila em PostgreSQL com `FOR UPDATE SKIP LOCKED`, 3 tentativas com espera
   progressiva, expiração pelos prazos da Meta e estado "incerto" sem reenvio.
+- Porta de seguidor opcional: consulta o perfil somente depois que a pessoa
+  envia uma mensagem, com no máximo duas checagens e liberação do link quando a
+  Meta não informa o status.
 - Tarefa agendada protegida por segredo (`/api/cron/tick`).
 - Páginas públicas `/privacidade` e `/exclusao-de-dados` e callback de exclusão
   de dados da Meta (`/api/data-deletion`).
@@ -96,8 +104,9 @@ O script sobe um "Instagram falso" em `127.0.0.1:4010`, cadastra uma conta e uma
 automação de demonstração, envia o webhook assinado de comentário, roda a fila
 pelo endpoint de cron e confere:
 
-- a primeira DM com o botão `Quero o link`, em resposta privada ao comentário;
-- o toque no botão abrindo a segunda mensagem com o botão HTTPS;
+- a primeira DM em texto puro, pedindo que a pessoa responda, em resposta
+  privada ao comentário;
+- a resposta da pessoa abrindo a segunda mensagem com o botão HTTPS;
 - o painel e a lista de publicações (incluindo a miniatura do vídeo).
 
 No fim ele imprime o JSON exato que seria enviado. Para isso o `.env.local`
@@ -137,6 +146,8 @@ O app precisa ser do tipo **Business**.
    exatamente como `https://SEU_DOMINIO/api/auth/instagram/callback`.
 4. Permissões necessárias: `instagram_business_basic`,
    `instagram_business_manage_comments`, `instagram_business_manage_messages`.
+   A porta de seguidor usa `is_user_follow_business` no perfil de quem conversa
+   (disponível só depois que a pessoa envia uma mensagem).
 5. Em **Webhooks**, configure:
    - Callback URL: `https://SEU_DOMINIO/api/webhook`
    - Verify token: o mesmo valor de `META_WEBHOOK_VERIFY_TOKEN`
@@ -186,6 +197,8 @@ Pontos que não podem ser esquecidos:
   duplicada.
 - **Prazos da Meta:** resposta privada ao comentário em até 7 dias (usamos
   2 minutos de margem) e link somente dentro de 24h após a resposta da pessoa.
+- **Porta de seguidor é opcional e não bloqueia para sempre:** no máximo duas
+  checagens; sem resposta da Meta, o link é liberado.
 - **Conteúdo congelado:** editar uma automação só afeta comentários novos.
 - **Uma conta por instalação** no MVP.
 - **Sem `pg_cron`/`pg_net`:** a fila anda pela tarefa agendada do Coolify.
@@ -218,9 +231,9 @@ tests/                    unitários e integração
 
 ## Pendências antes de produção
 
-- Validar em conta real se a resposta privada aceita `quick_replies` (a
-  documentação pública mostra apenas texto). Se a Meta recusar, será necessário
-  ajustar o formato ou solicitar suporte; o restante do fluxo não muda.
+- Validar em conta real se a Meta devolve `is_user_follow_business` no perfil de
+  quem conversa. Se o campo não vier, a porta de seguidor libera o link (nunca
+  bloqueia), mas a confirmação deixa de ser efetiva.
 - Criar o app Meta, obter credenciais, revisar permissões e publicar o app.
 - Definir o e-mail de privacidade (`PRIVACY_CONTACT_EMAIL`).
 - Revisar a política de privacidade com quem for responsável pelo perfil.

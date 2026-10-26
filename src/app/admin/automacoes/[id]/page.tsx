@@ -62,10 +62,13 @@ export default async function EditAutomationPage({
           keyword: automation.keyword,
           mediaId: automation.mediaId ?? "",
           firstDmText: automation.firstDmText,
-          quickReplyTitle: automation.quickReplyTitle,
           secondDmText: automation.secondDmText,
           linkButtonTitle: automation.linkButtonTitle,
           linkUrl: automation.linkUrl,
+          requireFollow: automation.requireFollow,
+          followGateText: automation.followGateText,
+          followGateFollowLabel: automation.followGateFollowLabel,
+          followGateConfirmLabel: automation.followGateConfirmLabel,
           isActive: automation.isActive,
         }}
         mediaOptions={media.options}

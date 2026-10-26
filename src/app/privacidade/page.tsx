@@ -39,8 +39,9 @@ export default async function PrivacyPage() {
             <li>identificador do Instagram de quem comentou (IGSID);</li>
             <li>texto do comentário e identificador da publicação;</li>
             <li>
-              conteúdo das mensagens trocadas com o perfil, incluindo o toque no
-              botão que libera o link;
+              conteúdo das mensagens trocadas com o perfil, incluindo sua resposta
+              na DM e a confirmação de que segue o perfil (quando essa opção
+              estiver ligada);
             </li>
             <li>identificadores técnicos e datas dos eventos da Meta.</li>
           </ul>

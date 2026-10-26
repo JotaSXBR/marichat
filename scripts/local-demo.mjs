@@ -3,7 +3,8 @@
  *
  * Sobe uma API do Instagram simulada em http://127.0.0.1:4010, cadastra uma
  * conta e uma automação no banco local, envia o webhook assinado de comentário
- * e depois o de toque no botão, executando a fila pelo endpoint de cron.
+ * e depois o de resposta da pessoa na DM, executando a fila pelo endpoint de
+ * cron.
  *
  * Uso:
  *   1. npm run dev                (em outro terminal)
@@ -248,12 +249,12 @@ async function seedDatabase(sql) {
   const [automation] = await sql`
     INSERT INTO automations (
       account_id, name, keyword, keyword_normalized, media_id,
-      first_dm_text, quick_reply_title, second_dm_text, link_button_title,
+      first_dm_text, second_dm_text, link_button_title,
       link_url, is_active
     ) VALUES (
       ${account.id}, 'Demonstração local', 'quero', 'quero', NULL,
-      'Que bom que você se interessou! Toque no botão para receber o link.',
-      'Quero o link', 'Aqui está o link que você pediu',
+      'Que bom que você se interessou! Responda esta mensagem para receber o link.',
+      'Aqui está o link que você pediu',
       'Abrir link', ${DEMO_LINK}, true
     )
     RETURNING id
@@ -345,7 +346,7 @@ async function main() {
     console.log(`   fila: ${JSON.stringify(firstTick.drain)}`);
 
     const [afterFirst] = await sql`
-      SELECT state, token, first_dm_message_id
+      SELECT state, first_dm_message_id
       FROM comment_interactions WHERE comment_id = ${commentId}
     `;
     check(Boolean(afterFirst), "Interação registrada no banco");
@@ -354,16 +355,20 @@ async function main() {
     const firstMessage = receivedMessages.at(-1)?.body;
     check(Boolean(firstMessage?.message?.text), "Primeira DM tem texto");
     check(
-      firstMessage?.message?.quick_replies?.[0]?.title === "Quero o link",
-      "Primeira DM traz o botão 'Quero o link'",
-      firstMessage?.message?.quick_replies?.[0]?.title ?? "(sem botão)",
+      firstMessage?.message?.text?.includes("Responda") ?? false,
+      "Primeira DM pede uma resposta (sem botão)",
+      firstMessage?.message?.text ?? "(sem texto)",
+    );
+    check(
+      !firstMessage?.message?.quick_replies,
+      "Primeira DM não usa quick reply",
     );
     check(
       firstMessage?.recipient?.comment_id === commentId,
       "Primeira DM é resposta privada ao comentário",
     );
 
-    step("6. Cliente toca no botão");
+    step("6. Cliente responde a DM");
     const tapResponse = await postWebhook({
       object: "instagram",
       entry: [
@@ -380,7 +385,6 @@ async function main() {
                 message: {
                   mid: `demo-mid-${Date.now()}`,
                   text: "Quero o link",
-                  quick_reply: { payload: afterFirst.token },
                 },
               },
             },
@@ -388,7 +392,7 @@ async function main() {
         },
       ],
     });
-    check(tapResponse.status === 200, "Webhook de toque aceito", `HTTP ${tapResponse.status}`);
+    check(tapResponse.status === 200, "Webhook de resposta aceito", `HTTP ${tapResponse.status}`);
 
     step("7. Executando a fila novamente");
     const secondTick = await runCron();
@@ -444,7 +448,7 @@ async function main() {
       );
     });
 
-    console.log("\nFluxo completo validado: comentário → DM com botão → toque → link.\n");
+    console.log("\nFluxo completo validado: comentário → DM pedindo resposta → resposta → link.\n");
     console.log(`Abra ${APP_URL}/admin (usuário admin) para ver os registros.`);
   } finally {
     await sql.end({ timeout: 5 });

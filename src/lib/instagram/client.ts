@@ -184,6 +184,67 @@ export async function listRecentMedia(
   });
 }
 
+export type InstagramUserProfile = {
+  id: string;
+  username?: string;
+  name?: string;
+  /** true = segue o perfil; false = não segue; null = a Meta não informou. */
+  isFollowing: boolean | null;
+  /** Erro devolvido pela Meta (ex.: consentimento ainda não dado). */
+  error?: string;
+};
+
+/**
+ * Consulta o perfil de quem conversa (Instagram User Profile API).
+ *
+ * A Meta só entrega esses dados depois que a pessoa envia uma mensagem para a
+ * conta. Qualquer falha vira "desconhecido" (null): o fluxo nunca deve impedir
+ * a pessoa de receber o link por causa de uma consulta indisponível.
+ */
+export async function getUserProfile(params: {
+  accessToken: string;
+  igsid: string;
+}): Promise<InstagramUserProfile> {
+  const url = new URL(
+    `${IG.graphBaseUrl}/${IG.apiVersion}/${encodeURIComponent(params.igsid)}`,
+  );
+  url.searchParams.set("fields", "id,username,name,is_user_follow_business");
+  url.searchParams.set("access_token", params.accessToken);
+
+  try {
+    const data = await requestJson(url.toString(), { method: "GET" });
+    const item = (data ?? {}) as {
+      id?: string;
+      username?: string;
+      name?: string;
+      is_user_follow_business?: boolean | string;
+    };
+    const following =
+      typeof item.is_user_follow_business === "boolean"
+        ? item.is_user_follow_business
+        : item.is_user_follow_business === "true"
+          ? true
+          : item.is_user_follow_business === "false"
+            ? false
+            : null;
+
+    return {
+      id: item.id ?? params.igsid,
+      username: item.username,
+      name: item.name,
+      isFollowing: following,
+    };
+  } catch (error) {
+    const message =
+      error instanceof InstagramApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Erro desconhecido";
+    return { id: params.igsid, isFollowing: null, error: message };
+  }
+}
+
 export type TokenExchangeResult = {
   accessToken: string;
   userId: string;

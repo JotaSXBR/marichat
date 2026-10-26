@@ -56,8 +56,6 @@ export const IG = {
 export const LIMITS = {
   /** Texto de mensagem: 1.000 bytes UTF-8. */
   messageTextBytes: 1000,
-  /** Título de quick reply: 20 caracteres. */
-  quickReplyTitleChars: 20,
   /** Título de elemento de template genérico: 80 caracteres. */
   templateTitleChars: 80,
   /** Título de botão: 20 caracteres. */

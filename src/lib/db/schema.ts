@@ -59,10 +59,27 @@ export const automations = pgTable(
     /** Publicação específica; NULL = qualquer publicação. */
     mediaId: text("media_id"),
     firstDmText: text("first_dm_text").notNull(),
-    quickReplyTitle: text("quick_reply_title").notNull(),
+    /**
+     * Campo legado da primeira versão (botão de quick reply na primeira DM).
+     * Mantido para não perder dados; a primeira DM agora é sempre texto puro.
+     */
+    quickReplyTitle: text("quick_reply_title").notNull().default("Quero o link"),
     secondDmText: text("second_dm_text").notNull(),
     linkButtonTitle: text("link_button_title").notNull(),
     linkUrl: text("link_url").notNull(),
+    /** Porta de seguidor opcional, desligada por padrão. */
+    requireFollow: boolean("require_follow").notNull().default(false),
+    followGateText: text("follow_gate_text")
+      .notNull()
+      .default(
+        "Para liberar o link, siga o perfil e depois toque em \"Já segui\". Se preferir, toque em \"Seguir agora\".",
+      ),
+    followGateFollowLabel: text("follow_gate_follow_label")
+      .notNull()
+      .default("Seguir agora"),
+    followGateConfirmLabel: text("follow_gate_confirm_label")
+      .notNull()
+      .default("Já segui"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -126,9 +143,13 @@ export const commentInteractions = pgTable(
     replyDeadlineAt: timestamp("reply_deadline_at", {
       withTimezone: true,
     }).notNull(),
-    /** Identificador opaco enviado no payload do quick reply. */
+    /** Identificador opaco usado nos botões (quick reply antigo ou postback). */
     token: text("token").notNull(),
-    /** queued | accepted | link_sent | expired | failed | canceled */
+    /**
+     * queued | accepted | gate_pending | link_sent | uncertain | expired |
+     * failed | canceled
+     * gate_pending = link retido até a pessoa tocar em "Já segui".
+     */
     state: text("state").notNull().default("queued"),
     firstDmMessageId: text("first_dm_message_id"),
     firstDmAcceptedAt: timestamp("first_dm_accepted_at", {
@@ -142,6 +163,11 @@ export const commentInteractions = pgTable(
     userLastMessageAt: timestamp("user_last_message_at", {
       withTimezone: true,
     }),
+    /**
+     * Quantas vezes já consultamos se a pessoa segue o perfil. Limitado a 2
+     * para não insistir: depois disso o link é liberado mesmo sem confirmação.
+     */
+    followChecks: integer("follow_checks").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -169,7 +195,11 @@ export const outboundMessages = pgTable(
     interactionId: uuid("interaction_id")
       .notNull()
       .references(() => commentInteractions.id, { onDelete: "restrict" }),
-    /** private_reply (primeira DM) | followup_link (segunda mensagem). */
+    /**
+     * private_reply (primeira DM) | followup_link (segunda mensagem) |
+     * follow_gate (mensagem com os botões de seguidor) |
+     * follow_check / follow_check_2 (consultas ao perfil; não enviam nada).
+     */
     kind: text("kind").notNull(),
     /**
      * pending | processing | accepted | failed | uncertain | expired | canceled

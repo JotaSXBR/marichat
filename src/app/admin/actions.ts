@@ -65,13 +65,6 @@ const automationSchema = z.object({
     .refine((value) => Buffer.byteLength(value, "utf8") <= 1000, {
       message: "A primeira mensagem pode ter no máximo 1.000 bytes.",
     }),
-  quickReplyTitle: z
-    .string()
-    .trim()
-    .min(1, "Escreva o texto do botão.")
-    .refine((value) => countChars(value) <= 20, {
-      message: "O título do botão pode ter no máximo 20 caracteres.",
-    }),
   secondDmText: z
     .string()
     .trim()
@@ -87,8 +80,33 @@ const automationSchema = z.object({
       message: "O texto do botão do link pode ter no máximo 20 caracteres.",
     }),
   linkUrl: httpsUrl,
+  requireFollow: z.boolean(),
+  followGateText: z
+    .string()
+    .trim()
+    .min(1, "Escreva a mensagem da porta de seguidor.")
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 640, {
+      message: "A mensagem da porta de seguidor pode ter no máximo 640 bytes.",
+    }),
+  followGateFollowLabel: z
+    .string()
+    .trim()
+    .min(1, "Escreva o texto do botão de seguir.")
+    .refine((value) => countChars(value) <= 20, {
+      message: "O texto do botão pode ter no máximo 20 caracteres.",
+    }),
+  followGateConfirmLabel: z
+    .string()
+    .trim()
+    .min(1, "Escreva o texto do botão de confirmação.")
+    .refine((value) => countChars(value) <= 20, {
+      message: "O texto do botão pode ter no máximo 20 caracteres.",
+    }),
   isActive: z.boolean(),
 });
+
+const DEFAULT_GATE_TEXT =
+  'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".';
 
 function readForm(formData: FormData) {
   return {
@@ -96,10 +114,17 @@ function readForm(formData: FormData) {
     keyword: String(formData.get("keyword") ?? ""),
     mediaId: String(formData.get("mediaId") ?? ""),
     firstDmText: String(formData.get("firstDmText") ?? ""),
-    quickReplyTitle: String(formData.get("quickReplyTitle") ?? ""),
     secondDmText: String(formData.get("secondDmText") ?? ""),
     linkButtonTitle: String(formData.get("linkButtonTitle") ?? ""),
     linkUrl: String(formData.get("linkUrl") ?? ""),
+    requireFollow: formData.get("requireFollow") === "on",
+    followGateText: String(formData.get("followGateText") ?? "").trim()
+      ? String(formData.get("followGateText") ?? "")
+      : DEFAULT_GATE_TEXT,
+    followGateFollowLabel:
+      String(formData.get("followGateFollowLabel") ?? "").trim() || "Seguir agora",
+    followGateConfirmLabel:
+      String(formData.get("followGateConfirmLabel") ?? "").trim() || "Já segui",
     isActive: formData.get("isActive") === "on",
   };
 }
@@ -140,10 +165,13 @@ export async function saveAutomation(
         keywordNormalized: normalizeKeyword(values.keyword),
         mediaId,
         firstDmText: values.firstDmText,
-        quickReplyTitle: values.quickReplyTitle,
         secondDmText: values.secondDmText,
         linkButtonTitle: values.linkButtonTitle,
         linkUrl: values.linkUrl,
+        requireFollow: values.requireFollow,
+        followGateText: values.followGateText,
+        followGateFollowLabel: values.followGateFollowLabel,
+        followGateConfirmLabel: values.followGateConfirmLabel,
         isActive: values.isActive,
         updatedAt: new Date(),
       })
@@ -163,10 +191,13 @@ export async function saveAutomation(
       keywordNormalized: normalizeKeyword(values.keyword),
       mediaId,
       firstDmText: values.firstDmText,
-      quickReplyTitle: values.quickReplyTitle,
       secondDmText: values.secondDmText,
       linkButtonTitle: values.linkButtonTitle,
       linkUrl: values.linkUrl,
+      requireFollow: values.requireFollow,
+      followGateText: values.followGateText,
+      followGateFollowLabel: values.followGateFollowLabel,
+      followGateConfirmLabel: values.followGateConfirmLabel,
       isActive: values.isActive,
     });
   }

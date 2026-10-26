@@ -3,7 +3,7 @@
 ## Rotina diária (2 minutos)
 
 1. Abra `https://SEU_DOMINIO/admin`.
-2. Confira os cartões **Aguardando toque**, **Links enviados** e
+2. Confira os cartões **Aguardando resposta**, **Links enviados** e
    **Precisam de atenção**.
 3. Se houver aviso de token, conexão ou webhook, abra **Conexão**.
 4. Se "Precisam de atenção" aumentar, veja os últimos comentários na visão geral.
@@ -15,11 +15,14 @@
 3. Palavra-chave: compare sem diferenciar maiúsculas, acentos ou pontuação;
    precisa ser a palavra inteira (`quero` não casa com `queroo`).
 4. Escolha **qualquer publicação** ou uma publicação específica.
-5. DM 1: texto (até ~1.000 bytes) e botão (até 20 caracteres).
+5. DM 1: texto (até ~1.000 bytes). Termine pedindo que a pessoa responda:
+   é a resposta que abre a janela de 24h e libera o link.
 6. DM 2: texto (até 80 caracteres), botão (até 20) e link **https://**.
-7. Marque **Ativa** e salve.
-8. Teste com uma **conta secundária**: comente a palavra-chave, abra a DM,
-   toque no botão e confirme o link.
+7. Opcional: ligue **Porta de seguidor** e ajuste a mensagem e os dois botões
+   ("Seguir agora" e "Já segui"). Desligada por padrão.
+8. Marque **Ativa** e salve.
+9. Teste com uma **conta secundária**: comente a palavra-chave, abra a DM,
+   responda e confirme o link (e a porta de seguidor, se estiver ligada).
 
 Editar uma automação **não** altera conversas já iniciadas.
 
@@ -29,6 +32,7 @@ Editar uma automação **não** altera conversas já iniciadas.
 | --- | --- | --- |
 | Na fila | Aguardando envio pelo cron | Nenhuma (roda a cada minuto) |
 | DM enviada (aceita) | Meta aceitou a requisição; não é confirmação de entrega | Nenhuma |
+| Aguardando confirmação | Porta de seguidor ativa; link retido até "Já segui" | Nenhuma (libera em até 2 checagens) |
 | Link enviado | Segunda mensagem aceita | Nenhuma |
 | Incerta | Não sabemos se a Meta recebeu | **Não reenviar**: pode duplicar |
 | Expirada | Passou de 7 dias (DM 1) ou 24h (link) | Nenhuma; prazo da Meta |

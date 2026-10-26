@@ -13,16 +13,19 @@ import {
 import { decryptToken, encryptToken } from "@/lib/crypto";
 import { getDb } from "@/lib/db/client";
 import {
+  automations,
   commentInteractions,
   instagramAccounts,
   outboundMessages,
 } from "@/lib/db/schema";
 import {
   InstagramApiError,
+  getUserProfile,
   refreshLongLivedToken,
   sendMessage,
 } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
+import { buildGatePayload, buildLinkPayload } from "@/lib/outbound";
 
 type JobRow = typeof outboundMessages.$inferSelect;
 type InteractionRow = typeof commentInteractions.$inferSelect;
@@ -97,7 +100,7 @@ export async function expireOverdueJobs(): Promise<number> {
       AND (
         (om.kind = 'private_reply' AND ci.reply_deadline_at <= now())
         OR (
-          om.kind = 'followup_link'
+          om.kind IN ('followup_link', 'follow_gate', 'follow_check', 'follow_check_2')
           AND ci.user_last_message_at IS NOT NULL
           AND ci.user_last_message_at <= now() - interval '24 hours'
         )
@@ -184,7 +187,7 @@ function deadlineFor(
 async function markAccepted(
   job: JobRow,
   interaction: InteractionRow,
-  messageId: string,
+  messageId: string | null,
 ): Promise<void> {
   const db = getDb();
   const now = new Date();
@@ -224,7 +227,10 @@ async function markAccepted(
           updatedAt: now,
         })
         .where(eq(commentInteractions.id, interaction.id));
-    } else {
+      return;
+    }
+
+    if (job.kind === "followup_link") {
       await tx
         .update(commentInteractions)
         .set({
@@ -233,6 +239,14 @@ async function markAccepted(
           secondDmAcceptedAt: now,
           updatedAt: now,
         })
+        .where(eq(commentInteractions.id, interaction.id));
+      return;
+    }
+
+    if (job.kind === "follow_gate") {
+      await tx
+        .update(commentInteractions)
+        .set({ state: "gate_pending", updatedAt: now })
         .where(eq(commentInteractions.id, interaction.id));
     }
   });
@@ -422,11 +436,161 @@ async function retryOrFail(
   return "requeued";
 }
 
+/**
+ * Porta de seguidor: consulta o perfil (somente depois que a pessoa enviou
+ * uma mensagem) e decide entre liberar o link ou enviar a mensagem com os
+ * botões "Seguir agora" e "Já segui".
+ *
+ * Regras de segurança do fluxo:
+ * - nunca bloqueia para sempre: no máximo duas checagens;
+ * - se a Meta não informar o status, o link é liberado;
+ * - a tarefa de checagem não envia nada: só agenda a próxima mensagem.
+ */
+async function processFollowCheck(
+  job: JobRow,
+  account: AccountRow,
+  interaction: InteractionRow,
+): Promise<"accepted" | "failed" | "uncertain" | "requeued" | "expired"> {
+  const deadline = deadlineFor(job, interaction);
+  if (deadline === null || Date.now() >= deadline) {
+    await markExpired(job, interaction);
+    return "expired";
+  }
+
+  if (account.connectionStatus !== "connected") {
+    await requeueForConnection(
+      job,
+      "A conexão com o Instagram precisa ser restabelecida antes da checagem.",
+    );
+    return "requeued";
+  }
+
+  let accessToken: string;
+  try {
+    accessToken = decryptToken(account.accessTokenEncrypted);
+  } catch {
+    await markAccountReconnectRequired(account.id);
+    await markFailed(
+      job,
+      interaction,
+      "Não foi possível ler o token guardado. Reconecte o Instagram.",
+      "TOKEN_UNREADABLE",
+    );
+    return "failed";
+  }
+
+  const db = getDb();
+  const [settings] = await db
+    .select()
+    .from(automations)
+    .where(eq(automations.id, interaction.automationId))
+    .limit(1);
+
+  if (!settings) {
+    await markFailed(
+      job,
+      interaction,
+      "A automação original não existe mais.",
+      "AUTOMATION_MISSING",
+    );
+    return "failed";
+  }
+
+  const profile = await getUserProfile({
+    accessToken,
+    igsid: interaction.commenterIgsid,
+  });
+
+  const checks = interaction.followChecks + 1;
+  // false = a Meta disse que não segue; true ou null (desconhecido) liberam.
+  const releaseLink = profile.isFollowing !== false || checks >= 2;
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(outboundMessages)
+      .set({
+        status: "accepted",
+        acceptedAt: now,
+        externalMessageId: null,
+        errorCode: null,
+        errorMessage: null,
+        lockedAt: null,
+        lockToken: null,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(outboundMessages.id, job.id),
+          job.lockToken
+            ? eq(outboundMessages.lockToken, job.lockToken)
+            : sql`true`,
+        ),
+      )
+      .returning({ id: outboundMessages.id });
+
+    if (updated.length === 0) return;
+
+    await tx
+      .update(commentInteractions)
+      .set({
+        followChecks: checks,
+        state: releaseLink
+          ? interaction.state === "gate_pending"
+            ? "accepted"
+            : interaction.state
+          : "gate_pending",
+        updatedAt: now,
+      })
+      .where(eq(commentInteractions.id, interaction.id));
+
+    const nextKind = releaseLink ? "followup_link" : "follow_gate";
+    const payload = releaseLink
+      ? buildLinkPayload(settings, interaction.commenterIgsid)
+      : buildGatePayload({
+          settings,
+          username: account.username,
+          senderId: interaction.commenterIgsid,
+          token: interaction.token,
+        });
+
+    await tx
+      .insert(outboundMessages)
+      .values({
+        accountId: account.id,
+        interactionId: interaction.id,
+        kind: nextKind,
+        status: "pending",
+        payload,
+      })
+      .onConflictDoNothing({
+        target: [outboundMessages.interactionId, outboundMessages.kind],
+      });
+
+    await tx
+      .update(outboundMessages)
+      .set({ nextAttemptAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(outboundMessages.interactionId, interaction.id),
+          eq(outboundMessages.kind, nextKind),
+          eq(outboundMessages.status, "pending"),
+        ),
+      );
+  });
+
+  return "accepted";
+}
+
 async function processJob(
   job: JobRow,
   account: AccountRow,
   interaction: InteractionRow,
 ): Promise<"accepted" | "failed" | "uncertain" | "requeued" | "expired"> {
+  if (job.kind === "follow_check" || job.kind === "follow_check_2") {
+    return processFollowCheck(job, account, interaction);
+  }
+
   const deadline = deadlineFor(job, interaction);
   if (deadline === null || Date.now() >= deadline) {
     await markExpired(job, interaction);

@@ -38,6 +38,17 @@ function errorResponse(status: number, code: number, message = "erro") {
   );
 }
 
+function profileResponse(following: boolean) {
+  return new Response(
+    JSON.stringify({
+      id: "user-123",
+      username: "pessoa",
+      is_user_follow_business: following,
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
+
 suite("fila: envio, retentativas, prazos e concorrência", () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -51,15 +62,18 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
     await closeTestDatabase();
   });
 
-  async function setup(kind: "private_reply" | "followup_link" = "private_reply") {
+  async function setup(
+    kind: "private_reply" | "followup_link" | "follow_gate" | "follow_check" | "follow_check_2" =
+      "private_reply",
+  ) {
     const account = await seedAccount();
     const automation = await seedAutomation(account.id);
     const interaction = await seedInteraction({
       accountId: account.id,
       automationId: automation.id,
-      ...(kind === "followup_link"
-        ? { userLastMessageAt: new Date(), state: "accepted" }
-        : {}),
+      ...(kind === "private_reply"
+        ? {}
+        : { userLastMessageAt: new Date(), state: "accepted" }),
     });
     const job = await seedJob({
       accountId: account.id,
@@ -296,5 +310,114 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
       .from(instagramAccounts)
       .where(eq(instagramAccounts.id, account.id));
     expect(row!.connectionStatus).toBe("reconnect_required");
+  });
+
+  it("checagem de seguidor: não segue → envia a porta e retém o link", async () => {
+    const { interaction } = await setup("follow_check");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("is_user_follow_business")) {
+        return profileResponse(false);
+      }
+      return okResponse("mid-gate");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const summary = await drainQueue(1);
+    expect(summary.accepted).toBe(1);
+    // A checagem não envia mensagem: só consulta o perfil.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    const check = jobs.find((job) => job.kind === "follow_check");
+    expect(check!.status).toBe("accepted");
+    expect(check!.externalMessageId).toBeNull();
+
+    const gate = jobs.find((job) => job.kind === "follow_gate");
+    expect(gate).toBeDefined();
+    expect(gate!.status).toBe("pending");
+
+    const [row] = await db
+      .select()
+      .from(commentInteractions)
+      .where(eq(commentInteractions.id, interaction.id));
+    expect(row!.state).toBe("gate_pending");
+    expect(row!.followChecks).toBe(1);
+  });
+
+  it("checagem de seguidor: segue → libera o link sem enviar a porta", async () => {
+    const { interaction } = await setup("follow_check");
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("is_user_follow_business")) {
+        return profileResponse(true);
+      }
+      return okResponse("mid-link");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const summary = await drainQueue(1);
+    expect(summary.accepted).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "follow_gate")).toHaveLength(0);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
+
+    const [row] = await db
+      .select()
+      .from(commentInteractions)
+      .where(eq(commentInteractions.id, interaction.id));
+    expect(row!.state).toBe("accepted");
+    expect(row!.followChecks).toBe(1);
+  });
+
+  it("checagem de seguidor: resposta desconhecida libera o link", async () => {
+    await setup("follow_check");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => errorResponse(400, 100, "campo indisponível")),
+    );
+
+    const summary = await drainQueue(1);
+    expect(summary.accepted).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
+
+    const [row] = await db.select().from(commentInteractions);
+    expect(row!.state).toBe("accepted");
+  });
+
+  it("checagem de seguidor: na segunda tentativa libera mesmo sem seguir", async () => {
+    const { interaction } = await setup("follow_check_2");
+    const db = getDb();
+    await db
+      .update(commentInteractions)
+      .set({ state: "gate_pending", followChecks: 1 })
+      .where(eq(commentInteractions.id, interaction.id));
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        if (String(input).includes("is_user_follow_business")) {
+          return profileResponse(false);
+        }
+        return okResponse("mid-link");
+      }),
+    );
+
+    await drainQueue(1);
+
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.filter((job) => job.kind === "follow_gate")).toHaveLength(0);
+    expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
+
+    const [row] = await db
+      .select()
+      .from(commentInteractions)
+      .where(eq(commentInteractions.id, interaction.id));
+    expect(row!.state).toBe("accepted");
+    expect(row!.followChecks).toBe(2);
   });
 });

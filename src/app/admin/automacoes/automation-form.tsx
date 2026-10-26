@@ -18,10 +18,13 @@ export type AutomationInitialValues = {
   keyword: string;
   mediaId: string;
   firstDmText: string;
-  quickReplyTitle: string;
   secondDmText: string;
   linkButtonTitle: string;
   linkUrl: string;
+  requireFollow: boolean;
+  followGateText: string;
+  followGateFollowLabel: string;
+  followGateConfirmLabel: string;
   isActive: boolean;
 };
 
@@ -220,14 +223,15 @@ export function AutomationForm({
           <h2 className="text-sm font-semibold">Primeira mensagem (privada)</h2>
           <p className="text-xs text-zinc-500">
             Enviada como resposta privada ao comentário. A Meta permite uma
-            resposta por comentário, em até 7 dias.
+            resposta por comentário, em até 7 dias. Ela sai como texto puro:
+            peça que a pessoa responda para abrir a conversa.
           </p>
         </div>
 
         <div>
           <Label
             htmlFor="firstDmText"
-            hint="Até 1.000 bytes (aproximadamente 1.000 letras sem acento)."
+            hint="Até 1.000 bytes. Termine pedindo uma resposta, por exemplo: “Responda esta mensagem para eu enviar o link”."
           >
             Texto da DM
           </Label>
@@ -237,23 +241,84 @@ export function AutomationForm({
             rows={4}
             defaultValue={initial?.firstDmText ?? ""}
             className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            placeholder="Ex.: Que bom que você se interessou! Toque no botão abaixo para receber o link."
+            placeholder="Ex.: Que bom que você se interessou! Responda esta mensagem que eu envio o link."
           />
           <FieldError message={errors.firstDmText} />
         </div>
+      </section>
+
+      <section className="space-y-5 rounded-lg border border-zinc-200 bg-white p-5">
+        <div>
+          <h2 className="text-sm font-semibold">Porta de seguidor (opcional)</h2>
+          <p className="text-xs text-zinc-500">
+            Quando ligada, o link só é liberado depois que a pessoa envia uma
+            mensagem. Aí o MARICHAT consulta se ela segue o perfil. São no máximo
+            duas checagens; se a Meta não informar, o link é liberado mesmo assim.
+          </p>
+        </div>
+
+        <label className="flex items-start gap-3 rounded-md border border-zinc-200 p-3 text-sm">
+          <input
+            type="checkbox"
+            name="requireFollow"
+            defaultChecked={initial?.requireFollow ?? false}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>
+            <span className="block font-medium">Exigir que a pessoa siga o perfil</span>
+            <span className="block text-xs text-zinc-500">
+              Vale para comentários novos. Desligado por padrão.
+            </span>
+          </span>
+        </label>
 
         <div>
-          <Label htmlFor="quickReplyTitle" hint="Até 20 caracteres.">
-            Texto do botão
+          <Label
+            htmlFor="followGateText"
+            hint="Até 640 bytes. Mensagem com os botões “Seguir agora” e “Já segui”."
+          >
+            Mensagem da porta de seguidor
           </Label>
-          <input
-            id="quickReplyTitle"
-            name="quickReplyTitle"
-            maxLength={20}
-            defaultValue={initial?.quickReplyTitle ?? "Quero o link"}
+          <textarea
+            id="followGateText"
+            name="followGateText"
+            rows={3}
+            defaultValue={
+              initial?.followGateText ??
+              'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".'
+            }
             className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
           />
-          <FieldError message={errors.quickReplyTitle} />
+          <FieldError message={errors.followGateText} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="followGateFollowLabel" hint="Até 20 caracteres.">
+              Botão para seguir
+            </Label>
+            <input
+              id="followGateFollowLabel"
+              name="followGateFollowLabel"
+              maxLength={20}
+              defaultValue={initial?.followGateFollowLabel ?? "Seguir agora"}
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <FieldError message={errors.followGateFollowLabel} />
+          </div>
+          <div>
+            <Label htmlFor="followGateConfirmLabel" hint="Até 20 caracteres.">
+              Botão de confirmação
+            </Label>
+            <input
+              id="followGateConfirmLabel"
+              name="followGateConfirmLabel"
+              maxLength={20}
+              defaultValue={initial?.followGateConfirmLabel ?? "Já segui"}
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <FieldError message={errors.followGateConfirmLabel} />
+          </div>
         </div>
       </section>
 
@@ -261,8 +326,9 @@ export function AutomationForm({
         <div>
           <h2 className="text-sm font-semibold">Segunda mensagem (o link)</h2>
           <p className="text-xs text-zinc-500">
-            Enviada somente quando a pessoa toca no botão, dentro da janela de 24
-            horas.
+            Enviada quando a pessoa responde à primeira mensagem (e confirma que
+            segue o perfil, se a porta de seguidor estiver ligada), dentro da
+            janela de 24 horas.
           </p>
         </div>
 

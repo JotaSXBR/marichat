@@ -15,6 +15,7 @@ import {
 const interactionLabels: Record<string, string> = {
   queued: "Na fila",
   accepted: "DM enviada (aceita)",
+  gate_pending: "Aguardando confirmação de seguidor",
   link_sent: "Link enviado",
   uncertain: "Incerta",
   expired: "Expirada",
@@ -115,7 +116,7 @@ export default async function AdminDashboard() {
   const activeAutomations =
     automationStats.find((row) => row.isActive)?.total ?? 0;
 
-  const waitingTap = byState.get("accepted") ?? 0;
+  const waitingReply = (byState.get("accepted") ?? 0) + (byState.get("gate_pending") ?? 0);
   const linkSent = byState.get("link_sent") ?? 0;
   const queuedJobs = byJob.get("pending") ?? 0;
   const needAttention =
@@ -135,8 +136,9 @@ export default async function AdminDashboard() {
         <div>
           <h1 className="text-2xl font-semibold">Visão geral</h1>
           <p className="mt-1 text-sm text-zinc-600">
-            Fluxo: comentário com a palavra-chave → DM com botão → toque no botão →
-            mensagem com o link.
+            Fluxo: comentário com a palavra-chave → DM pedindo uma resposta →
+            resposta da pessoa → mensagem com o link (opcionalmente após
+            confirmar que ela segue o perfil).
           </p>
         </div>
         <Link
@@ -187,9 +189,9 @@ export default async function AdminDashboard() {
           hint={`${totalAutomations} no total`}
         />
         <Card
-          title="Aguardando toque"
-          value={waitingTap}
-          hint="Primeira DM aceita pela Meta"
+          title="Aguardando resposta"
+          value={waitingReply}
+          hint="Primeira DM aceita; link ainda não enviado"
         />
         <Card title="Links enviados" value={linkSent} hint="Segunda mensagem aceita" />
         <Card

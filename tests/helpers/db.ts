@@ -72,7 +72,7 @@ export async function seedAutomation(
       keyword: "Quero",
       keywordNormalized: "quero",
       mediaId: null,
-      firstDmText: "Toque no botão para receber o link.",
+      firstDmText: "Responda esta mensagem para receber o link.",
       quickReplyTitle: "Quero o link",
       secondDmText: "Aqui está o link que você pediu",
       linkButtonTitle: "Abrir link",
@@ -118,7 +118,12 @@ export async function seedInteraction(params: {
 export async function seedJob(params: {
   accountId: string;
   interactionId: string;
-  kind?: "private_reply" | "followup_link";
+  kind?:
+    | "private_reply"
+    | "followup_link"
+    | "follow_gate"
+    | "follow_check"
+    | "follow_check_2";
   nextAttemptAt?: Date;
   payload?: unknown;
 }) {
@@ -133,7 +138,7 @@ export async function seedJob(params: {
       nextAttemptAt: params.nextAttemptAt ?? new Date(Date.now() - 1000),
       payload: params.payload ?? {
         recipient: { comment_id: "comment-1" },
-        message: { text: "Toque no botão", quick_replies: [] },
+        message: { text: "Responda esta mensagem" },
       },
     })
     .returning();
