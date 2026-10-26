@@ -54,6 +54,11 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      # Sem isso, o lint tipado e o tsc não encontram os tipos de rotas/páginas
+      # gerados pelo Next (.next/types) e acusam "type that cannot be resolved".
+      - name: Gerar tipos das rotas do Next
+        run: npm run typegen
+
       - name: Aplicar migrations no banco de teste
         run: npm run db:migrate
 

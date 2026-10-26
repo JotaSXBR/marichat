@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "lint:ci": "eslint . --max-warnings=56",
     "typecheck": "tsc --noEmit",
+    "typegen": "next typegen",
     "test": "vitest run",
     "test:watch": "vitest",
     "demo:local": "node scripts/local-demo.mjs",
