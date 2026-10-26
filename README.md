@@ -39,6 +39,12 @@ Tailwind, Docker. Sem Supabase, sem serviços pagos, sem `pg_cron`.
   travada (só entrega a seguidor confirmado), opcional (Seguir + link na mesma
   mensagem) e direta com aviso sobre a caixa principal.
 - Tarefa agendada protegida por segredo (`/api/cron/tick`).
+- Diagnóstico em **Conexão**: testa o token e lê `/subscribed_apps` para
+  confirmar os campos de webhook realmente assinados.
+- Página **Atividade** com as últimas interações, tarefas da fila e webhooks,
+  incluindo erros — útil no primeiro teste em produção.
+- Respeito ao limite oficial de 750 respostas privadas por hora por conta: a
+  tarefa espera a janela deslizante liberar espaço em vez de falhar.
 - Páginas públicas `/privacidade` e `/exclusao-de-dados` e callback de exclusão
   de dados da Meta (`/api/data-deletion`).
 

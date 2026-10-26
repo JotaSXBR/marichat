@@ -6,7 +6,10 @@
 2. Confira os cartões **Aguardando resposta**, **Links enviados** e
    **Precisam de atenção**.
 3. Se houver aviso de token, conexão ou webhook, abra **Conexão**.
-4. Se "Precisam de atenção" aumentar, veja os últimos comentários na visão geral.
+4. Se "Precisam de atenção" aumentar, abra **Atividade**: lá estão o comentário,
+   o envio e o erro de cada tarefa.
+5. Depois de qualquer mudança no app da Meta, rode **Testar conexão** em
+   Conexão: ele confere o token e os campos de webhook assinados.
 
 ## Criar uma automação
 
@@ -50,11 +53,15 @@ para conversas em andamento.
 ## Se algo der errado
 
 - **Token expirado/revogado:** Conexão → Reconectar. Envios ficam parados até lá.
-- **Webhooks não chegam:** Conexão → Reassinar webhooks; confira no painel da
-  Meta se a callback é `https://SEU_DOMINIO/api/webhook` e os campos `comments`,
-  `messages` e `messaging_postbacks` estão assinados.
-- **Nada é enviado:** verifique a tarefa agendada no Coolify (a cada minuto) e
-  os logs do container.
+- **Webhooks não chegam:** Conexão → **Testar conexão** (mostra o token e os
+  campos assinados) e → **Reassinar webhooks**. Confira no painel da Meta se a
+  callback é `https://SEU_DOMINIO/api/webhook` e se `comments`, `messages` e
+  `messaging_postbacks` estão ativos no app **e** na conta.
+- **Nada é enviado:** abra **Atividade** para ver a fila e os erros; confira a
+  tarefa agendada no Coolify (a cada minuto) e os logs do container.
+- **Muitos comentários de uma vez:** a fila respeita o limite de 750 respostas
+  privadas por hora. Acima disso, as tarefas ficam como `RATE_LIMITED` na
+  Atividade e são retomadas quando a janela libera — não é falha definitiva.
 - **Mensagem duplicada:** nunca "reprocessar" uma tarefa `uncertain` sem
   conferir a conversa no Instagram.
 - **Pedido de exclusão de dados:** use `/exclusao-de-dados` ou o callback da

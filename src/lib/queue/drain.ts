@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 
 import {
   getActiveAccount,
@@ -404,6 +404,63 @@ async function requeueForConnection(
     .where(eq(outboundMessages.id, job.id));
 }
 
+/**
+ * Respostas privadas aceitas na última hora. A Meta permite 750 por conta
+ * nesse intervalo; ao chegar no teto, a próxima tentativa espera a mensagem
+ * mais antiga sair da janela deslizante.
+ */
+async function privateReplyUsage(accountId: string): Promise<{
+  count: number;
+  retryAt: Date | null;
+}> {
+  const db = getDb();
+  const cutoff = new Date(Date.now() - IG.privateReplyRateWindowMs);
+  const rows = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      oldest: sql<Date | string | null>`min(${outboundMessages.acceptedAt})`,
+    })
+    .from(outboundMessages)
+    .where(
+      and(
+        eq(outboundMessages.accountId, accountId),
+        eq(outboundMessages.kind, "private_reply"),
+        eq(outboundMessages.status, "accepted"),
+        gte(outboundMessages.acceptedAt, cutoff),
+      ),
+    );
+
+  const row = rows[0];
+  const oldest = row?.oldest ? new Date(row.oldest) : null;
+  return {
+    count: Number(row?.total ?? 0),
+    retryAt: oldest
+      ? new Date(oldest.getTime() + IG.privateReplyRateWindowMs + 5_000)
+      : null,
+  };
+}
+
+async function requeueForRateLimit(
+  job: JobRow,
+  retryAt: Date,
+): Promise<void> {
+  const db = getDb();
+  await db
+    .update(outboundMessages)
+    .set({
+      status: "pending",
+      attempts: sql`greatest(${outboundMessages.attempts} - 1, 0)`,
+      nextAttemptAt: retryAt,
+      errorCode: "RATE_LIMITED",
+      errorMessage:
+        "Limite de 750 respostas privadas por hora atingido. A tarefa volta para a fila quando a janela liberar.",
+      lockedAt: null,
+      lockToken: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(outboundMessages.id, job.id));
+}
+
 async function retryOrFail(
   job: JobRow,
   interaction: InteractionRow,
@@ -665,6 +722,14 @@ async function processJob(
       "TOKEN_UNREADABLE",
     );
     return "failed";
+  }
+
+  if (job.kind === "private_reply") {
+    const usage = await privateReplyUsage(account.id);
+    if (usage.count >= IG.privateReplyLimitPerHour && usage.retryAt) {
+      await requeueForRateLimit(job, usage.retryAt);
+      return "requeued";
+    }
   }
 
   try {

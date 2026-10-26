@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db/client";
 import {
@@ -523,5 +523,54 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
     const gateJob = rows.find((job) => job.kind === "follow_gate");
     expect(gateJob!.status).toBe("pending");
     expect(gateJob!.payload).not.toEqual({ old: true });
+  });
+
+  it("segura a resposta privada quando o limite de 750 por hora é atingido", async () => {
+    const { account, automation, job } = await setup();
+    const db = getDb();
+
+    // Uma única instrução cria as 750 respostas privadas já aceitas na última
+    // hora, sem depender de 750 chamadas à API.
+    await db.execute(sql`
+      INSERT INTO comment_interactions (
+        account_id, automation_id, comment_id, media_id, commenter_igsid,
+        comment_created_at, reply_deadline_at, token, state
+      )
+      SELECT
+        ${account.id}::uuid, ${automation.id}::uuid, 'rate-' || g, 'm',
+        'u-' || g, now(), now() + interval '1 day', 'rate-token-' || g,
+        'accepted'
+      FROM generate_series(1, 750) AS g
+    `);
+    await db.execute(sql`
+      INSERT INTO outbound_messages (
+        account_id, interaction_id, kind, status, attempts, payload, accepted_at
+      )
+      SELECT ${account.id}::uuid, id, 'private_reply', 'accepted', 1,
+        '{}'::jsonb, now()
+      FROM comment_interactions
+      WHERE comment_id LIKE 'rate-%'
+    `);
+
+    const fetchMock = vi.fn(async () => okResponse("mid-123"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const startedAt = Date.now();
+    const summary = await drainQueue(1);
+
+    expect(summary.requeued).toBe(1);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const [held] = await db
+      .select()
+      .from(outboundMessages)
+      .where(eq(outboundMessages.id, job.id));
+    expect(held!.status).toBe("pending");
+    expect(held!.errorCode).toBe("RATE_LIMITED");
+    // A tentativa não consome o orçamento de envios.
+    expect(held!.attempts).toBe(0);
+    expect(held!.nextAttemptAt.getTime()).toBeGreaterThan(
+      startedAt + 59 * 60_000,
+    );
   });
 });

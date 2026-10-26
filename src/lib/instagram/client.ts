@@ -359,6 +359,50 @@ export async function subscribeWebhooks(params: {
   });
 }
 
+export type SubscribedApp = {
+  id?: string;
+  name?: string;
+  subscribedFields: string[];
+};
+
+/**
+ * Lê os campos de webhook realmente assinados para a conta.
+ *
+ * `POST /subscribed_apps` devolve apenas `{"success": true}`: ele não confirma
+ * quais campos ficaram ativos. A leitura é a única forma de conferir, depois da
+ * conexão, se `comments`, `messages` e `messaging_postbacks` chegaram à Meta.
+ */
+export async function getSubscribedApps(params: {
+  igUserId: string;
+  accessToken: string;
+}): Promise<SubscribedApp[]> {
+  const url = new URL(
+    `${IG.graphBaseUrl}/${IG.apiVersion}/${encodeURIComponent(params.igUserId)}/subscribed_apps`,
+  );
+  url.searchParams.set("access_token", params.accessToken);
+
+  const data = await requestJson(url.toString(), { method: "GET" });
+  const list = (data as { data?: unknown[] } | null)?.data;
+  if (!Array.isArray(list)) return [];
+
+  return list.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const item = entry as Record<string, unknown>;
+    const fields = Array.isArray(item.subscribed_fields)
+      ? item.subscribed_fields.filter(
+          (field): field is string => typeof field === "string",
+        )
+      : [];
+    return [
+      {
+        id: typeof item.id === "string" ? item.id : undefined,
+        name: typeof item.name === "string" ? item.name : undefined,
+        subscribedFields: fields,
+      },
+    ];
+  });
+}
+
 export type SentMessage = { messageId: string; recipientId?: string };
 
 export async function sendMessage(params: {

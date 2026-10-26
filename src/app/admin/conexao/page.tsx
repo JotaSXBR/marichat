@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { disconnectInstagram, resubscribeWebhooks } from "@/app/admin/actions";
+import { disconnectInstagram, resubscribeWebhooks, testInstagramConnection } from "@/app/admin/actions";
 import { ConfirmSubmitButton } from "@/app/admin/confirm-submit-button";
 import { getActiveAccount, getAppStateValue } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { webhookEvents } from "@/lib/db/schema";
+import {
+  CONNECTION_TEST_KEY,
+  type ConnectionTestResult,
+} from "@/lib/instagram/diagnostics";
 import { desc } from "drizzle-orm";
 
 const errorMessages: Record<string, string> = {
@@ -56,6 +60,8 @@ export default async function ConnectionPage({
   const account = await getActiveAccount();
   const webhookError = await getAppStateValue<string>("webhook_subscription_error");
   const subscribedAt = await getAppStateValue<string>("webhook_subscribed_at");
+  const connectionTest =
+    await getAppStateValue<ConnectionTestResult>(CONNECTION_TEST_KEY);
   const appUrl = process.env.APP_URL?.replace(/\/+$/, "");
 
   const db = getDb();
@@ -103,6 +109,12 @@ export default async function ConnectionPage({
         <div className="rounded-lg border border-zinc-300 bg-white p-4 text-sm text-zinc-700">
           Conta desconectada. As automações ficam pausadas e nenhuma mensagem
           será enviada até reconectar.
+        </div>
+      ) : null}
+
+      {get("testado") === "1" ? (
+        <div className="rounded-lg border border-zinc-300 bg-white p-4 text-sm text-zinc-700">
+          Teste concluído. Veja o resultado em <strong>Diagnóstico da conexão</strong>.
         </div>
       ) : null}
 
@@ -180,6 +192,85 @@ export default async function ConnectionPage({
         )}
       </section>
 
+      {account ? (
+        <section className="rounded-lg border border-zinc-200 bg-white p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-medium">Diagnóstico da conexão</h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Confere se o token ainda é aceito pela Meta e se os campos de
+                webhook estão realmente assinados nesta conta.
+              </p>
+            </div>
+            <form action={testInstagramConnection}>
+              <button
+                type="submit"
+                className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+              >
+                Testar conexão
+              </button>
+            </form>
+          </div>
+
+          {connectionTest ? (
+            <div className="mt-4 space-y-3 text-sm">
+              <p className="text-xs text-zinc-500">
+                Último teste em{" "}
+                {formatDateTime(new Date(connectionTest.checkedAt))}.
+              </p>
+              <ul className="space-y-1">
+                <li
+                  className={
+                    connectionTest.tokenOk ? "text-green-700" : "text-red-700"
+                  }
+                >
+                  {connectionTest.tokenOk ? "✓ Token aceito" : "✗ Token recusado ou ilegível"}
+                  {connectionTest.username ? ` — @${connectionTest.username}` : ""}
+                </li>
+                <li
+                  className={
+                    connectionTest.subscriptionChecked &&
+                    connectionTest.missingFields.length === 0
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }
+                >
+                  {!connectionTest.subscriptionChecked
+                    ? "✗ Webhooks: não foi possível conferir"
+                    : connectionTest.missingFields.length === 0
+                      ? "✓ Webhooks: todos os campos exigidos estão assinados"
+                      : `✗ Webhooks: faltam ${connectionTest.missingFields.join(", ")}`}
+                </li>
+              </ul>
+              {connectionTest.subscribedFields.length > 0 ? (
+                <p className="text-xs text-zinc-500">
+                  Campos assinados:{" "}
+                  <span className="font-mono">
+                    {connectionTest.subscribedFields.join(", ")}
+                  </span>
+                </p>
+              ) : null}
+              {connectionTest.problems.length > 0 ? (
+                <ul className="list-disc space-y-1 rounded-md border border-amber-300 bg-amber-50 p-3 pl-7 text-amber-900">
+                  {connectionTest.problems.map((problem) => (
+                    <li key={problem}>{problem}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="rounded-md border border-green-300 bg-green-50 p-3 text-green-900">
+                  Tudo certo: token válido e webhooks completos.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-zinc-600">
+              Nenhum teste executado desde a conexão. Rode o teste depois de
+              configurar os webhooks no painel da Meta.
+            </p>
+          )}
+        </section>
+      ) : null}
+
       <section className="rounded-lg border border-zinc-200 bg-white p-5">
         <h2 className="text-sm font-medium">Configuração no painel da Meta</h2>
         <p className="mt-2 text-sm text-zinc-600">
@@ -189,9 +280,15 @@ export default async function ConnectionPage({
           {appUrl ? `${appUrl}/api/webhook` : "(APP_URL ainda não configurada)"}
         </code>
         <p className="mt-2 text-sm text-zinc-600">
-          Assine os campos <strong>comments</strong> e <strong>messages</strong>. O
-          token de verificação é o valor de{" "}
-          <code className="rounded bg-zinc-100 px-1">META_WEBHOOK_VERIFY_TOKEN</code>.
+          Assine os campos <strong>comments</strong>, <strong>messages</strong> e{" "}
+          <strong>messaging_postbacks</strong>. O token de verificação é o valor
+          de <code className="rounded bg-zinc-100 px-1">META_WEBHOOK_VERIFY_TOKEN</code>.
+        </p>
+        <p className="mt-2 text-xs text-zinc-500">
+          <strong>messaging_postbacks</strong> é necessário para receber o toque
+          em &quot;Já segui&quot;. Sem ele, quem toca no botão não recebe o link.
+          Os três campos precisam estar ativos também nas assinaturas do app
+          (App Dashboard → Webhooks → Instagram).
         </p>
       </section>
 

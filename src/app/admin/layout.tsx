@@ -13,6 +13,7 @@ export const instant = false;
 const navItems = [
   { href: "/admin", label: "Visão geral" },
   { href: "/admin/automacoes", label: "Automações" },
+  { href: "/admin/atividade", label: "Atividade" },
   { href: "/admin/conexao", label: "Conexão" },
 ];
 

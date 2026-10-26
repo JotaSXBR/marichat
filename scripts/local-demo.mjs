@@ -169,6 +169,17 @@ function startMockApi() {
     }
 
     if (/\/subscribed_apps$/.test(url.pathname)) {
+      if (request.method === "GET") {
+        return json(200, {
+          data: [
+            {
+              id: DEMO_IG_ID,
+              name: "MARICHAT demo",
+              subscribed_fields: ["comments", "messages", "messaging_postbacks"],
+            },
+          ],
+        });
+      }
       console.log(`   [mock] webhooks assinados: ${url.searchParams.get("subscribed_fields")}`);
       return json(200, { success: true });
     }

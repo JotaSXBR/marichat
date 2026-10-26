@@ -56,6 +56,14 @@ export const IG = {
 
   /** Respostas privadas a comentários: 7 dias a partir do comentário. */
   privateReplyWindowMs: 7 * 24 * 60 * 60 * 1000,
+  /**
+   * Limite oficial da Meta para respostas privadas a comentários do Instagram:
+   * 750 por hora por conta profissional. O drenador segura a tarefa e tenta de
+   * novo quando a janela deslizante liberar espaço.
+   */
+  privateReplyLimitPerHour: 750,
+  /** Janela deslizante do limite acima. */
+  privateReplyRateWindowMs: 60 * 60 * 1000,
   /** Margem de segurança para não tentar enviar no limite exato do prazo. */
   privateReplySafetyMs: 2 * 60 * 1000,
   /** Janela de mensageria aberta quando o usuário responde. */

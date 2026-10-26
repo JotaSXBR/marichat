@@ -10,7 +10,12 @@ import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations, instagramAccounts } from "@/lib/db/schema";
 import { FOLLOW_MODES } from "@/lib/follow-mode";
-import { subscribeWebhooks } from "@/lib/instagram/client";
+import { getSubscribedApps, subscribeWebhooks } from "@/lib/instagram/client";
+import { IG } from "@/lib/instagram/config";
+import {
+  CONNECTION_TEST_KEY,
+  runConnectionTest,
+} from "@/lib/instagram/diagnostics";
 import { normalizeKeyword } from "@/lib/matching";
 
 /** Ações do painel. Todas revalidam a autenticação no servidor. */
@@ -279,12 +284,30 @@ export async function resubscribeWebhooks(): Promise<void> {
   }
 
   try {
+    const accessToken = getAccountToken(account);
     await subscribeWebhooks({
       igUserId: account.instagramUserId,
-      accessToken: getAccountToken(account),
+      accessToken,
     });
-    await setAppStateValue("webhook_subscription_error", null);
-    await setAppStateValue("webhook_subscribed_at", new Date().toISOString());
+
+    // A Meta responde apenas {"success": true}. Lemos de volta para confirmar
+    // que os campos aparecem na inscrição da conta.
+    const apps = await getSubscribedApps({
+      igUserId: account.instagramUserId,
+      accessToken,
+    });
+    const fields = new Set(apps.flatMap((app) => app.subscribedFields));
+    const missing = IG.webhookFields.filter((field) => !fields.has(field));
+
+    if (missing.length > 0) {
+      await setAppStateValue(
+        "webhook_subscription_error",
+        `A Meta aceitou a inscrição, mas estes campos não aparecem: ${missing.join(", ")}. Confira as assinaturas do app no painel da Meta.`,
+      );
+    } else {
+      await setAppStateValue("webhook_subscription_error", null);
+      await setAppStateValue("webhook_subscribed_at", new Date().toISOString());
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro desconhecido.";
@@ -293,4 +316,23 @@ export async function resubscribeWebhooks(): Promise<void> {
 
   revalidatePath("/admin/conexao");
   redirect("/admin/conexao");
+}
+
+/**
+ * Confere token e campos de webhook assinados, guardando o resultado para a
+ * página de Conexão. Não envia mensagens nem altera automações.
+ */
+export async function testInstagramConnection(): Promise<void> {
+  await requireAdmin();
+  const account = await getActiveAccount();
+  if (!account) {
+    redirect("/admin/conexao?erro=conexao");
+  }
+
+  const result = await runConnectionTest(account);
+  await setAppStateValue(CONNECTION_TEST_KEY, result);
+
+  revalidatePath("/admin/conexao");
+  revalidatePath("/admin");
+  redirect("/admin/conexao?testado=1");
 }

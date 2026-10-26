@@ -2,6 +2,7 @@ import { count, desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { formatDateTime, interactionLabels } from "@/app/admin/labels";
 import { getActiveAccount, getAppStateValue } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
@@ -11,26 +12,6 @@ import {
   outboundMessages,
   webhookEvents,
 } from "@/lib/db/schema";
-
-const interactionLabels: Record<string, string> = {
-  queued: "Na fila",
-  accepted: "DM enviada (aceita)",
-  gate_pending: "Aguardando confirmação de seguidor",
-  link_sent: "Link enviado",
-  uncertain: "Incerta",
-  expired: "Expirada",
-  failed: "Falhou",
-  canceled: "Cancelada",
-};
-
-function formatDateTime(value: Date | null): string {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(value);
-}
 
 function Card({
   title,

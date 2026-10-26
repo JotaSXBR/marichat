@@ -15,6 +15,12 @@ Pesquisa feita antes de evoluir a porta de seguidor, conforme a regra do
   de template chega como postback.
 - [Subscribe to webhooks](https://developers.facebook.com/documentation/instagram-platform/webhooks.md)
   — lista de campos assináveis em `/subscribed_apps`.
+- [Messenger Platform rate limits](https://developers.facebook.com/documentation/business-messaging/messenger-platform/overview/rate-limiting)
+  — 750 respostas privadas por hora por conta do Instagram; Send API 300/s para
+  texto (100/s em versões anteriores da doc); Conversations 2/s.
+- [Page Subscribed Apps](https://developers.facebook.com/docs/graph-api/reference/page/subscribed_apps/)
+  — `GET` devolve `data[].subscribed_fields`; `POST` devolve apenas
+  `{"success": true}`, por isso a leitura de volta é necessária.
 
 ## Projetos open source comparados
 
@@ -48,6 +54,14 @@ Pesquisa feita antes de evoluir a porta de seguidor, conforme a regra do
 6. **Limites de botão** — título com até 20 caracteres e texto do template de
    botão até 640 bytes (a Meta documenta 640 caracteres; bytes é mais restrito
    e seguro para acentos).
+7. **Rate limiting de respostas privadas** — a fila conta os envios aceitos na
+   última hora e, ao chegar em 750, devolve a tarefa para `pending` com
+   `RATE_LIMITED`, sem consumir tentativa. A próxima tentativa é agendada para
+   quando a mensagem mais antiga sair da janela.
+8. **Verificação da inscrição de webhooks** — depois do `POST`, lemos
+   `GET /subscribed_apps` e comparamos com os campos exigidos. Isso pegou um
+   problema real: a Meta responde `success: true` mesmo quando a inscrição não
+   reflete o esperado.
 
 ## Diferenças conscientes (possíveis evoluções)
 
@@ -64,5 +78,6 @@ Pesquisa feita antes de evoluir a porta de seguidor, conforme a regra do
   no banco e risco de spam); não foi adotado.
 - **Aviso de "estamos verificando":** OpenReply envia um aviso opcional após o
   toque. Pode melhorar a espera de 20s.
-- **Limite de 750 respostas privadas por hora:** OpenReply controla por conta;
-  o MARICHAT ainda não tem rate limiting.
+- **Limite de 750 respostas privadas por hora:** implementado por conta no
+  drenador (ver item 7). O limite de Send API por segundo não preocupa no
+  volume atual.
