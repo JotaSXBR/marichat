@@ -272,12 +272,10 @@ export async function getFollowStatus(params: {
   userId: string;
   refresh?: boolean;
 }): Promise<ZernioFollowStatus> {
-  const url = new URL(
-    `${ZERNIO.baseUrl}/v1/accounts/${encodeURIComponent(params.accountId)}/follow-status/${encodeURIComponent(params.userId)}`,
-  );
-  if (params.refresh) url.searchParams.set("refresh", "true");
+  const search = params.refresh ? "?refresh=true" : "";
+  const path = `/v1/accounts/${encodeURIComponent(params.accountId)}/follow-status/${encodeURIComponent(params.userId)}${search}`;
 
-  const data = await requestJson(url.toString(), { method: "GET" });
+  const data = await requestJson(path, { method: "GET" });
   const item = data as {
     isFollower?: boolean | null;
     unavailableReason?: string;

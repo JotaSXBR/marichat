@@ -1,8 +1,9 @@
 import { createHmac } from "node:crypto";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildGatePayload, buildLinkPayload, toZernioMessage } from "@/lib/outbound";
+import { getFollowStatus } from "@/lib/zernio/client";
 import { verifyZernioSignature } from "@/lib/zernio/signature";
 
 const secret = "segredo-do-webhook";
@@ -106,5 +107,54 @@ describe("tradução do corpo Meta para a Zernio", () => {
   it("recusa formato desconhecido", () => {
     expect(() => toZernioMessage({ message: {} })).toThrow();
     expect(() => toZernioMessage(null)).toThrow();
+  });
+});
+
+describe("cliente da Zernio", () => {
+  it("monta a URL do status de seguidor com a base uma única vez", async () => {
+    let calledUrl = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        calledUrl = String(input);
+        return new Response(JSON.stringify({ isFollower: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+
+    const result = await getFollowStatus({
+      accountId: "acc 1",
+      userId: "user/1",
+      refresh: true,
+    });
+
+    expect(calledUrl).toBe(
+      "https://zernio.com/api/v1/accounts/acc%201/follow-status/user%2F1?refresh=true",
+    );
+    expect(result.isFollowing).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it("trata isFollower nulo como desconhecido", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            isFollower: null,
+            unavailableReason: "consent_required",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    const result = await getFollowStatus({ accountId: "a", userId: "u" });
+
+    expect(result.isFollowing).toBeNull();
+    expect(result.unavailableReason).toBe("consent_required");
+    vi.unstubAllGlobals();
   });
 });

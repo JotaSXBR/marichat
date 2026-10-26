@@ -42,7 +42,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const summary = await handleZernioEvent(event);
+    const summary = await handleZernioEvent(
+      event,
+      request.headers.get("x-zernio-event-id"),
+    );
     try {
       after(async () => {
         try {

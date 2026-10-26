@@ -72,6 +72,8 @@ function eventTime(event: ZernioEvent): Date {
 
 export async function handleZernioEvent(
   event: ZernioEvent,
+  /** `X-Zernio-Event-Id`; usado quando o corpo não traz `id`. */
+  headerEventId?: string | null,
 ): Promise<WebhookSummary> {
   const summary: WebhookSummary = {
     received: 0,
@@ -89,7 +91,7 @@ export async function handleZernioEvent(
   if (!providerAccountId) return summary;
 
   const account = await findAccountByProviderAccountId(providerAccountId);
-  const eventKey = `zernio:${event.id ?? crypto.randomUUID()}`;
+  const eventKey = `zernio:${event.id ?? headerEventId ?? crypto.randomUUID()}`;
   const field = event.event === "comment.received" ? "comments" : "messages";
 
   summary.received += 1;

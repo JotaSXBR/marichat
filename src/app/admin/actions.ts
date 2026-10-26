@@ -426,6 +426,8 @@ export async function connectZernio(formData: FormData): Promise<void> {
     updatedAt: now,
   };
 
+  let activeId = existingId;
+
   try {
     if (existingId) {
       await db
@@ -433,13 +435,21 @@ export async function connectZernio(formData: FormData): Promise<void> {
         .set(values)
         .where(eq(instagramAccounts.id, existingId));
     } else {
-      await db.insert(instagramAccounts).values(values);
+      const [created] = await db
+        .insert(instagramAccounts)
+        .values(values)
+        .returning({ id: instagramAccounts.id });
+      activeId = created?.id;
     }
   } catch (error) {
     await setAppStateValue(
       "zernio_connection_error",
       error instanceof Error ? error.message : "erro desconhecido",
     );
+    redirect("/admin/conexao?erro=zernio-salvar");
+  }
+
+  if (!activeId) {
     redirect("/admin/conexao?erro=zernio-salvar");
   }
 
@@ -450,7 +460,7 @@ export async function connectZernio(formData: FormData): Promise<void> {
     .where(
       and(
         eq(instagramAccounts.provider, "zernio"),
-        ne(instagramAccounts.id, existingId ?? "00000000-0000-0000-0000-000000000000"),
+        ne(instagramAccounts.id, activeId),
       ),
     );
 

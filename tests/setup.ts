@@ -28,6 +28,7 @@ process.env.ADMIN_PASSWORD ||= "test-admin-password";
 process.env.APP_URL ||= "http://localhost:3000";
 process.env.CRON_SECRET ||= "test-cron-secret";
 process.env.ZERNIO_WEBHOOK_SECRET ||= "test-zernio-webhook-secret";
+process.env.ZERNIO_API_KEY ||= "test-zernio-api-key";
 // Os testes de integração do motor usam o transporte Meta; o webhook da Zernio
 // é exercitado direto, sem depender do provedor ativo.
 process.env.MESSAGING_PROVIDER = "meta";

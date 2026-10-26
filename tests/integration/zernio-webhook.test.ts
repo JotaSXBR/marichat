@@ -140,6 +140,24 @@ suite("webhook da Zernio: tradução para o motor", () => {
     expect(await db.select().from(outboundMessages)).toHaveLength(1);
   });
 
+  it("usa X-Zernio-Event-Id quando o corpo não traz id", async () => {
+    const account = await seedZernioAccount();
+    await seedAutomation(account.id);
+
+    await handleZernioEvent(
+      { ...commentEvent(), id: undefined },
+      "evt-header-1",
+    );
+    const duplicated = await handleZernioEvent(
+      { ...commentEvent(), id: undefined },
+      "evt-header-1",
+    );
+
+    expect(duplicated.ignored).toBe(1);
+    const db = getDb();
+    expect(await db.select().from(commentInteractions)).toHaveLength(1);
+  });
+
   it("ignora comentário de resposta e comentário do próprio perfil", async () => {
     const account = await seedZernioAccount();
     await seedAutomation(account.id);
