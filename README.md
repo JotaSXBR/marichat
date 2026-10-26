@@ -86,7 +86,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"     # C
 ```powershell
 npm test        # unitários + integração no PostgreSQL de teste (porta 5433)
 npm run lint     # eslint, sem informação de tipo
-npm run lint:ci  # eslint + tipos, falha com qualquer aviso (usar no CI)
+npm run lint:ci  # eslint + tipos; falha se os avisos passarem do baseline
 npm run typecheck
 npm run build
 ```

@@ -11,17 +11,18 @@ TypeScript, zero `any` explícito e zero asserções `!` no código de produçã
 Os testes cobrem o motor, o webhook, a fila, as rotas, o cliente da Meta e o
 tradutor da Zernio.
 
-O lint com tipos foi **aplicado na Fase 1** (ver plano no fim). O que falta
-agora é **orçamentos de tamanho e complexidade** e **um portão automático
-(CI)**.
+O lint com tipos foi **aplicado na Fase 1** e os orçamentos de tamanho,
+complexidade e duplicação na **Fase 2** (ver plano no fim). O que falta agora é
+o **portão automático (CI)**.
 
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
-| Regras efetivas no lint | 113 + preset tipado | ~150, com tipos |
+| Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
 | Arquivos `src` acima de 400 linhas | 5 | 0 (avisos) |
-| Funções acima de 80 linhas | 10 | 0 (avisos) |
+| Funções acima de 60 linhas | 21 | 0 (avisos) |
 | Funções com complexidade > 12 | 19 | 0 (avisos) |
-| Erros de lint tipado (medido) | 0 (Fase 1 aplicada) | 0 |
+| Avisos de orçamento no lint | 56 (baseline do CI) | 0 |
+| Erros de lint | 0 | 0 |
 | CI / GitHub Actions | não existe | lint + tipos + testes + build |
 
 ## O que já está bom
@@ -95,7 +96,7 @@ deve usar. O `npm run lint` continua permissivo para o dia a dia.
 `strict-boolean-expressions` e `no-unnecessary-condition` ficam para uma
 segunda fase: são úteis, mas geram muito ruído em código que já funciona.
 
-### 2. Tamanho e complexidade (avisos primeiro)
+### 2. Tamanho e complexidade (aplicado como aviso)
 
 ```js
 "max-lines": ["warn", { max: 400, skipBlankLines: true, skipComments: true }],
@@ -106,24 +107,45 @@ segunda fase: são úteis, mas geram muito ruído em código que já funciona.
 "complexity": ["warn", 12],
 ```
 
-Por que aviso e não erro: o projeto já tem 5 arquivos grandes e 19 funções
-complexas. Transformar tudo em erro hoje obrigaria uma refatoração ampla e
-arriscada de uma vez. O caminho recomendado na literatura é **ratchet**: novos
-códigos não podem piorar, e cada arquivo tocado reduz a dívida. Quando o
-backlog zerar, os limites viram `error` (e o CI passa a bloquear).
+Por que aviso e não erro: o projeto já tem arquivos grandes e dezenas de
+funções complexas. Transformar tudo em erro hoje obrigaria uma refatoração
+ampla e arriscada de uma vez, além de incentivar `eslint-disable` em massa. O
+caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
+reduz a dívida.
 
-Testes têm exceções conscientes:
+**Como o portão funciona:** o `npm run lint:ci` roda
+`eslint . --max-warnings=56`. Esse 56 é o baseline medido na adoção. Um aviso
+novo faz o CI falhar; corrigir avisos nunca quebra o CI. Quando o número cair,
+baixe o valor em `package.json` (e aqui). Quando chegar a zero, os limites
+podem virar `error`.
+
+Baseline por regra (2026-10-26):
+
+| Regra | Avisos |
+| --- | --- |
+| `complexity` (limite 12) | 19 |
+| `max-lines-per-function` (60) | 21 |
+| `max-lines` (400) | 5 |
+| `sonarjs/cognitive-complexity` (15) | 10 |
+| `max-depth` (3) | 1 |
+| **Total** | **56** |
+
+Testes e scripts têm exceções conscientes:
 
 ```js
 // tests/**
 "max-lines": ["warn", 800],
 "max-lines-per-function": "off", // um describe inteiro conta como uma função
+"complexity": "off",
+
+// scripts/**
+"max-lines-per-function": "off", // a API falsa do demo é um bloco só
 ```
 
-### 3. Duplicação e cheiros (SonarJS)
+### 3. Duplicação e cheiros (SonarJS, aplicado)
 
-Instalar `eslint-plugin-sonarjs` (4.x, compatível com ESLint 9) e começar com
-um subconjunto:
+`eslint-plugin-sonarjs` 4.x (compatível com ESLint 9) foi instalado com um
+subconjunto, tudo como aviso:
 
 ```js
 "sonarjs/cognitive-complexity": ["warn", 15],
@@ -136,6 +158,11 @@ um subconjunto:
 "sonarjs/prefer-immediate-return": "warn",
 "sonarjs/prefer-single-boolean-return": "warn",
 ```
+
+O `no-duplicate-string` já apontou `"/admin"` e `"/admin/conexao"`, repetidos
+8 vezes cada em `actions.ts`; viraram as constantes `ADMIN_PATH` e
+`CONNECTION_PATH`. As regras de SonarJS rodam só em `src` (testes e scripts
+ficam de fora para não gerar ruído).
 
 Duplicação já visível sem a ferramenta:
 
@@ -267,9 +294,10 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
 1. **Fase 1 — lint tipado + correções** ✅ **concluída**: `recommendedTypeChecked`
    ativo em `src` e `tests`, 22 achados corrigidos, `npm run lint:ci` com
    `--max-warnings=0` sem erros nem avisos.
-2. **Fase 2 — orçamentos como aviso**: `max-lines`, `max-lines-per-function`,
-   `complexity`, `max-depth`, `max-params`, SonarJS selecionado. Nenhuma
-   refatoração grande ainda.
+2. **Fase 2 — orçamentos como aviso** ✅ **concluída**: `max-lines`,
+   `max-lines-per-function`, `complexity`, `max-depth`, `max-params`,
+   `max-nested-callbacks` e SonarJS selecionado. Baseline de 56 avisos no
+   `lint:ci`, sem refatoração grande ainda.
 3. **Fase 3 — CI**: GitHub Actions com Postgres 18, `npm ci`, `lint`,
    `typecheck`, `test` e `build` em cada PR.
 4. **Fase 4 — formatação**: Prettier + `.editorconfig` em um commit só de

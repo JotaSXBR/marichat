@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { and, eq, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
@@ -31,7 +31,10 @@ import {
 import { ZERNIO, isZernioConfigured } from "@/lib/zernio/config";
 import { runZernioConnectionTest } from "@/lib/zernio/diagnostics";
 
-/** Ações do painel. Todas revalidam a autenticação no servidor. */
+/** AÃ§Ãµes do painel. Todas revalidam a autenticaÃ§Ã£o no servidor. */
+
+const ADMIN_PATH = "/admin";
+const CONNECTION_PATH = "/admin/conexao";
 
 export type AutomationFormState = {
   error?: string;
@@ -55,48 +58,48 @@ const httpsUrl = z
         return false;
       }
     },
-    { message: "A URL precisa começar com https:// e ser válida." },
+    { message: "A URL precisa comeÃ§ar com https:// e ser vÃ¡lida." },
   );
 
 const automationSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Dê um nome para identificar a automação.")
-    .max(80, "Use no máximo 80 caracteres."),
+    .min(1, "DÃª um nome para identificar a automaÃ§Ã£o.")
+    .max(80, "Use no mÃ¡ximo 80 caracteres."),
   keyword: z
     .string()
     .trim()
     .min(1, "Informe a palavra-chave.")
-    .max(80, "Use no máximo 80 caracteres.")
+    .max(80, "Use no mÃ¡ximo 80 caracteres.")
     .refine((value) => normalizeKeyword(value).length > 0, {
-      message: "A palavra-chave precisa ter letras ou números.",
+      message: "A palavra-chave precisa ter letras ou nÃºmeros.",
     }),
   mediaId: z
     .string()
     .trim()
-    .max(120, "Identificador de publicação inválido.")
+    .max(120, "Identificador de publicaÃ§Ã£o invÃ¡lido.")
     .optional(),
   firstDmText: z
     .string()
     .trim()
     .min(1, "Escreva a primeira mensagem.")
     .refine((value) => Buffer.byteLength(value, "utf8") <= 1000, {
-      message: "A primeira mensagem pode ter no máximo 1.000 bytes.",
+      message: "A primeira mensagem pode ter no mÃ¡ximo 1.000 bytes.",
     }),
   secondDmText: z
     .string()
     .trim()
     .min(1, "Escreva o texto da segunda mensagem.")
     .refine((value) => countChars(value) <= 80, {
-      message: "O texto da segunda mensagem pode ter no máximo 80 caracteres.",
+      message: "O texto da segunda mensagem pode ter no mÃ¡ximo 80 caracteres.",
     }),
   linkButtonTitle: z
     .string()
     .trim()
-    .min(1, "Escreva o texto do botão do link.")
+    .min(1, "Escreva o texto do botÃ£o do link.")
     .refine((value) => countChars(value) <= 20, {
-      message: "O texto do botão do link pode ter no máximo 20 caracteres.",
+      message: "O texto do botÃ£o do link pode ter no mÃ¡ximo 20 caracteres.",
     }),
   linkUrl: httpsUrl,
   followMode: z.enum(FOLLOW_MODES),
@@ -105,45 +108,45 @@ const automationSchema = z.object({
     .trim()
     .min(1, "Escreva a mensagem da porta de seguidor.")
     .refine((value) => Buffer.byteLength(value, "utf8") <= 640, {
-      message: "A mensagem da porta de seguidor pode ter no máximo 640 bytes.",
+      message: "A mensagem da porta de seguidor pode ter no mÃ¡ximo 640 bytes.",
     }),
   followGateFollowLabel: z
     .string()
     .trim()
-    .min(1, "Escreva o texto do botão de seguir.")
+    .min(1, "Escreva o texto do botÃ£o de seguir.")
     .refine((value) => countChars(value) <= 20, {
-      message: "O texto do botão pode ter no máximo 20 caracteres.",
+      message: "O texto do botÃ£o pode ter no mÃ¡ximo 20 caracteres.",
     }),
   followGateConfirmLabel: z
     .string()
     .trim()
-    .min(1, "Escreva o texto do botão de confirmação.")
+    .min(1, "Escreva o texto do botÃ£o de confirmaÃ§Ã£o.")
     .refine((value) => countChars(value) <= 20, {
-      message: "O texto do botão pode ter no máximo 20 caracteres.",
+      message: "O texto do botÃ£o pode ter no mÃ¡ximo 20 caracteres.",
     }),
   followOptionalText: z
     .string()
     .trim()
     .min(1, "Escreva a mensagem do modo opcional.")
     .refine((value) => Buffer.byteLength(value, "utf8") <= 640, {
-      message: "A mensagem do modo opcional pode ter no máximo 640 bytes.",
+      message: "A mensagem do modo opcional pode ter no mÃ¡ximo 640 bytes.",
     }),
   followDirectText: z
     .string()
     .trim()
     .min(1, "Escreva a mensagem do modo direto.")
     .refine((value) => Buffer.byteLength(value, "utf8") <= 640, {
-      message: "A mensagem do modo direto pode ter no máximo 640 bytes.",
+      message: "A mensagem do modo direto pode ter no mÃ¡ximo 640 bytes.",
     }),
   isActive: z.boolean(),
 });
 
 const DEFAULT_GATE_TEXT =
-  'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".';
+  'Para liberar o link, siga o perfil e depois toque em "JÃ¡ segui". Se preferir, toque em "Seguir agora".';
 const DEFAULT_OPTIONAL_TEXT =
-  "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:";
+  "Se quiser receber as prÃ³ximas mensagens na caixa principal, siga o perfil. O link jÃ¡ estÃ¡ aqui:";
 const DEFAULT_DIRECT_TEXT =
-  "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal.";
+  "Aqui estÃ¡ o link. Se seguir o perfil, as prÃ³ximas mensagens chegam na caixa principal.";
 
 function readForm(formData: FormData) {
   return {
@@ -160,7 +163,7 @@ function readForm(formData: FormData) {
     followGateFollowLabel:
       readText(formData, "followGateFollowLabel").trim() || "Seguir agora",
     followGateConfirmLabel:
-      readText(formData, "followGateConfirmLabel").trim() || "Já segui",
+      readText(formData, "followGateConfirmLabel").trim() || "JÃ¡ segui",
     followOptionalText:
       readText(formData, "followOptionalText").trim() || DEFAULT_OPTIONAL_TEXT,
     followDirectText:
@@ -177,7 +180,7 @@ export async function saveAutomation(
 
   const account = await getActiveAccount();
   if (!account) {
-    return { error: "Conecte uma conta do Instagram antes de criar automações." };
+    return { error: "Conecte uma conta do Instagram antes de criar automaÃ§Ãµes." };
   }
 
   const raw = readForm(formData);
@@ -223,7 +226,7 @@ export async function saveAutomation(
       .returning({ id: automations.id });
 
     if (updated.length === 0) {
-      return { error: "Automação não encontrada." };
+      return { error: "AutomaÃ§Ã£o nÃ£o encontrada." };
     }
   } else {
     await db.insert(automations).values({
@@ -247,7 +250,7 @@ export async function saveAutomation(
   }
 
   revalidatePath("/admin/automacoes");
-  revalidatePath("/admin");
+  revalidatePath(ADMIN_PATH);
   redirect("/admin/automacoes?ok=1");
 }
 
@@ -264,7 +267,7 @@ export async function toggleAutomation(formData: FormData): Promise<void> {
     .where(eq(automations.id, id));
 
   revalidatePath("/admin/automacoes");
-  revalidatePath("/admin");
+  revalidatePath(ADMIN_PATH);
 }
 
 export async function disconnectInstagram(): Promise<void> {
@@ -281,8 +284,8 @@ export async function disconnectInstagram(): Promise<void> {
     })
     .where(eq(instagramAccounts.id, account.id));
 
-  revalidatePath("/admin/conexao");
-  revalidatePath("/admin");
+  revalidatePath(CONNECTION_PATH);
+  revalidatePath(ADMIN_PATH);
   redirect("/admin/conexao?desconectado=1");
 }
 
@@ -295,7 +298,7 @@ export async function resubscribeWebhooks(): Promise<void> {
 
   if (account.provider === "zernio") {
     await registerZernioWebhookFor();
-    revalidatePath("/admin/conexao");
+    revalidatePath(CONNECTION_PATH);
     redirect("/admin/conexao?webhook=1");
   }
 
@@ -307,7 +310,7 @@ export async function resubscribeWebhooks(): Promise<void> {
     });
 
     // A Meta responde apenas {"success": true}. Lemos de volta para confirmar
-    // que os campos aparecem na inscrição da conta.
+    // que os campos aparecem na inscriÃ§Ã£o da conta.
     const apps = await getSubscribedApps({
       igUserId: account.instagramUserId,
       accessToken,
@@ -318,7 +321,7 @@ export async function resubscribeWebhooks(): Promise<void> {
     if (missing.length > 0) {
       await setAppStateValue(
         "webhook_subscription_error",
-        `A Meta aceitou a inscrição, mas estes campos não aparecem: ${missing.join(", ")}. Confira as assinaturas do app no painel da Meta.`,
+        `A Meta aceitou a inscriÃ§Ã£o, mas estes campos nÃ£o aparecem: ${missing.join(", ")}. Confira as assinaturas do app no painel da Meta.`,
       );
     } else {
       await setAppStateValue("webhook_subscription_error", null);
@@ -330,13 +333,13 @@ export async function resubscribeWebhooks(): Promise<void> {
     await setAppStateValue("webhook_subscription_error", message);
   }
 
-  revalidatePath("/admin/conexao");
-  redirect("/admin/conexao");
+  revalidatePath(CONNECTION_PATH);
+  redirect(CONNECTION_PATH);
 }
 
 /**
  * Confere token e campos de webhook assinados, guardando o resultado para a
- * página de Conexão. Não envia mensagens nem altera automações.
+ * pÃ¡gina de ConexÃ£o. NÃ£o envia mensagens nem altera automaÃ§Ãµes.
  */
 export async function testInstagramConnection(): Promise<void> {
   await requireAdmin();
@@ -348,17 +351,17 @@ export async function testInstagramConnection(): Promise<void> {
   const result = await runConnectionTest(account);
   await setAppStateValue(CONNECTION_TEST_KEY, result);
 
-  revalidatePath("/admin/conexao");
-  revalidatePath("/admin");
+  revalidatePath(CONNECTION_PATH);
+  revalidatePath(ADMIN_PATH);
   redirect("/admin/conexao?testado=1");
 }
 
 /**
- * Vincula uma conta do Instagram que já está conectada dentro da Zernio.
+ * Vincula uma conta do Instagram que jÃ¡ estÃ¡ conectada dentro da Zernio.
  *
  * A Zernio cuida do OAuth e do token; guardamos apenas o `accountId` dela e
- * um marcador cifrado no lugar do token (o campo é obrigatório no schema e a
- * leitura do token é ignorada quando `provider = zernio`).
+ * um marcador cifrado no lugar do token (o campo Ã© obrigatÃ³rio no schema e a
+ * leitura do token Ã© ignorada quando `provider = zernio`).
  */
 export async function connectZernio(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -466,8 +469,8 @@ export async function connectZernio(formData: FormData): Promise<void> {
   await setAppStateValue("webhook_subscription_error", null);
   await setAppStateValue("webhook_subscribed_at", now.toISOString());
 
-  revalidatePath("/admin/conexao");
-  revalidatePath("/admin");
+  revalidatePath(CONNECTION_PATH);
+  revalidatePath(ADMIN_PATH);
   redirect(`/admin/conexao?ok=1&conta=${encodeURIComponent(chosen.username ?? "")}`);
 }
 
@@ -503,7 +506,7 @@ async function registerZernioWebhookFor(): Promise<void> {
   }
 }
 
-/** Botão "Registrar webhook" quando o transporte ativo é a Zernio. */
+/** BotÃ£o "Registrar webhook" quando o transporte ativo Ã© a Zernio. */
 export async function registerZernioWebhook(): Promise<void> {
   await requireAdmin();
   const account = await getActiveAccount();
@@ -512,11 +515,11 @@ export async function registerZernioWebhook(): Promise<void> {
   }
 
   await registerZernioWebhookFor();
-  revalidatePath("/admin/conexao");
+  revalidatePath(CONNECTION_PATH);
   redirect("/admin/conexao?webhook=1");
 }
 
-/** Teste de conexão quando o transporte ativo é a Zernio. */
+/** Teste de conexÃ£o quando o transporte ativo Ã© a Zernio. */
 export async function testZernioConnection(): Promise<void> {
   await requireAdmin();
   const account = await getActiveAccount();
@@ -526,7 +529,7 @@ export async function testZernioConnection(): Promise<void> {
   );
   await setAppStateValue(CONNECTION_TEST_KEY, result);
 
-  revalidatePath("/admin/conexao");
-  revalidatePath("/admin");
+  revalidatePath(CONNECTION_PATH);
+  revalidatePath(ADMIN_PATH);
   redirect("/admin/conexao?testado=1");
 }
