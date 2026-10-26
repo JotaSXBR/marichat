@@ -7,3 +7,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Features não familiares: pesquisar antes de escrever
+
+Para funcionalidades ("features") que você não domina ou nunca implementou
+neste projeto, **não comece escrevendo código do zero**. Primeiro:
+
+1. Busque no GitHub projetos open source que já resolvam o mesmo problema.
+2. Compare as abordagens ("approaches") usadas: trade-offs, licença,
+   manutenção do projeto e aderência ao stack deste repositório.
+3. Só então implemente, seguindo a abordagem escolhida — e registre no commit
+   ou na descrição da mudança quais referências foram consultadas.
+
