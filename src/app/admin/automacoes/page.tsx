@@ -8,6 +8,8 @@ import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations } from "@/lib/db/schema";
 
+export const instant = false;
+
 export default async function AutomationsPage({
   searchParams,
 }: PageProps<"/admin/automacoes">) {

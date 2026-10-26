@@ -49,6 +49,9 @@ function Card({
   );
 }
 
+// Painel depende do banco e da autenticação a cada acesso.
+export const instant = false;
+
 export default async function AdminDashboard() {
   await connection();
   await requireAdmin();

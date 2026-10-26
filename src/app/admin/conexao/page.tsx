@@ -39,6 +39,8 @@ function formatDateTime(value: Date | null): string {
   }).format(value);
 }
 
+export const instant = false;
+
 export default async function ConnectionPage({
   searchParams,
 }: PageProps<"/admin/conexao">) {

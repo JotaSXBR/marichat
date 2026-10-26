@@ -6,6 +6,8 @@ import { loadMediaOptions } from "@/app/admin/automacoes/media-options";
 import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 
+export const instant = false;
+
 export default async function NewAutomationPage() {
   await connection();
   await requireAdmin();
