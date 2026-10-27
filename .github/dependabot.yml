@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # Dependências do npm: um PR por semana com minor/patch agrupados.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # TypeScript 7 ainda não é suportado pelo typescript-eslint.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # O runtime é Node 24; tipos de versão maior não devem ser usados.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+
+  # Ações do GitHub: um PR por mês com tudo agrupado.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+      time: "05:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: chore
+    groups:
+      github-actions:
+        patterns: ["*"]

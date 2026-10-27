@@ -222,7 +222,22 @@ evita `console.log` esquecido.
   `no-unlimited-disable`, para proibir `eslint-disable` sem justificativa
   (hoje existe um único `eslint-disable` no projeto).
 
-### 7. O que **não** adotar agora
+### 7. Segurança contínua (CodeQL e Dependabot)
+
+- **CodeQL** (`.github/workflows/codeql.yml`): `github/codeql-action@v4`,
+  linguagem `javascript-typescript`, `build-mode: none` (não precisa compilar o
+  Next), suíte `security-extended`. Roda em push/PR para `master` e toda
+  segunda-feira às 4h23. Resultados aparecem em **Security → Code scanning**.
+- **Dependabot** (`.github/dependabot.yml`): `npm` semanal (minor/patch
+  agrupados num PR só) e `github-actions` mensal. Major de `typescript` fica
+  ignorado enquanto o `typescript-eslint` não suportar; major de `@types/node`
+  fica ignorado porque o runtime é Node 24.
+- Atualização manual feita junto: Next `16.4.1 → 16.4.3`, React/React DOM
+  `19.3.0 → 19.3.1`, `@next/env` e `eslint-config-next` na mesma versão do Next.
+  TypeScript segue em 5.9.3 (o 7.x quebraria o lint tipado) e `@types/node` em
+  24.19.2.
+
+### 8. O que **não** adotar agora
 
 - **`eslint-plugin-unicorn`**: o ESLint já está no 10.13 e atende ao requisito
   técnico, mas o plugin continua altamente opinativo (renomeia identificadores,
@@ -343,7 +358,11 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    Parte 7: leitura de token compartilhada em `queue/token.ts` e
    `toZernioMessage` com extrações pequenas (26 → 23). 111 testes.
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
-   limpo.
+   limpo. ✅ **em parte**: `lint:ci` já falha com aviso novo
+   (`--max-warnings=23`) e o número desce a cada refatoração.
+7. **Fase 7 — segurança contínua** ✅ **concluída**: CodeQL (`security-extended`)
+   e Dependabot (npm semanal, Actions mensal) ativos, com major de TypeScript e
+   `@types/node` ignorados de propósito.
 
 ## Comandos usados na medição
 
