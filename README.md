@@ -104,7 +104,7 @@ O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
 
 Todo push em `master` e todo Pull Request rodam `.github/workflows/ci.yml`:
 PostgreSQL 18, migrations, `format:check`, `lint:ci`, `typecheck`, testes e
-build. Se o lint passar do baseline de avisos (42 em `package.json`) ou qualquer
+build. Se o lint passar do baseline de avisos (39 em `package.json`) ou qualquer
 etapa falhar, o PR fica vermelho. O build não recebe segredos e não acessa o
 banco, igual ao Dockerfile.
 

@@ -19,10 +19,10 @@ guiada dos arquivos grandes.
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
-| Arquivos `src` acima de 400 linhas | 3 (inclui `scripts`) | 0 (avisos) |
-| Funções acima de 60 linhas | 16 | 0 (avisos) |
+| Arquivos `src` acima de 400 linhas | 2 (inclui `scripts`) | 0 (avisos) |
+| Funções acima de 60 linhas | 15 | 0 (avisos) |
 | Funções com complexidade > 12 | 15 | 0 (avisos) |
-| Avisos de orçamento no lint | 42 (baseline do CI) | 0 |
+| Avisos de orçamento no lint | 39 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
 | Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
@@ -116,23 +116,23 @@ caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
 reduz a dívida.
 
 **Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=42`. Esse 42 é o baseline medido depois das três
+`eslint . --max-warnings=39`. Esse 39 é o baseline medido depois das quatro
 primeiras partes da Fase 5 (divisão de `admin/actions.ts`, de
-`webhook/process.ts` e de `admin/conexao/page.tsx`). Um aviso novo faz o CI
-falhar; corrigir avisos nunca quebra o CI. Quando o número cair, baixe o valor
-em `package.json` (e aqui). Quando chegar a zero, os limites podem virar
-`error`.
+`webhook/process.ts`, de `admin/conexao/page.tsx` e do formulário de automação).
+Um aviso novo faz o CI falhar; corrigir avisos nunca quebra o CI. Quando o
+número cair, baixe o valor em `package.json` (e aqui). Quando chegar a zero, os
+limites podem virar `error`.
 
-Baseline por regra (2026-10-26, após a Fase 5 parte 3):
+Baseline por regra (2026-10-26, após a Fase 5 parte 4):
 
 | Regra | Avisos |
 | --- | --- |
 | `complexity` (limite 12) | 15 |
-| `max-lines-per-function` (60) | 16 |
-| `max-lines` (400) | 3 |
-| `sonarjs/cognitive-complexity` (15) | 7 |
+| `max-lines-per-function` (60) | 15 |
+| `max-lines` (400) | 2 |
+| `sonarjs/cognitive-complexity` (15) | 6 |
 | `max-depth` (3) | 1 |
-| **Total** | **42** |
+| **Total** | **39** |
 
 Testes e scripts têm exceções conscientes:
 
@@ -242,7 +242,6 @@ Ordenado por retorno, não por tamanho.
 | Arquivo | Linhas | Problema | Divisão sugerida |
 | --- | --- | --- | --- |
 | `src/lib/queue/drain.ts` | 941 | claim, envio Meta/Zernio, follow-check, rate limit, token e limpeza no mesmo módulo | `queue/claim.ts`, `queue/send.ts`, `queue/follow-check.ts`, `queue/token.ts`, `queue/cleanup.ts` |
-| `src/app/admin/automacoes/automation-form.tsx` | 514 | complexidade 62; campos repetidos e condicionais de modo | `MessageFields`, `FollowGateFields`, `LinkFields` |
 | `scripts/local-demo.mjs` | 468 | API falsa + orquestração no mesmo `main` (complexidade 43) | `scripts/demo/mock-api.mjs` + `scripts/demo/run.mjs` |
 
 **Já dividido na Fase 5:**
@@ -262,6 +261,10 @@ Ordenado por retorno, não por tamanho.
   `diagnostics-card.tsx`, `webhook-setup-card.tsx`, `env-checklist.tsx`,
   `recent-webhooks.tsx` e `connection-header.tsx`, com os dados carregados em
   `load-connection.ts` e os textos em `connection-utils.ts`.
+- `src/app/admin/automacoes/automation-form.tsx` (514 → ~95 linhas) virou
+  componentes por seção: `identification-section.tsx`, `media-section.tsx`,
+  `message-sections.tsx`, `follow-gate-section.tsx` e `form-actions.tsx`, com
+  tipos em `form-types.ts` e campos pequenos em `form-controls.tsx`.
 
 ### Prioridade 2 — funções grandes
 
@@ -319,7 +322,8 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    arquivo por arquivo, com testes antes/depois. Parte 1: `admin/actions.ts`
    dividido (baseline 58 → 54). Parte 2: `webhook/process.ts` dividido em seis
    módulos (54 → 46). Parte 3: `admin/conexao/page.tsx` dividido em componentes
-   (46 → 42). 111 testes.
+   (46 → 42). Parte 4: formulário de automação dividido em seções (42 → 39).
+   111 testes.
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
    limpo.
 

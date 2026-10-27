@@ -3,7 +3,7 @@ import "server-only";
 import type { Account } from "@/lib/accounts";
 import { getAccountToken } from "@/lib/accounts";
 import { listRecentMedia } from "@/lib/instagram/client";
-import type { MediaOption } from "./automation-form";
+import type { MediaOption } from "./form-types";
 
 /**
  * Busca as publicações recentes na API oficial para montar o seletor.
