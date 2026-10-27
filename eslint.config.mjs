@@ -8,10 +8,9 @@ import tseslint from "typescript-eslint";
 /**
  * Orçamentos de tamanho e complexidade.
  *
- * Continuam como `warn` de propósito: o projeto já tem dívida antiga e virar
- * `error` de uma vez incentiva `eslint-disable` em massa. O portão do CI usa
- * `--max-warnings=<baseline>`: o código novo não pode aumentar o número de
- * avisos. Ao limpar um arquivo, o baseline desce (ver docs/QUALIDADE.md).
+ * Continuam como `warn` de propósito: o CI usa `--max-warnings=0`, então
+ * qualquer aviso já bloqueia o merge sem precisar transformar as regras em
+ * `error` (e sem incentivar `eslint-disable` em massa).
  */
 const sizeBudgets = {
   "max-lines": ["warn", { max: 400, skipBlankLines: true, skipComments: true }],

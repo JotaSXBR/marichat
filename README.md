@@ -88,7 +88,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"     # C
 ```powershell
 npm test        # unitários + integração no PostgreSQL de teste (porta 5433)
 npm run lint     # eslint, sem informação de tipo
-npm run lint:ci  # eslint + tipos; falha se os avisos passarem do baseline
+npm run lint:ci  # eslint + tipos; falha em qualquer aviso
 npm run typecheck
 npm run build
 npm run format       # formata com Prettier
@@ -97,16 +97,15 @@ npm run clean        # apaga .next/caches regeneráveis (limpeza de disco)
 ```
 
 O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
-`tests`. As escolhas de regras e a dívida de refatoração estão em
-`docs/QUALIDADE.md`.
+`tests`, com orçamentos de tamanho e complexidade em zero avisos. As escolhas de
+regras estão em `docs/QUALIDADE.md`.
 
 ### Verificação automática (CI)
 
 Todo push em `master` e todo Pull Request rodam `.github/workflows/ci.yml`:
 PostgreSQL 18, migrations, `format:check`, `lint:ci`, `typecheck`, testes e
-build. Se o lint passar do baseline de avisos (23 em `package.json`) ou qualquer
-etapa falhar, o PR fica vermelho. O build não recebe segredos e não acessa o
-banco, igual ao Dockerfile.
+build. Qualquer aviso de lint ou etapa com falha deixa o PR vermelho. O build
+não recebe segredos e não acessa o banco, igual ao Dockerfile.
 
 
 Os testes de integração só rodam quando `DATABASE_URL` aponta para

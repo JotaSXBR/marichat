@@ -13,16 +13,16 @@ tradutor da Zernio.
 
 O lint com tipos foi **aplicado na Fase 1**, os orçamentos de tamanho,
 complexidade e duplicação na **Fase 2**, a verificação automática na **Fase 3**
-e a formatação na **Fase 4** (ver plano no fim). O que resta é a refatoração
-guiada dos arquivos grandes.
+e a formatação na **Fase 4** (ver plano no fim). A refatoração guiada foi
+**concluída**: hoje o lint não tem nenhum aviso e o CI exige zero.
 
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
 | Arquivos `src` acima de 400 linhas | 0 | 0 (avisos) |
-| Funções acima de 60 linhas | 11 | 0 (avisos) |
-| Funções com complexidade > 12 | 9 | 0 (avisos) |
-| Avisos de orçamento no lint | 23 (baseline do CI) | 0 |
+| Funções acima de 60 linhas | 0 | 0 (avisos) |
+| Funções com complexidade > 12 | 0 | 0 (avisos) |
+| Avisos de orçamento no lint | 0 | 0 |
 | Erros de lint | 0 | 0 |
 | Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
@@ -109,31 +109,19 @@ segunda fase: são úteis, mas geram muito ruído em código que já funciona.
 "complexity": ["warn", 12],
 ```
 
-Por que aviso e não erro: o projeto já tem arquivos grandes e dezenas de
-funções complexas. Transformar tudo em erro hoje obrigaria uma refatoração
-ampla e arriscada de uma vez, além de incentivar `eslint-disable` em massa. O
-caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
-reduz a dívida.
+Por que aviso e não erro: o projeto já tinha arquivos grandes e dezenas de
+funções complexas, e transformar tudo em erro de uma vez obrigaria uma
+refatoração ampla e arriscada. O caminho foi **ratchet**: o código novo não
+podia piorar, e cada arquivo tocado reduzia a dívida.
 
-**Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=23`. Esse 23 é o baseline medido depois das seis
-primeiras partes da Fase 5 (divisão de `admin/actions.ts`, de
-`webhook/process.ts`, de `admin/conexao/page.tsx`, do formulário de automação,
-do motor da fila em `src/lib/queue/` e do demo local em `scripts/demo/`) e de
-duas extrações na fila (`processFollowCheck` e `toZernioMessage`).
-Um aviso novo faz o CI falhar; corrigir avisos nunca quebra o CI. Quando o
-número cair, baixe o valor em `package.json` (e aqui). Quando chegar a zero, os
-limites podem virar `error`.
+**Estado final:** o `npm run lint:ci` roda `eslint . --max-warnings=0`. O
+baseline desceu de 58 avisos (Fase 2) para 0, com refatoração antes/depois e
+testes entre cada parte. Para manter o zero, os orçamentos continuam como
+`warn`: qualquer aviso novo agora falha o CI.
 
-Baseline por regra (2026-10-26, após a Fase 5 parte 7):
-
-| Regra | Avisos |
-| --- | --- |
-| `max-lines-per-function` (60) | 11 |
-| `complexity` (limite 12) | 9 |
-| `sonarjs/cognitive-complexity` (15) | 2 |
-| `max-depth` (3) | 1 |
-| **Total** | **23** |
+Nenhuma regra de orçamento precisou virar `error`; se um dia for conveniente,
+basta trocar `warn` por `error` em `eslint.config.mjs` (o efeito no CI é o
+mesmo, mas o aviso fica mais explícito na saída).
 
 Somente os testes têm exceções conscientes:
 
@@ -298,14 +286,12 @@ funções e telas específicas (Prioridade 2).
 
 ### Prioridade 2 — funções grandes
 
-- Telas que ainda concentram muita coisa no componente: `ActivityPage` (311
-  linhas, complexidade 18), `AdminDashboard` (237, complexidade 27),
-  `DataDeletionPage` (119), `PrivacyPage` (115), `AutomationsPage` (131) e
-  `EditAutomationPage` (67). Extrair blocos de dados e listas para componentes.
-- `runConnectionTest` / `runZernioConnectionTest` / `completeOAuth`: separar
-  coleta de fatos de montagem da lista de problemas.
-- `processInboundMessage`, `handleZernioEvent`, `handleMessage` e `requestJson`
-  passam pouco do limite de complexidade (13 a 16); pequenas extrações bastam.
+Nenhuma função passa mais dos orçamentos. As telas que concentravam dados e
+listas foram divididas em módulos de consulta (`atividade/data.ts`,
+`admin/dashboard.ts`) e componentes de seção; `runConnectionTest`,
+`runZernioConnectionTest` e `completeOAuth` separam coleta de fatos de montagem
+do resultado; `processInboundMessage`, `handleZernioEvent`, `handleMessage` e
+`requestJson` ganharam extrações pequenas.
 
 ### Prioridade 3 — robustez e testes
 
@@ -356,10 +342,12 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    Parte 5: motor da fila (`queue/drain.ts`) dividido em nove módulos
    (39 → 29). Parte 6: demo local dividido em `scripts/demo/` (29 → 26).
    Parte 7: leitura de token compartilhada em `queue/token.ts` e
-   `toZernioMessage` com extrações pequenas (26 → 23). 111 testes.
-6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
-   limpo. ✅ **em parte**: `lint:ci` já falha com aviso novo
-   (`--max-warnings=23`) e o número desce a cada refatoração.
+   `toZernioMessage` com extrações pequenas (26 → 23). Parte 8: telas
+   (`Atividade`, `Visão geral`, `Automações`, `Editar automação`, `Privacidade`
+   e `Exclusão de dados`), diagnósticos, OAuth, webhook e cliente da Zernio
+   divididos em módulos e componentes (23 → 0). 111 testes.
+6. **Fase 6 — ratchet** ✅ **concluída**: `lint:ci` roda com
+   `--max-warnings=0`; qualquer aviso novo falha o CI.
 7. **Fase 7 — segurança contínua** ✅ **concluída**: CodeQL (`security-extended`)
    e Dependabot (npm semanal, Actions mensal) ativos, com major de TypeScript e
    `@types/node` ignorados de propósito.
