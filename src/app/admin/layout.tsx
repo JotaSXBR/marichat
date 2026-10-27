@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
 import { getActiveAccount } from "@/lib/accounts";
 import { AdminNav } from "@/components/marichat/admin-nav";
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
 export const instant = false;
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
+  // Sem isto o Next tenta pré-renderizar o painel no build, onde as variáveis
+  // de ambiente (e o banco) ainda não existem.
+  await connection();
   const account = await getActiveAccount();
 
   return (
