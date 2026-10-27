@@ -21,6 +21,10 @@ ENV HOSTNAME=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
+# curl: o healthcheck do Coolify não acha curl e cai no wget do busybox, que
+# resolve localhost só como ::1; o app escuta em IPv4 e o check falha.
+RUN apk add --no-cache curl
+
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
