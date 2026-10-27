@@ -1,0 +1,68 @@
+/*
+ * Tokens do MARICHAT — DESIGN.md v4, §5.
+ *
+ * Este é o único arquivo do projeto com hex, rgb() ou px de cor.
+ * Os nomes são os slots do shadcn/ui, para que todo componente instalado
+ * pelo CLI (shadcn e Kokonut) herde o tema sem retrabalho.
+ *
+ * Tema escuro fixo: o painel não tem versão clara.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- slots do shadcn/ui ---- */
+  --background: #09090b;
+  --foreground: #fafafa;
+
+  --card: rgb(255 255 255 / 0.04);
+  --card-foreground: #d4d4d8;
+
+  --popover: #131315;
+  --popover-foreground: #fafafa;
+
+  --primary: #a3e635;
+  --primary-foreground: #0a0a0a;
+
+  --secondary: rgb(255 255 255 / 0.07);
+  --secondary-foreground: #fafafa;
+
+  --muted: #0f0f11;
+  --muted-foreground: #a1a1aa;
+
+  /* No shadcn, `accent` é o hover de item — NÃO é o acento da marca. */
+  --accent: rgb(255 255 255 / 0.1);
+  --accent-foreground: #fafafa;
+
+  --destructive: #f87171;
+
+  --border: rgb(255 255 255 / 0.1);
+  --input: #66666d;
+  --ring: #a3e635;
+
+  --radius: 24px;
+
+  /* ---- extras do MARICHAT ---- */
+  --surface-hover: rgb(255 255 255 / 0.07);
+  --line-subtle: rgb(255 255 255 / 0.06);
+  --line-strong: rgb(255 255 255 / 0.18);
+
+  --text-tertiary: #a1a1aa;
+  --text-muted: #8a8a93;
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+
+  --radius-control: 12px;
+  --radius-inner: 16px;
+  --radius-card: 24px;
+  --radius-frame: 32px;
+
+  /* Elevação: só overlay. Card não tem sombra (§5.3). */
+  --shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.45);
+
+  /* Trilho de diagnóstico/prévia (§4, R5). */
+  --rail-width: 380px;
+}

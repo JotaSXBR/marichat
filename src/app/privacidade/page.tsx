@@ -18,9 +18,9 @@ export default async function PrivacyPage() {
   const contactEmail = process.env.PRIVACY_CONTACT_EMAIL?.trim();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 text-zinc-800">
-      <h1 className="text-2xl font-semibold">Política de Privacidade</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+    <div className="mx-auto max-w-3xl px-4 py-12 text-foreground">
+      <h1 className="text-display">Política de Privacidade</h1>
+      <p className="mt-2 text-label text-muted-foreground">
         Última atualização: outubro de 2026
       </p>
       <PrivacyContent contactEmail={contactEmail} />

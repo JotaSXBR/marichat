@@ -1,26 +1,149 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../styles/tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
+/*
+ * Ponte entre os tokens do MARICHAT (src/styles/tokens.css) e o Tailwind.
+ * Tudo aqui é `inline` para que as variáveis sejam resolvidas em tempo de
+ * uso — é o que faz o mesmo token valer em `bg-card`, em `border-border`
+ * e dentro de um componente do Kokonut sem duplicar valor.
+ */
 @theme inline {
+  /* Cor — slots do shadcn/ui */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Cor — extras do MARICHAT */
+  --color-surface-hover: var(--surface-hover);
+  --color-line-subtle: var(--line-subtle);
+  --color-line-strong: var(--line-strong);
+  --color-muted-soft: var(--text-muted);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  /* Raio — §5.5 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+
+  /* Tipografia — §5.4 */
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --text-display: 2.5rem;
+  --text-display--line-height: 2.75rem;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 600;
+
+  --text-section: 1.25rem;
+  --text-section--line-height: 1.75rem;
+  --text-section--letter-spacing: -0.02em;
+  --text-section--font-weight: 600;
+
+  --text-title: 0.9375rem;
+  --text-title--line-height: 1.375rem;
+  --text-title--font-weight: 500;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.125rem;
+  --text-label--font-weight: 500;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 0.875rem;
+  --text-micro--letter-spacing: 0.08em;
+  --text-micro--font-weight: 600;
+
+  --text-mono: 0.8125rem;
+  --text-mono--line-height: 1.125rem;
+
+  /* Movimento — §5.3 */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* Foco visível do §5.6: anel de 2 px lime + 2 px de offset. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Números de métrica não dançam de largura. */
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Superfície de vidro do §5.3: card + blur + borda + realce interno. */
+  .glass {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+    backdrop-filter: blur(20px);
+  }
+
+  /* Aurora: brilho radial lime no canto superior direito, ≤ 8%. */
+  .aurora {
+    background-image: radial-gradient(
+      60rem 32rem at 100% 0%,
+      rgb(163 230 53 / 0.08),
+      transparent 70%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -51,17 +51,17 @@ export default async function DataDeletionPage({
   const lookup = code ? await findLookup(code) : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 text-zinc-800">
-      <h1 className="text-2xl font-semibold">Exclusão de dados</h1>
-      <p className="mt-2 text-sm leading-6">
+    <div className="mx-auto max-w-3xl px-4 py-12 text-foreground">
+      <h1 className="text-display">Exclusão de dados</h1>
+      <p className="mt-2 text-body leading-6 text-card-foreground">
         Você pode solicitar a exclusão dos dados tratados pelo MARICHAT a
         qualquer momento. Apagamos o identificador do Instagram, os comentários
         e as mensagens registradas para atendimento.
       </p>
 
       {code ? (
-        <section className="mt-6 rounded-lg border border-zinc-200 bg-white p-4">
-          <h2 className="text-sm font-semibold">Consulta do pedido</h2>
+        <section className="mt-6 rounded-lg border border-border bg-card p-6">
+          <h2 className="text-title text-foreground">Consulta do pedido</h2>
           {lookup ? (
             <DeletionLookupSection lookup={lookup} />
           ) : (

@@ -4,7 +4,7 @@ function AboutSections() {
   return (
     <>
       <section>
-        <h2 className="text-base font-semibold">1. Quem somos</h2>
+        <h2 className="text-section">1. Quem somos</h2>
         <p className="mt-2">
           O MARICHAT é uma ferramenta de atendimento automático usada pelo
           perfil profissional do Instagram que publicou o conteúdo em que você
@@ -14,7 +14,7 @@ function AboutSections() {
       </section>
 
       <section>
-        <h2 className="text-base font-semibold">2. Quais dados tratamos</h2>
+        <h2 className="text-section">2. Quais dados tratamos</h2>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>identificador do Instagram de quem comentou (IGSID);</li>
           <li>texto do comentário e identificador da publicação;</li>
@@ -32,7 +32,7 @@ function AboutSections() {
       </section>
 
       <section>
-        <h2 className="text-base font-semibold">3. Para que usamos</h2>
+        <h2 className="text-section">3. Para que usamos</h2>
         <p className="mt-2">
           Exclusivamente para responder ao seu comentário e enviar o link
           solicitado, garantir a segurança e o funcionamento do serviço,
@@ -48,7 +48,7 @@ function LegalSections() {
   return (
     <>
       <section>
-        <h2 className="text-base font-semibold">4. Base legal</h2>
+        <h2 className="text-section">4. Base legal</h2>
         <p className="mt-2">
           Tratamos os dados com base no seu consentimento ao interagir com o
           perfil (art. 7º, I, da LGPD) e no legítimo interesse em prestar o
@@ -58,7 +58,7 @@ function LegalSections() {
       </section>
 
       <section>
-        <h2 className="text-base font-semibold">5. Compartilhamento</h2>
+        <h2 className="text-section">5. Compartilhamento</h2>
         <p className="mt-2">
           Os dados transitam pela plataforma da Meta (Instagram), conforme as
           políticas dela, e ficam hospedados em servidor contratado para operar
@@ -73,7 +73,7 @@ function LegalSections() {
 function RetentionSection() {
   return (
     <section>
-      <h2 className="text-base font-semibold">6. Por quanto tempo guardamos</h2>
+      <h2 className="text-section">6. Por quanto tempo guardamos</h2>
       <p className="mt-2">
         O conteúdo técnico dos eventos (payloads de webhook) e das mensagens
         enviadas é removido após 30 dias, mantendo-se apenas identificadores e
@@ -88,12 +88,15 @@ function RetentionSection() {
 function RightsSection({ contactEmail }: { contactEmail?: string }) {
   return (
     <section>
-      <h2 className="text-base font-semibold">7. Seus direitos</h2>
+      <h2 className="text-section">7. Seus direitos</h2>
       <p className="mt-2">
         Você pode pedir confirmação de tratamento, acesso, correção, eliminação,
         portabilidade e informação sobre compartilhamentos, nos termos da LGPD.
         Para excluir seus dados, siga as instruções em{" "}
-        <a className="underline" href="/exclusao-de-dados">
+        <a
+          className="text-primary underline underline-offset-4"
+          href="/exclusao-de-dados"
+        >
           Exclusão de dados
         </a>
         .
@@ -101,7 +104,10 @@ function RightsSection({ contactEmail }: { contactEmail?: string }) {
       {contactEmail ? (
         <p className="mt-2">
           Contato do responsável:{" "}
-          <a className="underline" href={`mailto:${contactEmail}`}>
+          <a
+            className="text-primary underline underline-offset-4"
+            href={`mailto:${contactEmail}`}
+          >
             {contactEmail}
           </a>
           .
@@ -119,7 +125,7 @@ function RightsSection({ contactEmail }: { contactEmail?: string }) {
 function CookiesSection() {
   return (
     <section>
-      <h2 className="text-base font-semibold">8. Cookies</h2>
+      <h2 className="text-section">8. Cookies</h2>
       <p className="mt-2">
         Usamos apenas cookies técnicos necessários: um durante o login oficial
         do Instagram (proteção contra fraude na autorização) e o cookie de
@@ -132,7 +138,7 @@ function CookiesSection() {
 
 export function PrivacyContent({ contactEmail }: { contactEmail?: string }) {
   return (
-    <div className="mt-8 space-y-6 text-sm leading-6">
+    <div className="mt-8 space-y-6 text-body leading-6 text-card-foreground">
       <AboutSections />
       <LegalSections />
       <RetentionSection />
