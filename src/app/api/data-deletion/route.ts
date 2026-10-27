@@ -1,13 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db/client";
-import {
-  commentInteractions,
-  dataDeletionRequests,
-  outboundMessages,
-} from "@/lib/db/schema";
+import { dataDeletionRequests } from "@/lib/db/schema";
 import { getAppUrl, requireEnv } from "@/lib/env";
 import { parseSignedRequest } from "@/lib/signature";
 
@@ -54,34 +50,35 @@ async function deleteUserData(
   confirmationCode: string,
 ): Promise<void> {
   const db = getDb();
-  const interactions = await db
-    .select({ id: commentInteractions.id })
-    .from(commentInteractions)
-    .where(eq(commentInteractions.commenterIgsid, instagramUserId));
 
-  for (const interaction of interactions) {
-    // Apaga primeiro as mensagens (FK), depois a interação.
-    await db
-      .delete(outboundMessages)
-      .where(eq(outboundMessages.interactionId, interaction.id));
-    await db
-      .delete(commentInteractions)
-      .where(eq(commentInteractions.id, interaction.id));
-  }
+  // Tudo ou nada: uma falha no meio não pode deixar o usuário parcialmente
+  // apagado sem registro. O LIKE usa o id entre aspas para não casar com um
+  // id maior que apenas contém os mesmos dígitos.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`
+      DELETE FROM outbound_messages
+      WHERE interaction_id IN (
+        SELECT id FROM comment_interactions
+        WHERE commenter_igsid = ${instagramUserId}
+      )
+    `);
+    await tx.execute(sql`
+      DELETE FROM comment_interactions
+      WHERE commenter_igsid = ${instagramUserId}
+    `);
+    await tx.execute(sql`
+      DELETE FROM webhook_events
+      WHERE payload::text LIKE ${`%"${instagramUserId}"%`}
+    `);
 
-  // Remove também cópias do identificador guardadas nos payloads de webhook.
-  await db.execute(sql`
-    DELETE FROM webhook_events
-    WHERE payload::text LIKE ${`%${instagramUserId}%`}
-  `);
-
-  await db.insert(dataDeletionRequests).values({
-    instagramUserIdHash: createHash("sha256")
-      .update(instagramUserId)
-      .digest("hex"),
-    confirmationCode,
-    status: "completed",
-    completedAt: new Date(),
+    await tx.insert(dataDeletionRequests).values({
+      instagramUserIdHash: createHash("sha256")
+        .update(instagramUserId)
+        .digest("hex"),
+      confirmationCode,
+      status: "completed",
+      completedAt: new Date(),
+    });
   });
 }
 

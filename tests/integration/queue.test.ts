@@ -244,6 +244,12 @@ suite("fila: envio, retentativas, prazos e concorrência", () => {
     const db = getDb();
     const [job] = await db.select().from(outboundMessages);
     expect(job!.status).toBe("expired");
+
+    const [row] = await db
+      .select()
+      .from(commentInteractions)
+      .where(eq(commentInteractions.id, interaction.id));
+    expect(row!.state).toBe("expired");
   });
 
   it("não permite que dois drenadores enviem a mesma tarefa", async () => {

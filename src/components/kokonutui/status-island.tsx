@@ -139,7 +139,7 @@ function TaskIcon({ task }: { task: IslandTask }) {
       aria-hidden="true"
       className={cn(
         "size-4 shrink-0 -rotate-90",
-        !known && "animate-spin motion-reduce:animate-none"
+        !known && "animate-spin motion-reduce:animate-none",
       )}
       fill="none"
       viewBox="0 0 16 16"
@@ -346,7 +346,7 @@ export function StatusIsland({
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === "Escape") {
       focusPill.current = Boolean(
-        islandRef.current?.contains(document.activeElement)
+        islandRef.current?.contains(document.activeElement),
       );
       setOpen(false);
     }

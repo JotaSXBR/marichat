@@ -34,6 +34,7 @@ export default async function AutomationsPage({
         .from(automations)
         .where(eq(automations.accountId, account.id))
         .orderBy(desc(automations.createdAt))
+        .limit(200)
     : [];
 
   return (

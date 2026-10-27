@@ -2,7 +2,7 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 
-import { setAppStateValue } from "@/lib/accounts";
+import { getAppStateValue, setAppStateValue } from "@/lib/accounts";
 import { getDb } from "@/lib/db/client";
 import { commentInteractions, instagramAccounts } from "@/lib/db/schema";
 import { claimNextJob } from "@/lib/queue/claim";
@@ -80,8 +80,12 @@ function recordOutcome(summary: DrainSummary, outcome: JobOutcome): void {
  */
 export async function drainQueue(limit = 10): Promise<DrainSummary> {
   const summary: DrainSummary = { ...EMPTY_SUMMARY };
+  const startedAt = Date.now();
 
   for (let index = 0; index < limit; index += 1) {
+    // O cron tem 60s no total; parar antes evita ser morto no meio de um envio.
+    if (Date.now() - startedAt > 30_000) break;
+
     const job = await claimNextJob();
     if (!job) break;
 
@@ -118,7 +122,18 @@ export async function runTick(): Promise<{
   const expired = await expireOverdueJobs();
   const drain = await drainQueue(10);
   const refresh = await refreshTokenIfNeeded();
-  await cleanupOldData();
+
+  // A limpeza é cara e quase sempre não tem o que fazer: uma vez por dia basta.
+  const lastCleanupAt = await getAppStateValue<string>("last_cleanup_at");
+  const lastCleanup = lastCleanupAt ? new Date(lastCleanupAt).getTime() : 0;
+  if (
+    !Number.isFinite(lastCleanup) ||
+    Date.now() - lastCleanup > 20 * 3_600_000
+  ) {
+    await cleanupOldData();
+    await setAppStateValue("last_cleanup_at", new Date().toISOString());
+  }
+
   await setAppStateValue("last_tick_at", new Date().toISOString());
   return { recovered, expired, drain, refresh };
 }

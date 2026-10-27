@@ -15,8 +15,8 @@ export function normalizeText(input: string): string {
     .toLowerCase();
 }
 
+/** Forma canônica da palavra-chave (minúsculas, sem acentos ou pontuação). */
 export function normalizeKeyword(input: string): string {
-  // Mesma forma usada na comparação: sem acentos, pontuação ou menções.
   return normalizeText(stripMentions(input))
     .replace(/[^a-z0-9]+/g, " ")
     .trim();

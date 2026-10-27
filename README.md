@@ -24,7 +24,7 @@ webhook de mensagem ──► consulta opcional "segue o perfil?"
 segunda mensagem com botão de link HTTPS
 ```
 
-Stack: Next.js 16.4.1 (App Router), TypeScript, Drizzle ORM, PostgreSQL,
+Stack: Next.js 16.4.3 (App Router), TypeScript, Drizzle ORM, PostgreSQL,
 Tailwind, Docker. Sem Supabase, sem serviços pagos, sem `pg_cron`.
 
 ## O que já está pronto

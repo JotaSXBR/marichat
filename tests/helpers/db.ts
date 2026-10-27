@@ -74,7 +74,6 @@ export async function seedAutomation(
       accountId,
       name: "Automação de teste",
       keyword: "Quero",
-      keywordNormalized: "quero",
       mediaId: null,
       firstDmText: "Responda esta mensagem para receber o link.",
       quickReplyTitle: "Quero o link",

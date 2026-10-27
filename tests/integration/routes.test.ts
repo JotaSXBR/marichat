@@ -7,8 +7,10 @@ import {
   commentInteractions,
   dataDeletionRequests,
   outboundMessages,
+  webhookEvents,
 } from "@/lib/db/schema";
 import { computeHubSignature256 } from "@/lib/signature";
+import { claimEvent, finishEvent } from "@/lib/webhook/events";
 import {
   closeTestDatabase,
   hasTestDatabase,
@@ -319,5 +321,82 @@ suite("rotas HTTP", () => {
       }),
     );
     expect(response.status).toBe(401);
+  });
+
+  it("nao apaga eventos de outro usuario com id parecido", async () => {
+    const account = await seedAccount();
+    const automation = await seedAutomation(account.id);
+    await seedInteraction({
+      accountId: account.id,
+      automationId: automation.id,
+      commenterIgsid: "1234",
+      commentId: "comment-del-1",
+    });
+    await seedInteraction({
+      accountId: account.id,
+      automationId: automation.id,
+      commenterIgsid: "9912345",
+      commentId: "comment-del-2",
+    });
+
+    const db = getDb();
+    await claimEvent({
+      eventKey: "comment:del-1234",
+      field: "comments",
+      instagramUserId: account.instagramUserId,
+      payload: { change: { value: { from: { id: "1234" } } } },
+    });
+    await claimEvent({
+      eventKey: "comment:del-9912345",
+      field: "comments",
+      instagramUserId: account.instagramUserId,
+      payload: { change: { value: { from: { id: "9912345" } } } },
+    });
+
+    const payload = Buffer.from(
+      JSON.stringify({
+        algorithm: "HMAC-SHA256",
+        user_id: "1234",
+        issued_at: Math.floor(Date.now() / 1000),
+      }),
+      "utf8",
+    ).toString("base64url");
+    const signature = createHmac("sha256", APP_SECRET)
+      .update(payload)
+      .digest("base64url");
+    const form = new URLSearchParams({
+      signed_request: `${signature}.${payload}`,
+    });
+
+    const response = await dataDeletionPost(
+      new Request("http://localhost/api/data-deletion", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: form.toString(),
+      }),
+    );
+    expect(response.status).toBe(200);
+
+    const interactions = await db.select().from(commentInteractions);
+    expect(interactions.map((row) => row.commenterIgsid)).toEqual(["9912345"]);
+
+    const events = await db.select().from(webhookEvents);
+    expect(events.map((row) => row.eventKey).sort()).toEqual([
+      "comment:del-9912345",
+    ]);
+  });
+
+  it("permite reservar de novo um evento que falhou", async () => {
+    const event = {
+      eventKey: "comment:retry-1",
+      field: "comments",
+      instagramUserId: "17841400000000000",
+      payload: {},
+    };
+    expect(await claimEvent(event)).toBe(true);
+    await finishEvent(event.eventKey, "failed", "boom");
+    expect(await claimEvent(event)).toBe(true);
+    await finishEvent(event.eventKey, "processed");
+    expect(await claimEvent(event)).toBe(false);
   });
 });

@@ -89,7 +89,7 @@ describe("automationSchema", () => {
 });
 
 describe("automationColumns", () => {
-  it("normaliza a palavra-chave e zera o mediaId vazio", () => {
+  it("zera o mediaId vazio", () => {
     const parsed = automationSchema.parse(
       readAutomationForm(
         validForm({ keyword: "Quero o LINK!", mediaId: "  " }),
@@ -97,8 +97,6 @@ describe("automationColumns", () => {
     );
 
     const columns = automationColumns(parsed);
-
-    expect(columns.keywordNormalized).toBe("quero o link");
     expect(columns.mediaId).toBeNull();
     expect(columns.followMode).toBe("off");
   });

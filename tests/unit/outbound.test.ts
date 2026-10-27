@@ -19,7 +19,6 @@ function settings(
     accountId: "account-1",
     name: "Automação",
     keyword: "Quero",
-    keywordNormalized: "quero",
     mediaId: null,
     firstDmText: "Responda esta mensagem para receber o link.",
     quickReplyTitle: "Quero o link",

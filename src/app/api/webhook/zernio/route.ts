@@ -59,9 +59,9 @@ export async function POST(request: Request) {
     }
     return Response.json({ ok: true, ...summary });
   } catch (error) {
-    // Nunca devolve erro para a Zernio por falha interna: ela reenviaria o
-    // evento e o dedupe já garantiu o registro.
+    // 5xx faz a Zernio reenviar. O evento ficou marcado como "failed" e pode
+    // ser reservado de novo; responder 200 perderia o evento para sempre.
     console.error("[zernio] erro ao processar evento:", error);
-    return Response.json({ received: true });
+    return Response.json({ error: "Falha ao processar." }, { status: 500 });
   }
 }

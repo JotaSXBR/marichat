@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db/client";
 import { commentInteractions, outboundMessages } from "@/lib/db/schema";
@@ -189,6 +189,23 @@ export async function markExpired(
         .update(commentInteractions)
         .set({ state: "expired", updatedAt: now })
         .where(eq(commentInteractions.id, interaction.id));
+    } else {
+      // Prazo do link venceu: a interação também terminou. Não rebaixa quem
+      // já recebeu um link (link_sent).
+      await tx
+        .update(commentInteractions)
+        .set({ state: "expired", updatedAt: now })
+        .where(
+          and(
+            eq(commentInteractions.id, interaction.id),
+            inArray(commentInteractions.state, [
+              "queued",
+              "accepted",
+              "gate_pending",
+              "uncertain",
+            ]),
+          ),
+        );
     }
   });
 }

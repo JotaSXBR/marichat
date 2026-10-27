@@ -62,8 +62,6 @@ export const automations = pgTable(
     name: text("name").notNull(),
     /** Palavra/frase digitada pelo administrador. */
     keyword: text("keyword").notNull(),
-    /** Forma canônica usada na comparação (minúsculas, sem acentos). */
-    keywordNormalized: text("keyword_normalized").notNull(),
     /** Publicação específica; NULL = qualquer publicação. */
     mediaId: text("media_id"),
     firstDmText: text("first_dm_text").notNull(),
@@ -119,11 +117,7 @@ export const automations = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("automations_lookup_idx").on(
-      table.accountId,
-      table.isActive,
-      table.keywordNormalized,
-    ),
+    index("automations_lookup_idx").on(table.accountId, table.isActive),
   ],
 );
 
@@ -270,6 +264,12 @@ export const outboundMessages = pgTable(
       table.kind,
     ),
     index("outbound_messages_queue_idx").on(table.status, table.nextAttemptAt),
+    index("outbound_messages_private_reply_usage_idx").on(
+      table.accountId,
+      table.kind,
+      table.status,
+      table.acceptedAt,
+    ),
   ],
 );
 

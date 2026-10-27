@@ -72,26 +72,38 @@ export async function expireOverdueJobs(): Promise<number> {
   await db.execute(sql`
     UPDATE comment_interactions ci
     SET state = 'expired', updated_at = now()
-    WHERE ci.state IN ('queued', 'uncertain')
+    WHERE ci.state IN ('queued', 'accepted', 'gate_pending', 'uncertain')
       AND EXISTS (
         SELECT 1 FROM outbound_messages om
         WHERE om.interaction_id = ci.id
-          AND om.kind = 'private_reply'
           AND om.status = 'expired'
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM outbound_messages om
+        WHERE om.interaction_id = ci.id
+          AND om.status = 'accepted'
+          AND om.kind IN ('followup_link', 'link_optional', 'link_direct')
       )
   `);
 
   return (result as unknown as { count?: number }).count ?? 0;
 }
 
-/** Remove o conteúdo de payloads antigos, preservando IDs e estados. */
+/**
+ * Retenção: some com eventos antigos (o dedupe só precisa de ~7 dias), apaga
+ * o texto dos comentários velhos e esvazia payloads de mensagens concluídas.
+ */
 export async function cleanupOldData(): Promise<void> {
   const db = getDb();
   await db.execute(sql`
-    UPDATE webhook_events
-    SET payload = '{"removed": true}'::jsonb
+    DELETE FROM webhook_events
     WHERE received_at < now() - interval '30 days'
-      AND payload <> '{"removed": true}'::jsonb
+  `);
+  await db.execute(sql`
+    UPDATE comment_interactions
+    SET comment_text = NULL, updated_at = now()
+    WHERE comment_text IS NOT NULL
+      AND created_at < now() - interval '90 days'
   `);
   await db.execute(sql`
     UPDATE outbound_messages

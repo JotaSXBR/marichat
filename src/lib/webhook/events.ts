@@ -15,7 +15,8 @@ export function opaqueToken(): string {
 
 /**
  * Reserva o evento pelo `eventKey`. Devolve `false` quando já foi processado
- * (dedupe), sem lançar erro.
+ * (dedupe), sem lançar erro. Um evento que falhou pode ser reservado de novo
+ * quando o provedor reenvia.
  */
 export async function claimEvent(params: {
   eventKey: string;
@@ -33,7 +34,11 @@ export async function claimEvent(params: {
       payload: params.payload,
       status: "received",
     })
-    .onConflictDoNothing({ target: webhookEvents.eventKey })
+    .onConflictDoUpdate({
+      target: webhookEvents.eventKey,
+      set: { status: "received", errorMessage: null, processedAt: null },
+      setWhere: eq(webhookEvents.status, "failed"),
+    })
     .returning({ id: webhookEvents.id });
   return inserted.length > 0;
 }

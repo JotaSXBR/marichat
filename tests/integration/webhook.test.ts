@@ -10,6 +10,7 @@ import {
   resetDatabase,
   seedAccount,
   seedAutomation,
+  seedInteraction,
 } from "../helpers/db";
 
 const suite = hasTestDatabase ? describe : describe.skip;
@@ -257,6 +258,26 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     const db = getDb();
     const [interaction] = await db.select().from(commentInteractions);
     expect(interaction?.automationId).toBe(specific.id);
+  });
+
+  it("ignora a automação de outra publicação", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, {
+      mediaId: "media-9",
+      name: "publicação específica",
+    });
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-1",
+        text: "quero",
+        mediaId: "media-8",
+      }),
+    );
+
+    const db = getDb();
+    expect(await db.select().from(commentInteractions)).toHaveLength(0);
   });
 
   it("agenda o link quando a pessoa responde (porta de seguidor desligada)", async () => {
@@ -648,5 +669,43 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     const db = getDb();
     const jobs = await db.select().from(outboundMessages);
     expect(jobs.filter((job) => job.kind === "followup_link")).toHaveLength(1);
+  });
+
+  it("responde a interacao aberta mesmo com outra ja encerrada", async () => {
+    const account = await seedAccount();
+    const automation = await seedAutomation(account.id);
+    const db = getDb();
+
+    const open = await seedInteraction({
+      accountId: account.id,
+      automationId: automation.id,
+      commentId: "comment-open",
+      state: "accepted",
+      userLastMessageAt: new Date(),
+    });
+    const closed = await seedInteraction({
+      accountId: account.id,
+      automationId: automation.id,
+      commentId: "comment-closed",
+      state: "link_sent",
+      userLastMessageAt: new Date(),
+    });
+    // A encerrada e a mais recente: antes ela "roubava" a resposta.
+    await db
+      .update(commentInteractions)
+      .set({ createdAt: new Date(Date.now() + 1000) })
+      .where(eq(commentInteractions.id, closed.id));
+
+    const summary = await handleWebhookPayload(
+      textReplyPayload({
+        igUserId: account.instagramUserId,
+        mid: "mid-open",
+      }),
+    );
+    expect(summary.processed).toBe(1);
+
+    const jobs = await db.select().from(outboundMessages);
+    const followup = jobs.find((job) => job.kind === "followup_link");
+    expect(followup?.interactionId).toBe(open.id);
   });
 });

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, notInArray } from "drizzle-orm";
 
 import type { Account } from "@/lib/accounts";
 import { getDb } from "@/lib/db/client";
@@ -96,7 +96,9 @@ async function findInteraction(params: {
     return interaction;
   }
 
-  // Texto livre: a interação mais recente desta pessoa nesta conta.
+  // Texto livre: a interação aberta mais recente desta pessoa nesta conta.
+  // Uma interação já encerrada (link enviado, expirada) não pode "roubar" a
+  // resposta de outra que ainda espera.
   const [interaction] = await db
     .select()
     .from(commentInteractions)
@@ -104,6 +106,7 @@ async function findInteraction(params: {
       and(
         eq(commentInteractions.accountId, params.accountId),
         eq(commentInteractions.commenterIgsid, params.senderId),
+        notInArray(commentInteractions.state, [...CLOSED_STATES]),
       ),
     )
     .orderBy(desc(commentInteractions.createdAt))

@@ -88,9 +88,9 @@ export async function POST(request: Request) {
     }
     return Response.json({ ok: true, ...summary });
   } catch (error) {
-    // Nunca devolve erro para a Meta por falha interna: ela reenviaria o
-    // mesmo evento e o dedupe já garantiu o registro.
+    // 5xx faz a Meta reenviar. O evento ficou marcado como "failed" e pode
+    // ser reservado de novo; responder 200 perderia o evento para sempre.
     console.error("[webhook] erro ao processar payload:", error);
-    return Response.json({ received: true });
+    return Response.json({ error: "Falha ao processar." }, { status: 500 });
   }
 }

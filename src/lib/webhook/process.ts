@@ -87,7 +87,19 @@ async function runClaimedEvent(params: {
     return;
   }
 
-  const outcome = await params.process(params.account);
+  let outcome: Outcome;
+  try {
+    outcome = await params.process(params.account);
+  } catch (error) {
+    // Sem isso o evento ficaria "received" e o provedor nunca reenviaria.
+    await finishEvent(
+      params.eventKey,
+      "failed",
+      error instanceof Error ? error.message : "Falha ao processar o evento.",
+    );
+    params.summary.failed += 1;
+    throw error;
+  }
   await finishEvent(params.eventKey, outcome);
   params.summary[outcome] += 1;
 }
@@ -161,8 +173,9 @@ async function processMessagingEntry(params: {
 }
 
 /**
- * Percorre o payload assinado. Nunca lança: o webhook precisa responder 200
- * rápido para a Meta. Falhas ficam registradas em webhook_events.
+ * Percorre o payload assinado. Lança apenas quando um evento já reservado
+ * falha no processamento (o evento fica marcado como `failed`); a rota
+ * responde 5xx para o provedor reenviar e o evento ser retomado.
  */
 export async function handleWebhookPayload(
   payload: WebhookPayload,

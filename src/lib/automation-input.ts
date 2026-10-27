@@ -153,12 +153,11 @@ export function readAutomationForm(formData: FormData) {
   };
 }
 
-/** Colunas prontas para INSERT/UPDATE, com palavra-chave normalizada. */
+/** Colunas prontas para INSERT/UPDATE. */
 export function automationColumns(values: AutomationInput) {
   return {
     name: values.name,
     keyword: values.keyword,
-    keywordNormalized: normalizeKeyword(values.keyword),
     mediaId:
       values.mediaId && values.mediaId.length > 0 ? values.mediaId : null,
     firstDmText: values.firstDmText,

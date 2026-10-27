@@ -137,7 +137,20 @@ export async function handleZernioEvent(
     return summary;
   }
 
-  const outcome = await dispatchEvent(account, event);
+  let outcome: "processed" | "ignored" | "failed";
+  try {
+    outcome = await dispatchEvent(account, event);
+  } catch (error) {
+    // A rota responde 5xx; o evento precisa ficar "failed" para ser retomado
+    // no reenvio, em vez de "received" para sempre.
+    await finishEvent(
+      eventKey,
+      "failed",
+      error instanceof Error ? error.message : "Falha ao processar o evento.",
+    );
+    summary.failed += 1;
+    throw error;
+  }
   await finishEvent(eventKey, outcome);
   summary[outcome] += 1;
   return summary;

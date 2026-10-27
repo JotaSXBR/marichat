@@ -3,6 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
@@ -20,6 +21,7 @@ import { readText } from "@/lib/form-data";
 
 const ADMIN_PATH = "/admin";
 const AUTOMATIONS_PATH = "/admin/automacoes";
+const automationIdSchema = z.uuid();
 
 function firstFieldErrors(
   issues: { path: PropertyKey[]; message: string }[],
@@ -55,13 +57,20 @@ export async function saveAutomation(
 
   const columns = automationColumns(parsed.data);
   const db = getDb();
-  const id = readText(formData, "id").trim();
+  const rawId = readText(formData, "id").trim();
+  const id = automationIdSchema.safeParse(rawId);
 
-  if (id) {
+  if (rawId && !id.success) {
+    return { error: "Automação não encontrada." };
+  }
+
+  if (id.success) {
     const updated = await db
       .update(automations)
       .set({ ...columns, updatedAt: new Date() })
-      .where(and(eq(automations.id, id), eq(automations.accountId, account.id)))
+      .where(
+        and(eq(automations.id, id.data), eq(automations.accountId, account.id)),
+      )
       .returning({ id: automations.id });
 
     if (updated.length === 0) {
@@ -78,15 +87,20 @@ export async function saveAutomation(
 
 export async function toggleAutomation(formData: FormData): Promise<void> {
   await requireAdmin();
-  const id = readText(formData, "id");
+  const id = automationIdSchema.safeParse(readText(formData, "id"));
   const activate = formData.get("activate") === "1";
-  if (!id) return;
+  if (!id.success) return;
+
+  const account = await getActiveAccount();
+  if (!account) return;
 
   const db = getDb();
   await db
     .update(automations)
     .set({ isActive: activate, updatedAt: new Date() })
-    .where(eq(automations.id, id));
+    .where(
+      and(eq(automations.id, id.data), eq(automations.accountId, account.id)),
+    );
 
   revalidatePath(AUTOMATIONS_PATH);
   revalidatePath(ADMIN_PATH);

@@ -1,13 +1,13 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 
 import type { Account } from "@/lib/accounts";
 import { getDb } from "@/lib/db/client";
 import { automations } from "@/lib/db/schema";
 import { commentMatchesKeyword, pickAutomation } from "@/lib/matching";
 
-/** Automação ativa cujo comentário casa e cujo post tem prioridade. */
+/** Automação ativa do post do comentário (ou de qualquer post) que casa. */
 export async function findMatchingAutomation(
   account: Account,
   commentText: string,
@@ -27,6 +27,7 @@ export async function findMatchingAutomation(
       and(
         eq(automations.accountId, account.id),
         eq(automations.isActive, true),
+        or(isNull(automations.mediaId), eq(automations.mediaId, mediaId)),
       ),
     )
     .limit(200);
