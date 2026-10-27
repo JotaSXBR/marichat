@@ -14,10 +14,43 @@ import {
   refreshLongLivedToken,
 } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
-import type { AccountRow } from "@/lib/queue/types";
+import { markFailed } from "@/lib/queue/job-state";
+import type {
+  AccountRow,
+  InteractionRow,
+  JobOutcome,
+  JobRow,
+} from "@/lib/queue/types";
 import { eq } from "drizzle-orm";
 
 const REFRESH_BACKOFF_MS = 60 * 60 * 1000;
+
+export type AccountToken = { token: string | null } | { outcome: JobOutcome };
+
+/**
+ * Token da Meta para enviar/consultar em nome da conta. Na Zernio não há token
+ * nosso (`null`); se o token guardado não abrir, a conta precisa reconectar.
+ */
+export async function readAccountToken(
+  job: JobRow,
+  account: AccountRow,
+  interaction: InteractionRow,
+): Promise<AccountToken> {
+  if (account.provider === "zernio") return { token: null };
+
+  try {
+    return { token: decryptToken(account.accessTokenEncrypted) };
+  } catch {
+    await markAccountReconnectRequired(account.id);
+    await markFailed(
+      job,
+      interaction,
+      "Não foi possível ler o token guardado. Reconecte o Instagram.",
+      "TOKEN_UNREADABLE",
+    );
+    return { outcome: "failed" };
+  }
+}
 
 /** Já é cedo demais (ou não há token) para renovar? */
 function isTooEarlyToRefresh(account: AccountRow, now: number): boolean {

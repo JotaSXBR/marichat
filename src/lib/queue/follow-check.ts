@@ -2,8 +2,6 @@ import "server-only";
 
 import { and, eq, sql } from "drizzle-orm";
 
-import { markAccountReconnectRequired } from "@/lib/accounts";
-import { decryptToken } from "@/lib/crypto";
 import { getDb } from "@/lib/db/client";
 import {
   automations,
@@ -16,6 +14,7 @@ import { buildGatePayload, buildLinkPayload } from "@/lib/outbound";
 import { deadlineFor } from "@/lib/queue/deadline";
 import { markExpired, markFailed } from "@/lib/queue/job-state";
 import { requeueForConnection } from "@/lib/queue/retry";
+import { readAccountToken } from "@/lib/queue/token";
 import type {
   AccountRow,
   InteractionRow,
@@ -238,6 +237,59 @@ async function applyFollowCheck(params: {
   });
 }
 
+type PreparedCheck =
+  { outcome: JobOutcome } | { settings: Settings; accessToken: string | null };
+
+/**
+ * Checagens que podem encerrar a tarefa antes de consultar o perfil: prazo,
+ * conexão, token, automação e vínculo com a Zernio.
+ */
+async function prepareCheck(
+  job: JobRow,
+  account: AccountRow,
+  interaction: InteractionRow,
+): Promise<PreparedCheck> {
+  const deadline = deadlineFor(job, interaction);
+  if (deadline === null || Date.now() >= deadline) {
+    await markExpired(job, interaction);
+    return { outcome: "expired" };
+  }
+
+  if (account.connectionStatus !== "connected") {
+    await requeueForConnection(
+      job,
+      "A conexão com o Instagram precisa ser restabelecida antes da checagem.",
+    );
+    return { outcome: "requeued" };
+  }
+
+  const token = await readAccountToken(job, account, interaction);
+  if ("outcome" in token) return { outcome: token.outcome };
+
+  const settings = await loadSettings(interaction);
+  if (!settings) {
+    await markFailed(
+      job,
+      interaction,
+      "A automação original não existe mais.",
+      "AUTOMATION_MISSING",
+    );
+    return { outcome: "failed" };
+  }
+
+  if (account.provider === "zernio" && !account.providerAccountId) {
+    await markFailed(
+      job,
+      interaction,
+      "A conta da Zernio não está vinculada. Reconecte em Conexão.",
+      "PROVIDER_ACCOUNT_MISSING",
+    );
+    return { outcome: "failed" };
+  }
+
+  return { settings, accessToken: token.token };
+}
+
 /**
  * Porta de seguidor: consulta o perfil (somente depois que a pessoa enviou
  * uma mensagem) e decide entre liberar o link ou enviar a mensagem com os
@@ -253,57 +305,10 @@ export async function processFollowCheck(
   account: AccountRow,
   interaction: InteractionRow,
 ): Promise<JobOutcome> {
-  const deadline = deadlineFor(job, interaction);
-  if (deadline === null || Date.now() >= deadline) {
-    await markExpired(job, interaction);
-    return "expired";
-  }
+  const prepared = await prepareCheck(job, account, interaction);
+  if ("outcome" in prepared) return prepared.outcome;
 
-  if (account.connectionStatus !== "connected") {
-    await requeueForConnection(
-      job,
-      "A conexão com o Instagram precisa ser restabelecida antes da checagem.",
-    );
-    return "requeued";
-  }
-
-  let accessToken: string | null = null;
-  if (account.provider !== "zernio") {
-    try {
-      accessToken = decryptToken(account.accessTokenEncrypted);
-    } catch {
-      await markAccountReconnectRequired(account.id);
-      await markFailed(
-        job,
-        interaction,
-        "Não foi possível ler o token guardado. Reconecte o Instagram.",
-        "TOKEN_UNREADABLE",
-      );
-      return "failed";
-    }
-  }
-
-  const settings = await loadSettings(interaction);
-  if (!settings) {
-    await markFailed(
-      job,
-      interaction,
-      "A automação original não existe mais.",
-      "AUTOMATION_MISSING",
-    );
-    return "failed";
-  }
-
-  if (account.provider === "zernio" && !account.providerAccountId) {
-    await markFailed(
-      job,
-      interaction,
-      "A conta da Zernio não está vinculada. Reconecte em Conexão.",
-      "PROVIDER_ACCOUNT_MISSING",
-    );
-    return "failed";
-  }
-
+  const { settings, accessToken } = prepared;
   const status = await resolveFollowStatus(account, interaction, accessToken);
   const checks = interaction.followChecks + 1;
   const mode: FollowMode = isFollowMode(settings.followMode)

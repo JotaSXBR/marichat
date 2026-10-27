@@ -40,18 +40,44 @@ type TemplatePayload = {
   elements?: Array<{ title?: unknown; buttons?: RawButton[] }>;
 };
 
-export function toZernioMessage(payload: unknown): ZernioMessage {
-  const root = payload as {
-    message?: {
-      text?: unknown;
-      attachment?: {
-        type?: unknown;
-        payload?: TemplatePayload;
-      };
+type PayloadRoot = {
+  message?: {
+    text?: unknown;
+    attachment?: {
+      type?: unknown;
+      payload?: TemplatePayload;
     };
-  } | null;
+  };
+};
 
-  const message = root?.message;
+/** Texto do template: campo `text` ou o título do primeiro elemento. */
+function extractText(template: TemplatePayload): string {
+  if (typeof template.text === "string") return template.text;
+  const title = template.elements?.[0]?.title;
+  return typeof title === "string" ? title : "";
+}
+
+/** Botões do primeiro elemento ou, na falta dele, os do próprio template. */
+function pickButtons(template: TemplatePayload): RawButton[] {
+  const elementButtons = template.elements?.[0]?.buttons;
+  if (Array.isArray(elementButtons)) return elementButtons;
+  return Array.isArray(template.buttons) ? template.buttons : [];
+}
+
+/** Traduz um botão da Meta; devolve `null` para formatos que não enviamos. */
+function toButton(raw: RawButton): ZernioButton | null {
+  if (typeof raw.title !== "string") return null;
+  if (raw.type === "web_url" && typeof raw.url === "string") {
+    return { type: "url", title: raw.title, url: raw.url };
+  }
+  if (raw.type === "postback" && typeof raw.payload === "string") {
+    return { type: "postback", title: raw.title, payload: raw.payload };
+  }
+  return null;
+}
+
+export function toZernioMessage(payload: unknown): ZernioMessage {
+  const message = (payload as PayloadRoot | null)?.message;
   if (message && typeof message.text === "string") {
     return { message: message.text };
   }
@@ -62,37 +88,14 @@ export function toZernioMessage(payload: unknown): ZernioMessage {
     throw new Error("Formato de mensagem não suportado pela Zernio.");
   }
 
-  const text =
-    typeof template.text === "string"
-      ? template.text
-      : typeof template.elements?.[0]?.title === "string"
-        ? template.elements[0].title
-        : null;
-
-  const elementButtons = template.elements?.[0]?.buttons;
-  const rawButtons: RawButton[] = Array.isArray(elementButtons)
-    ? elementButtons
-    : Array.isArray(template.buttons)
-      ? template.buttons
-      : [];
-
+  const text = extractText(template);
   if (!text) {
     throw new Error("Mensagem sem texto para a Zernio.");
   }
 
-  const buttons: ZernioButton[] = [];
-  for (const raw of rawButtons) {
-    if (!raw || typeof raw.title !== "string") continue;
-    if (raw.type === "web_url" && typeof raw.url === "string") {
-      buttons.push({ type: "url", title: raw.title, url: raw.url });
-    } else if (raw.type === "postback" && typeof raw.payload === "string") {
-      buttons.push({
-        type: "postback",
-        title: raw.title,
-        payload: raw.payload,
-      });
-    }
-  }
+  const buttons = pickButtons(template)
+    .map(toButton)
+    .filter((button): button is ZernioButton => button !== null);
 
   return buttons.length > 0 ? { message: text, buttons } : { message: text };
 }

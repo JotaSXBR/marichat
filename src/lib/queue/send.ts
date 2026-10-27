@@ -1,7 +1,6 @@
 import "server-only";
 
 import { markAccountReconnectRequired, setAppStateValue } from "@/lib/accounts";
-import { decryptToken } from "@/lib/crypto";
 import { InstagramApiError, sendMessage } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
 import { toZernioMessage } from "@/lib/outbound";
@@ -19,6 +18,7 @@ import {
   requeueForRateLimit,
   retryOrFail,
 } from "@/lib/queue/retry";
+import { readAccountToken } from "@/lib/queue/token";
 import type {
   AccountRow,
   InteractionRow,
@@ -52,29 +52,6 @@ async function blockedIfNotSendable(
   }
 
   return null;
-}
-
-type TokenResult = { token: string | null } | { outcome: JobOutcome };
-
-async function readAccessToken(
-  job: JobRow,
-  account: AccountRow,
-  interaction: InteractionRow,
-): Promise<TokenResult> {
-  if (account.provider === "zernio") return { token: null };
-
-  try {
-    return { token: decryptToken(account.accessTokenEncrypted) };
-  } catch {
-    await markAccountReconnectRequired(account.id);
-    await markFailed(
-      job,
-      interaction,
-      "Não foi possível ler o token guardado. Reconecte o Instagram.",
-      "TOKEN_UNREADABLE",
-    );
-    return { outcome: "failed" };
-  }
 }
 
 /**
@@ -264,7 +241,7 @@ export async function processJob(
   const blocked = await blockedIfNotSendable(job, account, interaction);
   if (blocked) return blocked;
 
-  const token = await readAccessToken(job, account, interaction);
+  const token = await readAccountToken(job, account, interaction);
   if ("outcome" in token) return token.outcome;
 
   if (job.kind === "private_reply") {
