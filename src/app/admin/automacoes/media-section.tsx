@@ -32,7 +32,7 @@ function MediaThumbnail({ option }: { option: MediaOption }) {
   }
 
   return (
-    // Imagem hospedada pela Meta; usamos <img> para não precisar liberar
+    // Imagem hospedada pela Meta ou pela Zernio; usamos <img> para não precisar liberar
     // domínios dinâmicos no otimizador.
     // eslint-disable-next-line @next/next/no-img-element
     <img

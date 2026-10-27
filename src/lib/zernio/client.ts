@@ -268,6 +268,53 @@ export async function sendConversationMessage(params: {
   };
 }
 
+export type ZernioPost = {
+  /** ID da publicação na Meta — o mesmo que vem em `comment.platformPostId`. */
+  id: string;
+  caption: string;
+  permalink?: string;
+  picture?: string;
+  mediaType?: string;
+  createdTime?: string;
+};
+
+/**
+ * Últimas 25 publicações que existem na plataforma.
+ *
+ * Inclui posts que nunca passaram pela Zernio, então serve para o seletor do
+ * editor sem exigir que a conta publique por ela.
+ */
+export async function listAccountPosts(
+  accountId: string,
+): Promise<ZernioPost[]> {
+  const data = await requestJson(
+    `/v1/accounts/${encodeURIComponent(accountId)}/posts`,
+    { method: "GET" },
+  );
+
+  const list = (data as { posts?: unknown[] } | null)?.posts;
+  if (!Array.isArray(list)) return [];
+
+  return list.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const item = entry as Record<string, unknown>;
+    if (typeof item.id !== "string") return [];
+    return [
+      {
+        id: item.id,
+        caption: typeof item.message === "string" ? item.message : "",
+        permalink:
+          typeof item.permalink === "string" ? item.permalink : undefined,
+        picture: typeof item.picture === "string" ? item.picture : undefined,
+        mediaType:
+          typeof item.mediaType === "string" ? item.mediaType : undefined,
+        createdTime:
+          typeof item.createdTime === "string" ? item.createdTime : undefined,
+      },
+    ];
+  });
+}
+
 export type ZernioFollowStatus = {
   /** true segue, false não segue, null = a Meta não informou. */
   isFollowing: boolean | null;

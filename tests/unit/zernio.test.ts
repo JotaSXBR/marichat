@@ -7,7 +7,7 @@ import {
   buildLinkPayload,
   toZernioMessage,
 } from "@/lib/outbound";
-import { getFollowStatus } from "@/lib/zernio/client";
+import { getFollowStatus, listAccountPosts } from "@/lib/zernio/client";
 import { verifyZernioSignature } from "@/lib/zernio/signature";
 
 const secret = "segredo-do-webhook";
@@ -160,6 +160,48 @@ describe("cliente da Zernio", () => {
 
     expect(result.isFollowing).toBeNull();
     expect(result.unavailableReason).toBe("consent_required");
+    vi.unstubAllGlobals();
+  });
+
+  it("lista posts da conta pelo endpoint da Zernio", async () => {
+    let calledUrl = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        calledUrl = String(input);
+        return new Response(
+          JSON.stringify({
+            status: "success",
+            posts: [
+              {
+                id: "17895695668004550",
+                message: "Primeira linha\nsegunda",
+                permalink: "https://www.instagram.com/p/abc/",
+                picture: "https://cdn.exemplo/foto.jpg",
+                mediaType: "VIDEO",
+                createdTime: "2026-10-20T12:00:00.000Z",
+              },
+              { message: "sem id é ignorado" },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+
+    const posts = await listAccountPosts("acc 1");
+
+    expect(calledUrl).toBe("https://zernio.com/api/v1/accounts/acc%201/posts");
+    expect(posts).toEqual([
+      {
+        id: "17895695668004550",
+        caption: "Primeira linha\nsegunda",
+        permalink: "https://www.instagram.com/p/abc/",
+        picture: "https://cdn.exemplo/foto.jpg",
+        mediaType: "VIDEO",
+        createdTime: "2026-10-20T12:00:00.000Z",
+      },
+    ]);
     vi.unstubAllGlobals();
   });
 });
