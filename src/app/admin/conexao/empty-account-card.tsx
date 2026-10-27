@@ -1,5 +1,13 @@
 import { ZernioAccountPicker } from "@/app/admin/conexao/zernio-account-picker";
 import type { ZernioAccount } from "@/lib/zernio/client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Link2Icon } from "lucide-react";
 
 type Props = {
   isZernio: boolean;
@@ -14,36 +22,29 @@ export function EmptyAccountCard({
   zernioListError,
 }: Props) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-5">
-      <h2 className="text-sm font-medium">Conta atual</h2>
-      <div className="mt-3 space-y-4 text-sm">
-        {isZernio ? (
-          <>
-            <p className="text-zinc-600">
-              Nenhuma conta vinculada no MARICHAT. A conta do Instagram precisa
-              estar conectada primeiro no painel da Zernio; depois escolha
-              abaixo qual usar.
-            </p>
-            <ZernioAccountPicker
-              accounts={zernioAccounts}
-              listError={zernioListError}
-            />
-          </>
-        ) : (
-          <>
-            <p className="text-zinc-600">
-              Nenhuma conta conectada. Use uma conta profissional do Instagram
-              (criador ou empresa) com acesso às mensagens.
-            </p>
-            <a
-              href="/api/auth/instagram/start"
-              className="inline-block rounded-md bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-700"
-            >
-              Conectar Instagram
-            </a>
-          </>
-        )}
-      </div>
-    </section>
+    <Card className="items-start gap-4">
+      <CardHeader>
+        <CardTitle>Nenhuma conta conectada</CardTitle>
+        <CardDescription>
+          {isZernio
+            ? "A conta do Instagram precisa estar conectada primeiro no painel da Zernio; depois escolha abaixo qual usar."
+            : "Use uma conta profissional do Instagram (criador ou empresa) com acesso às mensagens."}
+        </CardDescription>
+      </CardHeader>
+
+      {isZernio ? (
+        <ZernioAccountPicker
+          accounts={zernioAccounts}
+          listError={zernioListError}
+        />
+      ) : (
+        <Button asChild>
+          <a href="/api/auth/instagram/start">
+            <Link2Icon aria-hidden />
+            Conectar Instagram
+          </a>
+        </Button>
+      )}
+    </Card>
   );
 }

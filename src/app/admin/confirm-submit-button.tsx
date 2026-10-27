@@ -1,27 +1,65 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+
+/**
+ * Ação destrutiva com confirmação em diálogo (§10.2).
+ * O botão real fica no formulário; o diálogo só dispara o envio.
+ */
 export function ConfirmSubmitButton({
   children,
   message,
-  className,
+  title = "Desconectar o Instagram?",
+  confirmLabel = "Desconectar",
 }: {
   children: ReactNode;
   message: string;
-  className?: string;
+  title?: string;
+  confirmLabel?: string;
 }) {
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+
   return (
-    <button
-      type="submit"
-      className={className}
-      onClick={(event) => {
-        if (!window.confirm(message)) {
-          event.preventDefault();
-        }
-      }}
-    >
-      {children}
-    </button>
+    <>
+      <Button
+        ref={submitRef}
+        type="button"
+        variant="destructive"
+        onClick={() => setOpen(true)}
+      >
+        {children}
+      </Button>
+
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{title}</AlertDialogTitle>
+            <AlertDialogDescription>{message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => submitRef.current?.form?.requestSubmit()}
+            >
+              {confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

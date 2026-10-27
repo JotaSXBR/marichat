@@ -63,6 +63,16 @@ export const webhookTones: Record<string, ChipTone> = {
   failed: "danger",
 };
 
+/** Situação da conta conectada, com texto e tom. */
+export const connectionLabels: Record<
+  string,
+  { label: string; tone: ChipTone }
+> = {
+  connected: { label: "Conectada", tone: "success" },
+  reconnect_required: { label: "Reconectar", tone: "warning" },
+  revoked: { label: "Revogada", tone: "danger" },
+};
+
 export const jobTones: Record<string, ChipTone> = {
   pending: "neutral",
   processing: "loading",

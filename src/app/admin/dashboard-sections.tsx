@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 
 import {
+  connectionLabels,
+  formatDateTime,
   interactionLabels,
   interactionTones,
-  formatDateTime,
-  type ChipTone,
 } from "@/app/admin/labels";
 import type { DashboardData } from "@/app/admin/dashboard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -257,12 +257,6 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
     </div>
   );
 }
-
-const connectionLabels: Record<string, { label: string; tone: ChipTone }> = {
-  connected: { label: "Conectada", tone: "success" },
-  reconnect_required: { label: "Reconectar", tone: "warning" },
-  revoked: { label: "Revogada", tone: "danger" },
-};
 
 function initials(handle: string) {
   return handle.slice(0, 2).toUpperCase();

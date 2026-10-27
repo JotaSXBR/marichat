@@ -1,6 +1,10 @@
 import { connectZernio } from "@/app/admin/conexao/actions";
 import type { ZernioAccount } from "@/lib/zernio/client";
 import { isZernioConfigured } from "@/lib/zernio/config";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { TriangleAlertIcon } from "lucide-react";
 
 type Props = {
   accounts: ZernioAccount[];
@@ -11,16 +15,18 @@ type Props = {
 export function ZernioAccountPicker({ accounts, listError }: Props) {
   if (listError) {
     return (
-      <p className="rounded-md border border-red-300 bg-red-50 p-3 text-red-900">
-        Não foi possível consultar a Zernio: {listError}
-      </p>
+      <Alert variant="danger">
+        <TriangleAlertIcon aria-hidden />
+        <AlertTitle>Não foi possível consultar a Zernio</AlertTitle>
+        <AlertDescription>{listError}</AlertDescription>
+      </Alert>
     );
   }
 
   if (accounts.length === 0) {
     if (!isZernioConfigured()) return null;
     return (
-      <p className="text-zinc-600">
+      <p className="text-body text-muted-foreground">
         A Zernio ainda não tem nenhuma conta do Instagram conectada. Conecte no
         painel dela e recarregue esta página.
       </p>
@@ -28,29 +34,24 @@ export function ZernioAccountPicker({ accounts, listError }: Props) {
   }
 
   return (
-    <form action={connectZernio} className="space-y-3">
-      <label className="block text-sm font-medium" htmlFor="accountId">
-        Conta da Zernio
-      </label>
-      <select
-        id="accountId"
-        name="accountId"
-        defaultValue={accounts[0]?.id}
-        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-      >
-        {accounts.map((item) => (
-          <option key={item.id} value={item.id}>
-            @{item.username ?? item.id}
-            {item.isActive ? "" : " (inativa)"}
-          </option>
-        ))}
-      </select>
-      <button
-        type="submit"
-        className="rounded-md bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-700"
-      >
-        Conectar conta da Zernio
-      </button>
+    <form action={connectZernio} className="w-full space-y-3">
+      <div>
+        <Label htmlFor="accountId">Conta da Zernio</Label>
+        <select
+          id="accountId"
+          name="accountId"
+          defaultValue={accounts[0]?.id}
+          className="h-10 w-full rounded-md border border-input bg-muted px-3 text-body text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {accounts.map((item) => (
+            <option key={item.id} value={item.id}>
+              @{item.username ?? item.id}
+              {item.isActive ? "" : " (inativa)"}
+            </option>
+          ))}
+        </select>
+      </div>
+      <Button type="submit">Conectar conta da Zernio</Button>
     </form>
   );
 }

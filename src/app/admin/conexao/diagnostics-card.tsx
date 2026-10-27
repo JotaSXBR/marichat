@@ -1,34 +1,62 @@
+import type { ReactNode } from "react";
+
 import { formatDateTime } from "@/app/admin/conexao/connection-utils";
 import {
   testInstagramConnection,
   testZernioConnection,
 } from "@/app/admin/conexao/actions";
 import type { ConnectionTestResult } from "@/lib/instagram/diagnostics";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 
 type Props = {
   isZernio: boolean;
   test: ConnectionTestResult | null;
 };
 
+function CheckLine({ ok, children }: { ok: boolean; children: ReactNode }) {
+  const Icon = ok ? CheckCircle2Icon : XCircleIcon;
+  return (
+    <li className="flex items-start gap-2">
+      <Icon
+        aria-hidden
+        className={cn(
+          "mt-0.5 size-4 shrink-0",
+          ok ? "text-success" : "text-danger",
+        )}
+      />
+      <span className="text-body text-foreground">{children}</span>
+    </li>
+  );
+}
+
 function tokenLine(test: ConnectionTestResult, isZernio: boolean): string {
   if (test.tokenOk) {
-    return isZernio ? "✓ Chave da Zernio aceita" : "✓ Token aceito";
+    return isZernio ? "Chave da Zernio aceita" : "Token aceito";
   }
   return isZernio
-    ? "✗ Chave da Zernio recusada ou ausente"
-    : "✗ Token recusado ou ilegível";
+    ? "Chave da Zernio recusada ou ausente"
+    : "Token recusado ou ilegível";
 }
 
 function subscriptionLine(test: ConnectionTestResult, isZernio: boolean) {
   if (!test.subscriptionChecked) {
-    return "✗ Webhooks: não foi possível conferir";
+    return "Webhooks: não foi possível conferir";
   }
   if (test.missingFields.length > 0) {
-    return `✗ Webhooks: faltam ${test.missingFields.join(", ")}`;
+    return `Webhooks: faltam ${test.missingFields.join(", ")}`;
   }
   return isZernio
-    ? "✓ Webhook: segredo configurado"
-    : "✓ Webhooks: todos os campos exigidos estão assinados";
+    ? "Webhook: segredo configurado"
+    : "Webhooks: todos os campos exigidos estão assinados";
 }
 
 function TestResult({
@@ -39,76 +67,88 @@ function TestResult({
     test.subscriptionChecked && test.missingFields.length === 0;
 
   return (
-    <div className="mt-4 space-y-3 text-sm">
-      <p className="text-xs text-zinc-500">
+    <div className="space-y-3">
+      <p className="text-label text-muted-foreground">
         Último teste em {formatDateTime(new Date(test.checkedAt))}.
       </p>
-      <ul className="space-y-1">
-        <li className={test.tokenOk ? "text-green-700" : "text-red-700"}>
+
+      <ul className="grid gap-2">
+        <CheckLine ok={test.tokenOk}>
           {tokenLine(test, isZernio)}
           {test.username ? ` — @${test.username}` : ""}
-        </li>
-        <li className={subscriptionOk ? "text-green-700" : "text-red-700"}>
+        </CheckLine>
+        <CheckLine ok={subscriptionOk}>
           {subscriptionLine(test, isZernio)}
-        </li>
+        </CheckLine>
       </ul>
+
       {test.subscribedFields.length > 0 ? (
-        <p className="text-xs text-zinc-500">
+        <p className="text-label text-muted-foreground">
           {isZernio ? "Eventos registrados" : "Campos assinados"}:{" "}
-          <span className="font-mono">{test.subscribedFields.join(", ")}</span>
+          <span className="font-mono text-mono">
+            {test.subscribedFields.join(", ")}
+          </span>
         </p>
       ) : null}
+
       {test.problems.length > 0 ? (
-        <ul className="list-disc space-y-1 rounded-md border border-amber-300 bg-amber-50 p-3 pl-7 text-amber-900">
-          {test.problems.map((problem) => (
-            <li key={problem}>{problem}</li>
-          ))}
-        </ul>
+        <Alert variant="warning">
+          <XCircleIcon aria-hidden />
+          <AlertTitle>O que precisa de atenção</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc space-y-1 pl-4">
+              {test.problems.map((problem) => (
+                <li key={problem}>{problem}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       ) : (
-        <p className="rounded-md border border-green-300 bg-green-50 p-3 text-green-900">
-          {isZernio
-            ? "Tudo certo: chave válida, conta ativa e segredo do webhook configurado."
-            : "Tudo certo: token válido e webhooks completos."}
-        </p>
+        <Alert variant="success">
+          <CheckCircle2Icon aria-hidden />
+          <AlertTitle>Tudo certo</AlertTitle>
+          <AlertDescription>
+            {isZernio
+              ? "Chave válida, conta ativa e segredo do webhook configurado."
+              : "Token válido e webhooks completos."}
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   );
 }
 
-/** Botão de teste e resultado da última verificação. */
+/** Teste da conexão e resultado da última verificação. */
 export function DiagnosticsCard({ isZernio, test }: Props) {
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-5">
+    <Card className="gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-medium">Diagnóstico da conexão</h2>
-          <p className="mt-1 text-sm text-zinc-600">
+        <CardHeader>
+          <CardTitle>Diagnóstico da conexão</CardTitle>
+          <CardDescription>
             {isZernio
               ? "Confere se a chave da Zernio é aceita e se a conta vinculada continua ativa lá."
-              : "Confere se o token ainda é aceito pela Meta e se os campos de webhook estão realmente assinados nesta conta."}
-          </p>
-        </div>
+              : "Confere se o token ainda é aceito pela Meta e se os campos de webhook estão assinados nesta conta."}
+          </CardDescription>
+        </CardHeader>
         <form
           action={isZernio ? testZernioConnection : testInstagramConnection}
         >
-          <button
-            type="submit"
-            className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50"
-          >
+          <Button type="submit" variant="secondary">
             Testar conexão
-          </button>
+          </Button>
         </form>
       </div>
 
       {test ? (
         <TestResult test={test} isZernio={isZernio} />
       ) : (
-        <p className="mt-3 text-sm text-zinc-600">
+        <p className="text-body text-muted-foreground">
           {isZernio
             ? "Nenhum teste executado desde a conexão. Rode o teste depois de registrar o webhook."
             : "Nenhum teste executado desde a conexão. Rode o teste depois de configurar os webhooks no painel da Meta."}
         </p>
       )}
-    </section>
+    </Card>
   );
 }

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { connection } from "next/server";
 
 import { AccountCard } from "@/app/admin/conexao/account-card";
@@ -43,34 +42,33 @@ export default async function ConnectionPage({
         tested={get("testado") === "1"}
       />
 
-      {data.account ? (
-        <AccountCard
-          account={data.account}
-          isZernio={isZernio}
-          webhookError={data.webhookError}
-          subscribedAt={data.subscribedAt}
-        />
-      ) : (
-        <EmptyAccountCard
-          isZernio={isZernio}
-          zernioAccounts={data.zernioAccounts}
-          zernioListError={data.zernioListError}
-        />
-      )}
+      <section
+        aria-label="Conta e diagnóstico"
+        className="grid gap-4 lg:grid-cols-2"
+      >
+        {data.account ? (
+          <AccountCard
+            account={data.account}
+            isZernio={isZernio}
+            webhookError={data.webhookError}
+            subscribedAt={data.subscribedAt}
+          />
+        ) : (
+          <EmptyAccountCard
+            isZernio={isZernio}
+            zernioAccounts={data.zernioAccounts}
+            zernioListError={data.zernioListError}
+          />
+        )}
 
-      {data.account ? (
-        <DiagnosticsCard isZernio={isZernio} test={data.connectionTest} />
-      ) : null}
+        {data.account ? (
+          <DiagnosticsCard isZernio={isZernio} test={data.connectionTest} />
+        ) : null}
+      </section>
 
       <WebhookSetupCard isZernio={isZernio} appUrl={data.appUrl} />
       <EnvChecklist requirements={data.requiredEnv} />
       <RecentWebhooks events={data.lastEvents} />
-
-      <p className="text-sm">
-        <Link href="/admin" className="text-zinc-600 underline">
-          Voltar para a visão geral
-        </Link>
-      </p>
     </div>
   );
 }
