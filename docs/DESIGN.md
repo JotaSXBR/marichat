@@ -1,9 +1,12 @@
-# MARICHAT Design System
+# MARICHAT Design System v4
 
-Este arquivo foi substituído pela especificação v3 na raiz do repositório:
+Este arquivo foi substituído pela especificação v4 na raiz do repositório:
 
 **[`/DESIGN.md`](../DESIGN.md)**
 
-A v3 é a fonte única de verdade para o produto: leis de UX, regiões, tokens, tipografia, componentes, estados, acessibilidade WCAG 2.2 AA, camada de IA, inventário fechado de 5 telas e regras de geração no Stitch.
+A v4 reconstrói a camada visual sobre o **Kokonut UI OSS** (registry do shadcn),
+com o **shadcn/ui** como base para o que o Kokonut não tem. O catálogo do
+Kokonut e as regras de adaptação estão em [`KOKONUT.md`](KOKONUT.md).
 
-O conteúdo anterior (v2, "Leis & Tokens") está superado e não deve ser usado como referência.
+As versões anteriores (v3, "Leis & Tokens", e v2) estão superadas e não devem
+ser usadas como referência.
