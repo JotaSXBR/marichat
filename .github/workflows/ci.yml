@@ -65,7 +65,7 @@ jobs:
       - name: Formatação (Prettier)
         run: npm run format:check
 
-      # Falha se aparecer aviso novo (baseline de 39 em package.json).
+      # Falha se aparecer aviso novo (baseline de 29 em package.json).
       - name: Lint com tipos e orçamentos
         run: npm run lint:ci
 

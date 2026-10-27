@@ -19,10 +19,10 @@ guiada dos arquivos grandes.
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
-| Arquivos `src` acima de 400 linhas | 2 (inclui `scripts`) | 0 (avisos) |
-| Funções acima de 60 linhas | 15 | 0 (avisos) |
-| Funções com complexidade > 12 | 15 | 0 (avisos) |
-| Avisos de orçamento no lint | 39 (baseline do CI) | 0 |
+| Arquivos `src` acima de 400 linhas | 1 (inclui `scripts`) | 0 (avisos) |
+| Funções acima de 60 linhas | 12 | 0 (avisos) |
+| Funções com complexidade > 12 | 12 | 0 (avisos) |
+| Avisos de orçamento no lint | 29 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
 | Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
@@ -116,23 +116,24 @@ caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
 reduz a dívida.
 
 **Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=39`. Esse 39 é o baseline medido depois das quatro
+`eslint . --max-warnings=29`. Esse 29 é o baseline medido depois das cinco
 primeiras partes da Fase 5 (divisão de `admin/actions.ts`, de
-`webhook/process.ts`, de `admin/conexao/page.tsx` e do formulário de automação).
+`webhook/process.ts`, de `admin/conexao/page.tsx`, do formulário de automação e
+do motor da fila em `src/lib/queue/`).
 Um aviso novo faz o CI falhar; corrigir avisos nunca quebra o CI. Quando o
 número cair, baixe o valor em `package.json` (e aqui). Quando chegar a zero, os
 limites podem virar `error`.
 
-Baseline por regra (2026-10-26, após a Fase 5 parte 4):
+Baseline por regra (2026-10-26, após a Fase 5 parte 5):
 
 | Regra | Avisos |
 | --- | --- |
-| `complexity` (limite 12) | 15 |
-| `max-lines-per-function` (60) | 15 |
-| `max-lines` (400) | 2 |
-| `sonarjs/cognitive-complexity` (15) | 6 |
+| `complexity` (limite 12) | 12 |
+| `max-lines-per-function` (60) | 12 |
+| `max-lines` (400) | 1 |
+| `sonarjs/cognitive-complexity` (15) | 3 |
 | `max-depth` (3) | 1 |
-| **Total** | **39** |
+| **Total** | **29** |
 
 Testes e scripts têm exceções conscientes:
 
@@ -241,7 +242,6 @@ Ordenado por retorno, não por tamanho.
 
 | Arquivo | Linhas | Problema | Divisão sugerida |
 | --- | --- | --- | --- |
-| `src/lib/queue/drain.ts` | 941 | claim, envio Meta/Zernio, follow-check, rate limit, token e limpeza no mesmo módulo | `queue/claim.ts`, `queue/send.ts`, `queue/follow-check.ts`, `queue/token.ts`, `queue/cleanup.ts` |
 | `scripts/local-demo.mjs` | 468 | API falsa + orquestração no mesmo `main` (complexidade 43) | `scripts/demo/mock-api.mjs` + `scripts/demo/run.mjs` |
 
 **Já dividido na Fase 5:**
@@ -265,12 +265,19 @@ Ordenado por retorno, não por tamanho.
   componentes por seção: `identification-section.tsx`, `media-section.tsx`,
   `message-sections.tsx`, `follow-gate-section.tsx` e `form-actions.tsx`, com
   tipos em `form-types.ts` e campos pequenos em `form-controls.tsx`.
+- `src/lib/queue/drain.ts` (941 → ~120 linhas) virou uma fachada fina sobre
+  módulos por responsabilidade: `queue/claim.ts` (bloqueio atômico),
+  `queue/job-state.ts` (estados aceito/incerto/falhou/expirado),
+  `queue/send.ts` (envio Meta/Zernio e erros), `queue/follow-check.ts` (porta
+  de seguidor), `queue/retry.ts` (retentativas e limite de 750/h),
+  `queue/deadline.ts`, `queue/token.ts` (renovação), `queue/maintenance.ts`
+  (recuperação, expiração e limpeza) e `queue/types.ts`. Os nomes públicos
+  (`drainQueue`, `runTick`, `recoverStuckJobs`, `expireOverdueJobs`,
+  `cleanupOldData`, `refreshTokenIfNeeded`, `DrainSummary`) continuam iguais.
 
 ### Prioridade 2 — funções grandes
 
-- `processJob` (123 linhas, complexidade 29): separar envio Meta e Zernio em
-  funções próprias (a Zernio já tem `sendWithZernio`; falta o caminho Meta).
-- `processFollowCheck` (184 linhas): extrair `fetchFollowStatus(account,
+- `processFollowCheck` (68 linhas): extrair `fetchFollowStatus(account,
   interaction)` (o bloco Meta/Zernio) e `applyFollowResult(...)`.
 - `toZernioMessage` (complexidade 27): separar extração de texto e de botões
   em funções pequenas e testáveis.
@@ -323,7 +330,8 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    dividido (baseline 58 → 54). Parte 2: `webhook/process.ts` dividido em seis
    módulos (54 → 46). Parte 3: `admin/conexao/page.tsx` dividido em componentes
    (46 → 42). Parte 4: formulário de automação dividido em seções (42 → 39).
-   111 testes.
+   Parte 5: motor da fila (`queue/drain.ts`) dividido em nove módulos
+   (39 → 29). 111 testes.
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
    limpo.
 

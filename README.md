@@ -104,7 +104,7 @@ O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
 
 Todo push em `master` e todo Pull Request rodam `.github/workflows/ci.yml`:
 PostgreSQL 18, migrations, `format:check`, `lint:ci`, `typecheck`, testes e
-build. Se o lint passar do baseline de avisos (39 em `package.json`) ou qualquer
+build. Se o lint passar do baseline de avisos (29 em `package.json`) ou qualquer
 etapa falhar, o PR fica vermelho. O build não recebe segredos e não acessa o
 banco, igual ao Dockerfile.
 
@@ -294,7 +294,7 @@ src/app/api/webhook/zernio webhook da Zernio (POST assinado)
 src/app/api/auth/...      login OAuth do Instagram
 src/app/api/cron/tick/    tarefa agendada
 src/app/api/data-deletion callback de exclusão
-src/lib/queue/drain.ts    fila, retentativas, prazos, token, envio Meta/Zernio
+src/lib/queue/          fila: claim, envio, follow-check, retry, token, limpeza
 src/lib/webhook/process.ts regras de comentário e DM
 src/lib/webhook/zernio.ts tradução dos eventos da Zernio
 src/lib/instagram/        config, cliente Graph API, OAuth
