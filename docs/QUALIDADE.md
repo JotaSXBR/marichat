@@ -19,10 +19,10 @@ guiada dos arquivos grandes.
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
-| Arquivos `src` acima de 400 linhas | 5 (inclui `scripts`) | 0 (avisos) |
-| Funções acima de 60 linhas | 20 | 0 (avisos) |
-| Funções com complexidade > 12 | 18 | 0 (avisos) |
-| Avisos de orçamento no lint | 54 (baseline do CI) | 0 |
+| Arquivos `src` acima de 400 linhas | 4 (inclui `scripts`) | 0 (avisos) |
+| Funções acima de 60 linhas | 17 | 0 (avisos) |
+| Funções com complexidade > 12 | 16 | 0 (avisos) |
+| Avisos de orçamento no lint | 46 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
 | Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
@@ -116,21 +116,22 @@ caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
 reduz a dívida.
 
 **Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=54`. Esse 54 é o baseline medido depois da primeira
-parte da Fase 5 (divisão de `admin/actions.ts`). Um aviso novo faz o CI falhar;
-corrigir avisos nunca quebra o CI. Quando o número cair, baixe o valor em
-`package.json` (e aqui). Quando chegar a zero, os limites podem virar `error`.
+`eslint . --max-warnings=46`. Esse 46 é o baseline medido depois das duas
+primeiras partes da Fase 5 (divisão de `admin/actions.ts` e de
+`webhook/process.ts`). Um aviso novo faz o CI falhar; corrigir avisos nunca
+quebra o CI. Quando o número cair, baixe o valor em `package.json` (e aqui).
+Quando chegar a zero, os limites podem virar `error`.
 
-Baseline por regra (2026-10-26, após a Fase 5 parte 1):
+Baseline por regra (2026-10-26, após a Fase 5 parte 2):
 
 | Regra | Avisos |
 | --- | --- |
-| `complexity` (limite 12) | 18 |
-| `max-lines-per-function` (60) | 20 |
-| `max-lines` (400) | 5 |
-| `sonarjs/cognitive-complexity` (15) | 10 |
+| `complexity` (limite 12) | 16 |
+| `max-lines-per-function` (60) | 17 |
+| `max-lines` (400) | 4 |
+| `sonarjs/cognitive-complexity` (15) | 8 |
 | `max-depth` (3) | 1 |
-| **Total** | **54** |
+| **Total** | **46** |
 
 Testes e scripts têm exceções conscientes:
 
@@ -240,24 +241,25 @@ Ordenado por retorno, não por tamanho.
 | Arquivo | Linhas | Problema | Divisão sugerida |
 | --- | --- | --- | --- |
 | `src/lib/queue/drain.ts` | 941 | claim, envio Meta/Zernio, follow-check, rate limit, token e limpeza no mesmo módulo | `queue/claim.ts`, `queue/send.ts`, `queue/follow-check.ts`, `queue/token.ts`, `queue/cleanup.ts` |
-| `src/lib/webhook/process.ts` | 529 | parsing, dedupe, criação de interação e decisão de follow no mesmo lugar | `webhook/parse.ts`, `webhook/comment.ts`, `webhook/message.ts`, `webhook/events.ts` |
 | `src/app/admin/conexao/page.tsx` | 512 | 56 caminhos condicionais na mesma função | componentes `AccountCard`, `DiagnosticsCard`, `WebhookCard`, `EnvChecklist` |
 | `src/app/admin/automacoes/automation-form.tsx` | 514 | complexidade 62; campos repetidos e condicionais de modo | `MessageFields`, `FollowGateFields`, `LinkFields` |
 | `scripts/local-demo.mjs` | 468 | API falsa + orquestração no mesmo `main` (complexidade 43) | `scripts/demo/mock-api.mjs` + `scripts/demo/run.mjs` |
 
-**Já dividido na Fase 5:** `src/app/admin/actions.ts` (524 → ~120 linhas) virou
-`admin/actions.ts` (só `saveAutomation` e `toggleAutomation`),
-`admin/conexao/actions.ts` (conexão Meta/Zernio), `lib/automation-input.ts`
-(leitura e schema do formulário, testado) e `lib/zernio/select-account.ts`
-(escolha da conta, testada).
+**Já dividido na Fase 5:**
+
+- `src/app/admin/actions.ts` (524 → ~120 linhas) virou `admin/actions.ts` (só
+  `saveAutomation` e `toggleAutomation`), `admin/conexao/actions.ts` (conexão
+  Meta/Zernio), `lib/automation-input.ts` (leitura e schema do formulário,
+  testado) e `lib/zernio/select-account.ts` (escolha da conta, testada).
+- `src/lib/webhook/process.ts` (642 → ~200 linhas) virou
+  `webhook/comment.ts` (comentário e primeira DM), `webhook/message.ts`
+  (mensagem, modos e porta de seguidor), `webhook/automation.ts` (busca da
+  automação), `webhook/outbox.ts` (fila de saída), `webhook/events.ts`
+  (dedupe) e `webhook/types.ts`. `process.ts` continua sendo a porta de
+  entrada usada pela rota e pela Zernio.
 
 ### Prioridade 2 — funções grandes
 
-- `processInboundMessage` (158 linhas, complexidade 45): extrair
-  `touchInteractionWindow`, `findInteractionForMessage`,
-  `isInteractionOpen`, `enqueueByFollowMode` e `handleGateTap`.
-- `handleWebhookPayload` (94 linhas, complexidade 35): extrair
-  `processEntry`/`processChange`.
 - `processJob` (123 linhas, complexidade 29): separar envio Meta e Zernio em
   funções próprias (a Zernio já tem `sendWithZernio`; falta o caminho Meta).
 - `processFollowCheck` (184 linhas): extrair `fetchFollowStatus(account,
@@ -309,8 +311,9 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
 4. **Fase 4 — formatação** ✅ **concluída**: Prettier + `.editorconfig` num
    commit só de formatação; `format:check` entrou no CI.
 5. **Fase 5 — refatoração guiada** 🔄 **em andamento**: atacar Prioridade 1,
-   arquivo por arquivo, com testes antes/depois. Parte 1 concluída
-   (`admin/actions.ts` dividido; baseline 58 → 54; 111 testes).
+   arquivo por arquivo, com testes antes/depois. Parte 1: `admin/actions.ts`
+   dividido (baseline 58 → 54). Parte 2: `webhook/process.ts` dividido em seis
+   módulos (baseline 54 → 46). 111 testes.
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
    limpo.
 
