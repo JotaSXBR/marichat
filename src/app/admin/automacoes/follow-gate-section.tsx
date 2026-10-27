@@ -1,8 +1,15 @@
-import { FieldError, Label } from "@/app/admin/automacoes/form-controls";
+import {
+  FieldError,
+  FormSection,
+  Label,
+} from "@/app/admin/automacoes/form-controls";
 import type {
   AutomationInitialValues,
   FieldErrors,
 } from "@/app/admin/automacoes/form-types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DEFAULT_CONFIRM_LABEL,
   DEFAULT_FOLLOW_DIRECT_TEXT,
@@ -15,6 +22,8 @@ import {
   FOLLOW_MODE_LABELS,
   type FollowMode,
 } from "@/lib/follow-mode";
+import { cn } from "@/lib/utils";
+import { ShieldAlertIcon } from "lucide-react";
 
 type Props = {
   initial?: AutomationInitialValues;
@@ -37,11 +46,12 @@ function FollowModeOptions({
         return (
           <label
             key={mode}
-            className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm ${
+            className={cn(
+              "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors duration-150 ease-out",
               selected
-                ? "border-zinc-900 bg-zinc-50"
-                : "border-zinc-200 hover:bg-zinc-50"
-            }`}
+                ? "border-line-strong bg-surface-hover"
+                : "border-line-subtle hover:bg-surface-hover",
+            )}
           >
             <input
               type="radio"
@@ -52,8 +62,10 @@ function FollowModeOptions({
               className="mt-1"
             />
             <span>
-              <span className="block font-medium">{option.title}</span>
-              <span className="block text-xs text-zinc-500">
+              <span className="block text-label font-medium text-foreground">
+                {option.title}
+              </span>
+              <span className="block text-label text-muted-foreground">
                 {option.description}
               </span>
             </span>
@@ -164,12 +176,12 @@ function GateTextField({
       >
         Mensagem do pedido para seguir
       </Label>
-      <textarea
+      <Textarea
         id="followGateText"
         name="followGateText"
         rows={3}
         defaultValue={initial?.followGateText ?? DEFAULT_FOLLOW_GATE_TEXT}
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+        aria-invalid={errors.followGateText ? true : undefined}
       />
       <FieldError message={errors.followGateText} />
     </div>
@@ -188,14 +200,14 @@ function OptionalTextField({
       >
         Mensagem do convite (com o link)
       </Label>
-      <textarea
+      <Textarea
         id="followOptionalText"
         name="followOptionalText"
         rows={3}
         defaultValue={
           initial?.followOptionalText ?? DEFAULT_FOLLOW_OPTIONAL_TEXT
         }
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+        aria-invalid={errors.followOptionalText ? true : undefined}
       />
       <FieldError message={errors.followOptionalText} />
     </div>
@@ -214,12 +226,12 @@ function DirectTextField({
       >
         Mensagem com o link e o aviso
       </Label>
-      <textarea
+      <Textarea
         id="followDirectText"
         name="followDirectText"
         rows={3}
         defaultValue={initial?.followDirectText ?? DEFAULT_FOLLOW_DIRECT_TEXT}
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+        aria-invalid={errors.followDirectText ? true : undefined}
       />
       <FieldError message={errors.followDirectText} />
     </div>
@@ -237,12 +249,12 @@ function FollowLabelsFields({
         <Label htmlFor="followGateFollowLabel" hint="Até 20 caracteres.">
           Botão para seguir
         </Label>
-        <input
+        <Input
           id="followGateFollowLabel"
           name="followGateFollowLabel"
           maxLength={20}
           defaultValue={initial?.followGateFollowLabel ?? DEFAULT_FOLLOW_LABEL}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          aria-invalid={errors.followGateFollowLabel ? true : undefined}
         />
         <FieldError message={errors.followGateFollowLabel} />
       </div>
@@ -251,14 +263,14 @@ function FollowLabelsFields({
           <Label htmlFor="followGateConfirmLabel" hint="Até 20 caracteres.">
             Botão de confirmação
           </Label>
-          <input
+          <Input
             id="followGateConfirmLabel"
             name="followGateConfirmLabel"
             maxLength={20}
             defaultValue={
               initial?.followGateConfirmLabel ?? DEFAULT_CONFIRM_LABEL
             }
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            aria-invalid={errors.followGateConfirmLabel ? true : undefined}
           />
           <FieldError message={errors.followGateConfirmLabel} />
         </div>
@@ -272,16 +284,10 @@ export function FollowGateSection(props: Props) {
   const { initial, errors, followMode, needsCheck, needsFollowButton } = props;
 
   return (
-    <section className="space-y-5 rounded-lg border border-zinc-200 bg-white p-5">
-      <div>
-        <h2 className="text-sm font-semibold">Porta de seguidor</h2>
-        <p className="text-xs text-zinc-500">
-          Escolha como o link é entregue depois que a pessoa responde à primeira
-          mensagem. A consulta ao perfil só acontece depois que ela envia uma
-          mensagem, como a Meta exige.
-        </p>
-      </div>
-
+    <FormSection
+      title="Porta de seguidor"
+      description="Como o link é entregue depois que a pessoa responde à primeira mensagem. A consulta ao perfil só acontece depois que ela envia uma mensagem, como a Meta exige."
+    >
       <FollowModeOptions
         followMode={followMode}
         onFollowModeChange={props.onFollowModeChange}
@@ -314,13 +320,16 @@ export function FollowGateSection(props: Props) {
       ) : null}
 
       {followMode === "locked" ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          No modo travado, quem não for confirmado como seguidor não recebe o
-          link. Se a Meta não informar o status (por exemplo, por falta de
-          consentimento), a conversa permanece retida até a janela de 24h
-          expirar. As checagens são limitadas para não insistir com a Meta.
-        </p>
+        <Alert variant="warning">
+          <ShieldAlertIcon aria-hidden />
+          <AlertTitle>Modo travado</AlertTitle>
+          <AlertDescription>
+            Quem não for confirmado como seguidor não recebe o link. Se a Meta
+            não informar o status (por exemplo, por falta de consentimento), a
+            conversa permanece retida até a janela de 24h expirar.
+          </AlertDescription>
+        </Alert>
       ) : null}
-    </section>
+    </FormSection>
   );
 }

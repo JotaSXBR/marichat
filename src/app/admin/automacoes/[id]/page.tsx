@@ -2,12 +2,9 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
-import { AutomationForm } from "@/app/admin/automacoes/automation-form";
+import { AutomationEditor } from "@/app/admin/automacoes/automation-editor";
 import { loadMediaOptions } from "@/app/admin/automacoes/media-options";
-import {
-  ConnectAccountNotice,
-  EditAutomationHeader,
-} from "@/app/admin/automacoes/notices";
+import { ConnectAccountNotice } from "@/app/admin/automacoes/notices";
 import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
@@ -41,31 +38,28 @@ export default async function EditAutomationPage({
   );
 
   return (
-    <div className="space-y-6">
-      <EditAutomationHeader />
-      <AutomationForm
-        initial={{
-          id: automation.id,
-          name: automation.name,
-          keyword: automation.keyword,
-          mediaId: automation.mediaId ?? "",
-          firstDmText: automation.firstDmText,
-          secondDmText: automation.secondDmText,
-          linkButtonTitle: automation.linkButtonTitle,
-          linkUrl: automation.linkUrl,
-          followMode: isFollowMode(automation.followMode)
-            ? automation.followMode
-            : "off",
-          followGateText: automation.followGateText,
-          followGateFollowLabel: automation.followGateFollowLabel,
-          followGateConfirmLabel: automation.followGateConfirmLabel,
-          followOptionalText: automation.followOptionalText,
-          followDirectText: automation.followDirectText,
-          isActive: automation.isActive,
-        }}
-        mediaOptions={media.options}
-        {...(media.error ? { mediaError: media.error } : {})}
-      />
-    </div>
+    <AutomationEditor
+      initial={{
+        id: automation.id,
+        name: automation.name,
+        keyword: automation.keyword,
+        mediaId: automation.mediaId ?? "",
+        firstDmText: automation.firstDmText,
+        secondDmText: automation.secondDmText,
+        linkButtonTitle: automation.linkButtonTitle,
+        linkUrl: automation.linkUrl,
+        followMode: isFollowMode(automation.followMode)
+          ? automation.followMode
+          : "off",
+        followGateText: automation.followGateText,
+        followGateFollowLabel: automation.followGateFollowLabel,
+        followGateConfirmLabel: automation.followGateConfirmLabel,
+        followOptionalText: automation.followOptionalText,
+        followDirectText: automation.followDirectText,
+        isActive: automation.isActive,
+      }}
+      mediaOptions={media.options}
+      {...(media.error ? { mediaError: media.error } : {})}
+    />
   );
 }

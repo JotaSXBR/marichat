@@ -1,9 +1,16 @@
-import { FieldError, Label } from "@/app/admin/automacoes/form-controls";
+import {
+  FieldError,
+  FormSection,
+  Label,
+} from "@/app/admin/automacoes/form-controls";
 import type {
   AutomationInitialValues,
   FieldErrors,
   MediaOption,
 } from "@/app/admin/automacoes/form-types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { TriangleAlertIcon } from "lucide-react";
 
 type Props = {
   initial?: AutomationInitialValues;
@@ -12,10 +19,13 @@ type Props = {
   mediaError?: string;
 };
 
+const OPTION_CLASS =
+  "flex cursor-pointer items-start gap-3 rounded-md border border-line-subtle p-3 transition-colors duration-150 ease-out hover:bg-surface-hover has-checked:border-line-strong has-checked:bg-surface-hover";
+
 function MediaThumbnail({ option }: { option: MediaOption }) {
   if (!option.thumbnailUrl) {
     return (
-      <span className="flex h-12 w-12 items-center justify-center rounded bg-zinc-100 text-[10px] text-zinc-500">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-micro text-muted-soft">
         sem foto
       </span>
     );
@@ -29,7 +39,7 @@ function MediaThumbnail({ option }: { option: MediaOption }) {
       src={option.thumbnailUrl}
       alt=""
       loading="lazy"
-      className="h-12 w-12 rounded object-cover"
+      className="size-10 shrink-0 rounded-md object-cover"
     />
   );
 }
@@ -40,7 +50,7 @@ function MediaOptionList({
 }: Pick<Props, "initial" | "mediaOptions">) {
   return (
     <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-      <label className="flex cursor-pointer items-start gap-3 rounded-md border border-zinc-200 p-3 hover:bg-zinc-50">
+      <label className={OPTION_CLASS}>
         <input
           type="radio"
           name="mediaId"
@@ -49,18 +59,17 @@ function MediaOptionList({
           className="mt-1"
         />
         <span>
-          <span className="block text-sm font-medium">Qualquer publicação</span>
-          <span className="block text-xs text-zinc-500">
+          <span className="block text-label font-medium text-foreground">
+            Qualquer publicação
+          </span>
+          <span className="block text-label text-muted-foreground">
             Responde a comentários em qualquer post ou reel.
           </span>
         </span>
       </label>
 
       {mediaOptions.map((option) => (
-        <label
-          key={option.id}
-          className="flex cursor-pointer items-start gap-3 rounded-md border border-zinc-200 p-3 hover:bg-zinc-50"
-        >
+        <label key={option.id} className={OPTION_CLASS}>
           <input
             type="radio"
             name="mediaId"
@@ -70,8 +79,10 @@ function MediaOptionList({
           />
           <MediaThumbnail option={option} />
           <span className="min-w-0">
-            <span className="block truncate text-sm">{option.label}</span>
-            <span className="block font-mono text-[11px] text-zinc-500">
+            <span className="block truncate text-label text-foreground">
+              {option.label}
+            </span>
+            <span className="block font-mono text-mono text-muted-soft">
               {option.id}
             </span>
           </span>
@@ -87,12 +98,13 @@ function MediaIdField({ initial, errors }: Pick<Props, "initial" | "errors">) {
       <Label htmlFor="mediaId" hint="Deixe em branco para qualquer publicação.">
         ID da publicação (opcional)
       </Label>
-      <input
+      <Input
         id="mediaId"
         name="mediaId"
         defaultValue={initial?.mediaId ?? ""}
-        className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm"
+        className="font-mono"
         placeholder="Ex.: 17895695668004550"
+        aria-invalid={errors.mediaId ? true : undefined}
       />
       <FieldError message={errors.mediaId} />
     </div>
@@ -107,22 +119,19 @@ export function MediaSection({
   mediaError,
 }: Props) {
   return (
-    <section className="space-y-4 rounded-lg border border-zinc-200 bg-white p-5">
-      <div>
-        <h2 className="text-sm font-semibold">Publicação</h2>
-        <p className="text-xs text-zinc-500">
-          Escolha uma publicação específica ou responda a qualquer publicação.
-          Vídeos usam a miniatura fornecida pela API.
-        </p>
-      </div>
-
+    <FormSection
+      title="Publicação"
+      description="Escolha uma publicação específica ou responda a comentários em qualquer uma."
+    >
       {mediaError ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          Não foi possível carregar a lista de publicações agora: {mediaError}
-          <span className="mt-1 block">
-            Você ainda pode salvar usando o ID da publicação abaixo.
-          </span>
-        </div>
+        <Alert variant="warning">
+          <TriangleAlertIcon aria-hidden />
+          <AlertTitle>Lista de publicações indisponível</AlertTitle>
+          <AlertDescription>
+            {mediaError} Você ainda pode salvar usando o ID da publicação
+            abaixo.
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {mediaOptions.length > 0 ? (
@@ -130,6 +139,6 @@ export function MediaSection({
       ) : (
         <MediaIdField initial={initial} errors={errors} />
       )}
-    </section>
+    </FormSection>
   );
 }

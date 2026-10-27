@@ -373,8 +373,8 @@ tabela vazio.
   botão, contador dentro do controle), mensagem do link (texto + botão + URL
   https), porta de seguidor (5 cards de rádio, "Travado" mostra aviso âmbar).
 - **R5:** prévia da DM em moldura de 32 px, 380 px, com as duas bolhas, o botão e
-  "Prévia aproximada. O Instagram pode alterar a aparência." Atualiza com
-  debounce de 300 ms.
+  "Prévia aproximada. O Instagram pode alterar a aparência." Atualiza a cada
+  tecla (a prévia é leve; sem debounce).
 - Sair com alterações não salvas → diálogo; descartar é destrutivo.
 
 ### 9.4 Atividade (`/admin/atividade`) — R1, R2, R3, R4, R6
