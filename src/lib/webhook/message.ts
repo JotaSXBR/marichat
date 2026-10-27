@@ -248,6 +248,29 @@ async function queueContinuation(params: {
   }
 }
 
+/** Quem mandou a mensagem, ou `null` se o evento não deve ser processado. */
+function messageSender(
+  account: Account,
+  message: InboundMessage,
+): string | null {
+  const senderId = message.sender?.id;
+  if (!senderId || senderId === account.instagramUserId) return null;
+  if (message.message?.is_echo) return null;
+  const mid = message.message?.mid ?? message.postback?.mid;
+  return mid ? senderId : null;
+}
+
+/** A janela de 24h ainda está aberta? */
+function isWithinWindow(
+  interaction: InteractionRow,
+  receivedAt: Date,
+): boolean {
+  const deadline =
+    (interaction.userLastMessageAt ?? receivedAt).getTime() +
+    IG.messagingWindowMs;
+  return Date.now() < deadline;
+}
+
 /**
  * Mensagem recebida (texto livre ou toque em botão). Decide o próximo passo
  * conforme o modo da automação congelada na interação.
@@ -259,12 +282,8 @@ export async function processInboundMessage(params: {
   conversationId?: string;
 }): Promise<Outcome> {
   const { account, message } = params;
-  const senderId = message.sender?.id;
-  const mid = message.message?.mid ?? message.postback?.mid;
-
-  if (!senderId || senderId === account.instagramUserId) return "ignored";
-  if (message.message?.is_echo) return "ignored";
-  if (!mid) return "ignored";
+  const senderId = messageSender(account, message);
+  if (!senderId) return "ignored";
 
   const receivedAt = message.timestamp
     ? new Date(message.timestamp * 1000)
@@ -283,13 +302,8 @@ export async function processInboundMessage(params: {
     token: gateToken(message),
   });
 
-  if (!interaction) return "ignored";
-  if (CLOSED_STATES.has(interaction.state)) return "ignored";
-
-  const deadline =
-    (interaction.userLastMessageAt ?? receivedAt).getTime() +
-    IG.messagingWindowMs;
-  if (Date.now() >= deadline) return "ignored";
+  if (!interaction || CLOSED_STATES.has(interaction.state)) return "ignored";
+  if (!isWithinWindow(interaction, receivedAt)) return "ignored";
 
   const settings = await fullAutomation(interaction.automationId);
   if (!settings) return "ignored";

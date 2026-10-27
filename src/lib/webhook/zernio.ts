@@ -71,6 +71,29 @@ function eventTime(event: ZernioEvent): Date {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
+function isSupportedEvent(event: ZernioEvent): boolean {
+  return (
+    event.event === "comment.received" || event.event === "message.received"
+  );
+}
+
+function fieldOf(event: ZernioEvent): "comments" | "messages" {
+  return event.event === "comment.received" ? "comments" : "messages";
+}
+
+function eventKeyOf(event: ZernioEvent, headerEventId?: string | null): string {
+  return `zernio:${event.id ?? headerEventId ?? crypto.randomUUID()}`;
+}
+
+async function dispatchEvent(
+  account: Account,
+  event: ZernioEvent,
+): Promise<"processed" | "ignored" | "failed"> {
+  return event.event === "comment.received"
+    ? handleComment(account, event)
+    : handleMessage(account, event);
+}
+
 export async function handleZernioEvent(
   event: ZernioEvent,
   /** `X-Zernio-Event-Id`; usado quando o corpo não traz `id`. */
@@ -84,24 +107,18 @@ export async function handleZernioEvent(
   };
 
   if (event.test) return summary;
-  if (
-    event.event !== "comment.received" &&
-    event.event !== "message.received"
-  ) {
-    return summary;
-  }
+  if (!isSupportedEvent(event)) return summary;
 
   const providerAccountId = accountIdOf(event);
   if (!providerAccountId) return summary;
 
   const account = await findAccountByProviderAccountId(providerAccountId);
-  const eventKey = `zernio:${event.id ?? headerEventId ?? crypto.randomUUID()}`;
-  const field = event.event === "comment.received" ? "comments" : "messages";
+  const eventKey = eventKeyOf(event, headerEventId);
 
   summary.received += 1;
   const claimed = await claimEvent({
     eventKey,
-    field,
+    field: fieldOf(event),
     instagramUserId: account?.instagramUserId ?? providerAccountId,
     payload: event,
   });
@@ -120,14 +137,7 @@ export async function handleZernioEvent(
     return summary;
   }
 
-  let outcome: "processed" | "ignored" | "failed" = "ignored";
-
-  if (event.event === "comment.received") {
-    outcome = await handleComment(account, event);
-  } else {
-    outcome = await handleMessage(account, event);
-  }
-
+  const outcome = await dispatchEvent(account, event);
   await finishEvent(eventKey, outcome);
   summary[outcome] += 1;
   return summary;
@@ -161,6 +171,40 @@ async function handleComment(
   });
 }
 
+/** Corpo da mensagem no formato interno, com botão ou quick reply. */
+function messageBody(
+  message: NonNullable<ZernioEvent["message"]>,
+  metadata: NonNullable<ZernioEvent["metadata"]>,
+): NonNullable<InboundMessage["message"]> {
+  const body: NonNullable<InboundMessage["message"]> = {
+    mid: message.platformMessageId ?? message.id,
+    text: message.text ?? undefined,
+  };
+  if (!metadata.postbackPayload && metadata.interactiveId) {
+    body.quick_reply = { payload: metadata.interactiveId };
+  }
+  return body;
+}
+
+function buildInboundMessage(
+  account: Account,
+  event: ZernioEvent,
+  message: NonNullable<ZernioEvent["message"]>,
+): InboundMessage {
+  const metadata = event.metadata ?? {};
+  const body = messageBody(message, metadata);
+  const inbound: InboundMessage = {
+    sender: { id: message.sender?.id },
+    recipient: { id: account.instagramUserId },
+    timestamp: Math.floor(eventTime(event).getTime() / 1000),
+    message: body,
+  };
+  if (metadata.postbackPayload) {
+    inbound.postback = { mid: body.mid, payload: metadata.postbackPayload };
+  }
+  return inbound;
+}
+
 async function handleMessage(
   account: Account,
   event: ZernioEvent,
@@ -171,36 +215,9 @@ async function handleMessage(
   if (message.direction === "outgoing") return "ignored";
   if (event.metadata?.standby) return "ignored";
 
-  const metadata = event.metadata ?? {};
-  const postbackPayload = metadata.postbackPayload;
-  const quickReplyPayload = metadata.interactiveId;
-
-  const inbound: InboundMessage = {
-    sender: { id: message.sender?.id },
-    recipient: { id: account.instagramUserId },
-    timestamp: Math.floor(eventTime(event).getTime() / 1000),
-    message: {
-      mid: message.platformMessageId ?? message.id,
-      text: message.text ?? undefined,
-      ...(postbackPayload
-        ? {}
-        : quickReplyPayload
-          ? { quick_reply: { payload: quickReplyPayload } }
-          : {}),
-    },
-    ...(postbackPayload
-      ? {
-          postback: {
-            mid: message.platformMessageId ?? message.id,
-            payload: postbackPayload,
-          },
-        }
-      : {}),
-  };
-
   return processInboundMessage({
     account,
-    message: inbound,
+    message: buildInboundMessage(account, event, message),
     conversationId: message.conversationId,
   });
 }

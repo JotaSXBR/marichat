@@ -60,18 +60,18 @@ type ZernioErrorBody = {
   details?: Record<string, unknown>;
 };
 
-async function requestJson(
-  path: string,
-  init: RequestInit & { idempotencyKey?: string } = {},
-): Promise<unknown> {
-  if (!ZERNIO.apiKey) {
-    throw new ZernioApiError(
-      "A chave da Zernio não está configurada (ZERNIO_API_KEY).",
-      500,
-      "missing_api_key",
-    );
-  }
+function missingKeyError(): ZernioApiError {
+  return new ZernioApiError(
+    "A chave da Zernio não está configurada (ZERNIO_API_KEY).",
+    500,
+    "missing_api_key",
+  );
+}
 
+function buildRequest(init: RequestInit & { idempotencyKey?: string }): {
+  rest: RequestInit;
+  headers: Headers;
+} {
   const { idempotencyKey, ...rest } = init;
   const headers = new Headers(rest.headers);
   headers.set("authorization", `Bearer ${ZERNIO.apiKey}`);
@@ -80,7 +80,46 @@ async function requestJson(
   if (rest.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
+  return { rest, headers };
+}
 
+/** Timeout/rede: quem chama trata como "resultado desconhecido". */
+function networkError(error: unknown): ZernioApiError {
+  return new ZernioApiError(
+    error instanceof Error
+      ? `Não foi possível falar com a Zernio: ${error.message}`
+      : "Não foi possível falar com a Zernio.",
+    0,
+    "network_error",
+  );
+}
+
+function parseBody(raw: string): unknown {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function httpError(response: Response, parsed: unknown): ZernioApiError {
+  const body = (parsed ?? {}) as ZernioErrorBody;
+  return new ZernioApiError(
+    body.error ?? `A Zernio respondeu HTTP ${response.status}.`,
+    response.status,
+    body.code,
+    body.details,
+  );
+}
+
+async function requestJson(
+  path: string,
+  init: RequestInit & { idempotencyKey?: string } = {},
+): Promise<unknown> {
+  if (!ZERNIO.apiKey) throw missingKeyError();
+
+  const { rest, headers } = buildRequest(init);
   let response: Response;
   try {
     response = await fetch(`${ZERNIO.baseUrl}${path}`, {
@@ -89,36 +128,11 @@ async function requestJson(
       signal: AbortSignal.timeout(ZERNIO.requestTimeoutMs),
     });
   } catch (error) {
-    // Timeout/rede: quem chama trata como "resultado desconhecido".
-    throw new ZernioApiError(
-      error instanceof Error
-        ? `Não foi possível falar com a Zernio: ${error.message}`
-        : "Não foi possível falar com a Zernio.",
-      0,
-      "network_error",
-    );
+    throw networkError(error);
   }
 
-  const raw = await response.text();
-  let parsed: unknown = null;
-  if (raw) {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      parsed = null;
-    }
-  }
-
-  if (!response.ok) {
-    const body = (parsed ?? {}) as ZernioErrorBody;
-    throw new ZernioApiError(
-      body.error ?? `A Zernio respondeu HTTP ${response.status}.`,
-      response.status,
-      body.code,
-      body.details,
-    );
-  }
-
+  const parsed = parseBody(await response.text());
+  if (!response.ok) throw httpError(response, parsed);
   return parsed;
 }
 

@@ -14,6 +14,7 @@ import {
   exchangeForLongLivedToken,
   getMe,
   subscribeWebhooks,
+  type InstagramMe,
 } from "@/lib/instagram/client";
 import { IG } from "@/lib/instagram/config";
 
@@ -62,22 +63,26 @@ export type OAuthResult = {
   webhookError?: string;
 };
 
-export async function completeOAuth(params: {
+/** Troca o `code` pelos tokens e confere se os IDs da Meta coincidem. */
+async function exchangeTokens(params: {
   code: string;
   redirectUri: string;
-}): Promise<OAuthResult> {
+  appSecret: string;
+}): Promise<{
+  me: InstagramMe;
+  longLived: { accessToken: string; expiresInSeconds: number };
+}> {
   const appId = requireEnv("INSTAGRAM_APP_ID");
-  const appSecret = requireEnv("INSTAGRAM_APP_SECRET");
 
   const shortLived = await exchangeCodeForToken({
     appId,
-    appSecret,
+    appSecret: params.appSecret,
     code: params.code,
     redirectUri: params.redirectUri,
   });
 
   const longLived = await exchangeForLongLivedToken({
-    appSecret,
+    appSecret: params.appSecret,
     shortLivedToken: shortLived.accessToken,
   });
 
@@ -90,70 +95,103 @@ export async function completeOAuth(params: {
     );
   }
 
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + longLived.expiresInSeconds * 1000);
-  const encrypted = encryptToken(longLived.accessToken);
+  return { me, longLived };
+}
 
+/** Grava (ou atualiza) a conta da Meta com o token cifrado. */
+async function saveAccount(params: {
+  me: InstagramMe;
+  accessToken: string;
+  expiresAt: Date;
+  now: Date;
+}): Promise<void> {
+  const encrypted = encryptToken(params.accessToken);
+  const base = {
+    provider: "meta" as const,
+    username: params.me.username,
+    accessTokenEncrypted: encrypted,
+    tokenExpiresAt: params.expiresAt,
+    connectionStatus: "connected",
+    lastVerifiedAt: params.now,
+    updatedAt: params.now,
+  };
   const db = getDb();
   await db
     .insert(instagramAccounts)
     .values({
-      provider: "meta",
-      instagramUserId: me.userId,
-      username: me.username,
-      accessTokenEncrypted: encrypted,
-      tokenExpiresAt: expiresAt,
-      connectionStatus: "connected",
-      lastVerifiedAt: now,
-      updatedAt: now,
+      ...base,
+      instagramUserId: params.me.userId,
     })
     .onConflictDoUpdate({
       target: instagramAccounts.instagramUserId,
-      set: {
-        provider: "meta",
-        providerAccountId: null,
-        username: me.username,
-        accessTokenEncrypted: encrypted,
-        tokenExpiresAt: expiresAt,
-        connectionStatus: "connected",
-        lastVerifiedAt: now,
-        updatedAt: now,
-      },
+      set: { ...base, providerAccountId: null },
     });
 
   const [account] = await db
     .select()
     .from(instagramAccounts)
-    .where(eq(instagramAccounts.instagramUserId, me.userId))
+    .where(eq(instagramAccounts.instagramUserId, params.me.userId))
     .limit(1);
 
   if (!account) {
     throw new Error("Não foi possível salvar a conta do Instagram.");
   }
+}
 
-  let webhookSubscribed = false;
-  let webhookError: string | undefined;
+/** Assina os webhooks e registra o resultado no estado do app. */
+async function subscribeAccount(params: {
+  igUserId: string;
+  accessToken: string;
+  now: Date;
+}): Promise<{ webhookSubscribed: boolean; webhookError?: string }> {
   try {
     await subscribeWebhooks({
-      igUserId: me.userId,
-      accessToken: longLived.accessToken,
+      igUserId: params.igUserId,
+      accessToken: params.accessToken,
     });
-    webhookSubscribed = true;
     await setAppStateValue("webhook_subscription_error", null);
-    await setAppStateValue("webhook_subscribed_at", now.toISOString());
+    await setAppStateValue("webhook_subscribed_at", params.now.toISOString());
+    return { webhookSubscribed: true };
   } catch (error) {
-    webhookError =
+    const webhookError =
       error instanceof Error
         ? error.message
         : "Erro desconhecido ao assinar webhooks.";
     await setAppStateValue("webhook_subscription_error", webhookError);
     console.error("[oauth] falha ao assinar webhooks:", error);
+    return { webhookSubscribed: false, webhookError };
   }
+}
+
+export async function completeOAuth(params: {
+  code: string;
+  redirectUri: string;
+}): Promise<OAuthResult> {
+  const appSecret = requireEnv("INSTAGRAM_APP_SECRET");
+  const now = new Date();
+  const { me, longLived } = await exchangeTokens({
+    code: params.code,
+    redirectUri: params.redirectUri,
+    appSecret,
+  });
+  const expiresAt = new Date(now.getTime() + longLived.expiresInSeconds * 1000);
+
+  await saveAccount({
+    me,
+    accessToken: longLived.accessToken,
+    expiresAt,
+    now,
+  });
+
+  const webhook = await subscribeAccount({
+    igUserId: me.userId,
+    accessToken: longLived.accessToken,
+    now,
+  });
 
   return {
     username: me.username,
     instagramUserId: me.userId,
-    webhookSubscribed,
-    webhookError,
+    ...webhook,
   };
 }
