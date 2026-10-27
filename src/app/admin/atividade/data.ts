@@ -1,0 +1,155 @@
+import "server-only";
+
+import { desc, eq, sql } from "drizzle-orm";
+
+import { getActiveAccount, getAppStateValue } from "@/lib/accounts";
+import { getDb } from "@/lib/db/client";
+import {
+  automations,
+  commentInteractions,
+  outboundMessages,
+  webhookEvents,
+} from "@/lib/db/schema";
+import {
+  CONNECTION_TEST_KEY,
+  type ConnectionTestResult,
+} from "@/lib/instagram/diagnostics";
+import type { DrainSummary } from "@/lib/queue/drain";
+
+/**
+ * Consultas da página de Atividade. Ficam fora do componente para a página
+ * cuidar só do layout e para cada consulta ter um nome.
+ */
+
+export const ACTIVITY_LIMIT = 30;
+/** Se a tarefa agendada não roda, nada anda; avisamos depois deste tempo. */
+const STALE_TICK_MS = 5 * 60 * 1000;
+
+type Db = ReturnType<typeof getDb>;
+
+function loadInteractions(db: Db) {
+  return db
+    .select({
+      id: commentInteractions.id,
+      commenter: commentInteractions.commenterIgsid,
+      commentText: commentInteractions.commentText,
+      state: commentInteractions.state,
+      followChecks: commentInteractions.followChecks,
+      mediaId: commentInteractions.mediaId,
+      createdAt: commentInteractions.createdAt,
+      userLastMessageAt: commentInteractions.userLastMessageAt,
+      secondDmAcceptedAt: commentInteractions.secondDmAcceptedAt,
+      automationName: automations.name,
+    })
+    .from(commentInteractions)
+    .leftJoin(automations, eq(automations.id, commentInteractions.automationId))
+    .orderBy(desc(commentInteractions.createdAt))
+    .limit(ACTIVITY_LIMIT);
+}
+
+function loadJobs(db: Db) {
+  return db
+    .select({
+      id: outboundMessages.id,
+      interactionId: outboundMessages.interactionId,
+      commenter: commentInteractions.commenterIgsid,
+      kind: outboundMessages.kind,
+      status: outboundMessages.status,
+      attempts: outboundMessages.attempts,
+      maxAttempts: outboundMessages.maxAttempts,
+      nextAttemptAt: outboundMessages.nextAttemptAt,
+      errorCode: outboundMessages.errorCode,
+      errorMessage: outboundMessages.errorMessage,
+      updatedAt: outboundMessages.updatedAt,
+    })
+    .from(outboundMessages)
+    .leftJoin(
+      commentInteractions,
+      eq(commentInteractions.id, outboundMessages.interactionId),
+    )
+    .orderBy(desc(outboundMessages.updatedAt))
+    .limit(ACTIVITY_LIMIT);
+}
+
+function loadEvents(db: Db) {
+  return db
+    .select({
+      eventKey: webhookEvents.eventKey,
+      field: webhookEvents.field,
+      status: webhookEvents.status,
+      errorMessage: webhookEvents.errorMessage,
+      receivedAt: webhookEvents.receivedAt,
+    })
+    .from(webhookEvents)
+    .orderBy(desc(webhookEvents.receivedAt))
+    .limit(ACTIVITY_LIMIT);
+}
+
+function loadDiagnostics() {
+  return Promise.all([
+    getAppStateValue<string>("last_tick_at"),
+    getAppStateValue<string>("last_drain_at"),
+    getAppStateValue<DrainSummary>("last_drain_summary"),
+    getAppStateValue<string>("last_send_accepted_at"),
+    getAppStateValue<string>("webhook_subscription_error"),
+    getAppStateValue<ConnectionTestResult>(CONNECTION_TEST_KEY),
+  ] as const);
+}
+
+function drainSummaryOf(summary: DrainSummary | null): string {
+  if (!summary) return "—";
+  return `${summary.accepted} aceitas, ${summary.failed} falhas, ${summary.requeued} reenfileiradas, ${summary.expired} expiradas`;
+}
+
+function toDate(value: string | null): Date | null {
+  return value ? new Date(value) : null;
+}
+
+function isTickStale(tickDate: Date | null, dbNow: Date | null): boolean {
+  if (!tickDate || !dbNow) return false;
+  return dbNow.getTime() - tickDate.getTime() > STALE_TICK_MS;
+}
+
+export async function loadActivity() {
+  const db = getDb();
+  const account = await getActiveAccount();
+  // Hora do banco: mantém a página determinística e alinhada ao cron.
+  const nowRows = await db.execute<{ now: Date | string }>(
+    sql`select now() as now`,
+  );
+  const dbNow = nowRows[0]?.now ? new Date(nowRows[0].now) : null;
+
+  const [interactions, jobs, events] = await Promise.all([
+    loadInteractions(db),
+    loadJobs(db),
+    loadEvents(db),
+  ]);
+
+  const [
+    lastTickAt,
+    lastDrainAt,
+    lastDrainSummary,
+    lastSendAt,
+    webhookError,
+    connectionTest,
+  ] = await loadDiagnostics();
+
+  const tickDate = toDate(lastTickAt);
+
+  return {
+    account,
+    interactions,
+    jobs,
+    events,
+    lastTickAt,
+    lastDrainAt,
+    lastSendAt,
+    tickDate,
+    tickStale: isTickStale(tickDate, dbNow),
+    drainSummary: drainSummaryOf(lastDrainSummary),
+    webhookError,
+    connectionTest,
+  };
+}
+
+export type ActivityData = Awaited<ReturnType<typeof loadActivity>>;

@@ -1,10 +1,13 @@
 import { and, eq } from "drizzle-orm";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
 import { AutomationForm } from "@/app/admin/automacoes/automation-form";
 import { loadMediaOptions } from "@/app/admin/automacoes/media-options";
+import {
+  ConnectAccountNotice,
+  EditAutomationHeader,
+} from "@/app/admin/automacoes/notices";
 import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
@@ -21,19 +24,7 @@ export default async function EditAutomationPage({
 
   const { id } = await params;
   const account = await getActiveAccount();
-  if (!account) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Editar automação</h1>
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          Conecte uma conta do Instagram primeiro.{" "}
-          <Link href="/admin/conexao" className="font-medium underline">
-            Ir para Conexão
-          </Link>
-        </p>
-      </div>
-    );
-  }
+  if (!account) return <ConnectAccountNotice />;
 
   const db = getDb();
   const [automation] = await db
@@ -51,15 +42,7 @@ export default async function EditAutomationPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Editar automação</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          O texto da primeira DM fica congelado no comentário. O modo da porta e
-          os textos da segunda mensagem valem para os próximos envios, inclusive
-          de conversas em andamento.
-        </p>
-      </div>
-
+      <EditAutomationHeader />
       <AutomationForm
         initial={{
           id: automation.id,
