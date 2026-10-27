@@ -19,10 +19,10 @@ guiada dos arquivos grandes.
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
-| Arquivos `src` acima de 400 linhas | 6 (inclui `scripts`) | 0 (avisos) |
-| Funções acima de 60 linhas | 22 | 0 (avisos) |
-| Funções com complexidade > 12 | 19 | 0 (avisos) |
-| Avisos de orçamento no lint | 58 (baseline do CI) | 0 |
+| Arquivos `src` acima de 400 linhas | 5 (inclui `scripts`) | 0 (avisos) |
+| Funções acima de 60 linhas | 20 | 0 (avisos) |
+| Funções com complexidade > 12 | 18 | 0 (avisos) |
+| Avisos de orçamento no lint | 54 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
 | Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
@@ -116,21 +116,21 @@ caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
 reduz a dívida.
 
 **Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=58`. Esse 58 é o baseline medido depois da formatação
-(que quebrou algumas linhas em mais de uma). Um aviso novo faz o CI falhar;
+`eslint . --max-warnings=54`. Esse 54 é o baseline medido depois da primeira
+parte da Fase 5 (divisão de `admin/actions.ts`). Um aviso novo faz o CI falhar;
 corrigir avisos nunca quebra o CI. Quando o número cair, baixe o valor em
 `package.json` (e aqui). Quando chegar a zero, os limites podem virar `error`.
 
-Baseline por regra (2026-10-26, após Prettier):
+Baseline por regra (2026-10-26, após a Fase 5 parte 1):
 
 | Regra | Avisos |
 | --- | --- |
-| `complexity` (limite 12) | 19 |
-| `max-lines-per-function` (60) | 22 |
-| `max-lines` (400) | 6 |
+| `complexity` (limite 12) | 18 |
+| `max-lines-per-function` (60) | 20 |
+| `max-lines` (400) | 5 |
 | `sonarjs/cognitive-complexity` (15) | 10 |
 | `max-depth` (3) | 1 |
-| **Total** | **58** |
+| **Total** | **54** |
 
 Testes e scripts têm exceções conscientes:
 
@@ -239,12 +239,17 @@ Ordenado por retorno, não por tamanho.
 
 | Arquivo | Linhas | Problema | Divisão sugerida |
 | --- | --- | --- | --- |
-| `src/lib/queue/drain.ts` | 1.085 | claim, envio Meta/Zernio, follow-check, rate limit, token e limpeza no mesmo módulo | `queue/claim.ts`, `queue/send.ts`, `queue/follow-check.ts`, `queue/token.ts`, `queue/cleanup.ts` |
-| `src/lib/webhook/process.ts` | 630 | parsing, dedupe, criação de interação e decisão de follow no mesmo lugar | `webhook/parse.ts`, `webhook/comment.ts`, `webhook/message.ts`, `webhook/events.ts` |
-| `src/app/admin/actions.ts` | 524 | CRUD de automação + conexão Meta/Zernio + diagnóstico | `admin/actions/automations.ts` e `admin/actions/connection.ts` |
-| `src/app/admin/conexao/page.tsx` | 509 | 56 caminhos condicionais na mesma função | componentes `AccountCard`, `DiagnosticsCard`, `WebhookCard`, `EnvChecklist` |
-| `src/app/admin/automacoes/automation-form.tsx` | 537 | complexidade 62; campos repetidos e condicionais de modo | `MessageFields`, `FollowGateFields`, `LinkFields` |
-| `scripts/local-demo.mjs` | 473 | API falsa + orquestração no mesmo `main` (complexidade 43) | `scripts/demo/mock-api.mjs` + `scripts/demo/run.mjs` |
+| `src/lib/queue/drain.ts` | 941 | claim, envio Meta/Zernio, follow-check, rate limit, token e limpeza no mesmo módulo | `queue/claim.ts`, `queue/send.ts`, `queue/follow-check.ts`, `queue/token.ts`, `queue/cleanup.ts` |
+| `src/lib/webhook/process.ts` | 529 | parsing, dedupe, criação de interação e decisão de follow no mesmo lugar | `webhook/parse.ts`, `webhook/comment.ts`, `webhook/message.ts`, `webhook/events.ts` |
+| `src/app/admin/conexao/page.tsx` | 512 | 56 caminhos condicionais na mesma função | componentes `AccountCard`, `DiagnosticsCard`, `WebhookCard`, `EnvChecklist` |
+| `src/app/admin/automacoes/automation-form.tsx` | 514 | complexidade 62; campos repetidos e condicionais de modo | `MessageFields`, `FollowGateFields`, `LinkFields` |
+| `scripts/local-demo.mjs` | 468 | API falsa + orquestração no mesmo `main` (complexidade 43) | `scripts/demo/mock-api.mjs` + `scripts/demo/run.mjs` |
+
+**Já dividido na Fase 5:** `src/app/admin/actions.ts` (524 → ~120 linhas) virou
+`admin/actions.ts` (só `saveAutomation` e `toggleAutomation`),
+`admin/conexao/actions.ts` (conexão Meta/Zernio), `lib/automation-input.ts`
+(leitura e schema do formulário, testado) e `lib/zernio/select-account.ts`
+(escolha da conta, testada).
 
 ### Prioridade 2 — funções grandes
 
@@ -257,17 +262,13 @@ Ordenado por retorno, não por tamanho.
   funções próprias (a Zernio já tem `sendWithZernio`; falta o caminho Meta).
 - `processFollowCheck` (184 linhas): extrair `fetchFollowStatus(account,
   interaction)` (o bloco Meta/Zernio) e `applyFollowResult(...)`.
-- `readForm` (complexidade 22): trocar o objeto gigante por helper
-  `readText` e defaults vindos de `automation-defaults.ts`.
 - `toZernioMessage` (complexidade 27): separar extração de texto e de botões
   em funções pequenas e testáveis.
-- `runConnectionTest` / `runZernioConnectionTest` / `connectZernio`:
-  separar coleta de fatos de montagem da lista de problemas.
+- `runConnectionTest` / `runZernioConnectionTest`: separar coleta de fatos de
+  montagem da lista de problemas.
 
 ### Prioridade 3 — robustez e testes
 
-- `src/app/admin/actions.ts` não tem teste. Extrair funções puras
-  (`pickZernioAccount`, `zernioAccountValues`, `readForm`) e testá-las.
 - `runZernioConnectionTest` diz “Webhook: segredo configurado” só checando a
   variável de ambiente; não confirma que o endpoint existe na Zernio. Buscar os
   webhooks cadastrados e comparar URL/eventos.
@@ -307,8 +308,9 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    Dockerfile.
 4. **Fase 4 — formatação** ✅ **concluída**: Prettier + `.editorconfig` num
    commit só de formatação; `format:check` entrou no CI.
-5. **Fase 5 — refatoração guiada**: atacar Prioridade 1, arquivo por arquivo,
-   com testes antes/depois. Ao zerar um arquivo, apertar o limite dele.
+5. **Fase 5 — refatoração guiada** 🔄 **em andamento**: atacar Prioridade 1,
+   arquivo por arquivo, com testes antes/depois. Parte 1 concluída
+   (`admin/actions.ts` dividido; baseline 58 → 54; 111 testes).
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
    limpo.
 

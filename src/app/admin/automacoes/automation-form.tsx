@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
-import { saveAutomation, type AutomationFormState } from "@/app/admin/actions";
+import { saveAutomation } from "@/app/admin/actions";
+import {
+  DEFAULT_CONFIRM_LABEL,
+  DEFAULT_FOLLOW_DIRECT_TEXT,
+  DEFAULT_FOLLOW_GATE_TEXT,
+  DEFAULT_FOLLOW_LABEL,
+  DEFAULT_FOLLOW_OPTIONAL_TEXT,
+} from "@/lib/automation-defaults";
+import type { AutomationFormState } from "@/lib/automation-input";
 import {
   FOLLOW_MODES,
   FOLLOW_MODE_LABELS,
@@ -316,15 +324,14 @@ export function AutomationForm({
             <input
               type="hidden"
               name="followGateText"
-              defaultValue={
-                initial?.followGateText ??
-                'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".'
-              }
+              defaultValue={initial?.followGateText ?? DEFAULT_FOLLOW_GATE_TEXT}
             />
             <input
               type="hidden"
               name="followGateConfirmLabel"
-              defaultValue={initial?.followGateConfirmLabel ?? "Já segui"}
+              defaultValue={
+                initial?.followGateConfirmLabel ?? DEFAULT_CONFIRM_LABEL
+              }
             />
           </>
         ) : null}
@@ -333,8 +340,7 @@ export function AutomationForm({
             type="hidden"
             name="followOptionalText"
             defaultValue={
-              initial?.followOptionalText ??
-              "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:"
+              initial?.followOptionalText ?? DEFAULT_FOLLOW_OPTIONAL_TEXT
             }
           />
         ) : null}
@@ -343,8 +349,7 @@ export function AutomationForm({
             type="hidden"
             name="followDirectText"
             defaultValue={
-              initial?.followDirectText ??
-              "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal."
+              initial?.followDirectText ?? DEFAULT_FOLLOW_DIRECT_TEXT
             }
           />
         ) : null}
@@ -352,7 +357,9 @@ export function AutomationForm({
           <input
             type="hidden"
             name="followGateFollowLabel"
-            defaultValue={initial?.followGateFollowLabel ?? "Seguir agora"}
+            defaultValue={
+              initial?.followGateFollowLabel ?? DEFAULT_FOLLOW_LABEL
+            }
           />
         ) : null}
 
@@ -372,10 +379,7 @@ export function AutomationForm({
               id="followGateText"
               name="followGateText"
               rows={3}
-              defaultValue={
-                initial?.followGateText ??
-                'Para liberar o link, siga o perfil e depois toque em "Já segui". Se preferir, toque em "Seguir agora".'
-              }
+              defaultValue={initial?.followGateText ?? DEFAULT_FOLLOW_GATE_TEXT}
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
             />
             <FieldError message={errors.followGateText} />
@@ -395,8 +399,7 @@ export function AutomationForm({
               name="followOptionalText"
               rows={3}
               defaultValue={
-                initial?.followOptionalText ??
-                "Se quiser receber as próximas mensagens na caixa principal, siga o perfil. O link já está aqui:"
+                initial?.followOptionalText ?? DEFAULT_FOLLOW_OPTIONAL_TEXT
               }
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
             />
@@ -417,8 +420,7 @@ export function AutomationForm({
               name="followDirectText"
               rows={3}
               defaultValue={
-                initial?.followDirectText ??
-                "Aqui está o link. Se seguir o perfil, as próximas mensagens chegam na caixa principal."
+                initial?.followDirectText ?? DEFAULT_FOLLOW_DIRECT_TEXT
               }
               className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
             />
@@ -436,7 +438,9 @@ export function AutomationForm({
                 id="followGateFollowLabel"
                 name="followGateFollowLabel"
                 maxLength={20}
-                defaultValue={initial?.followGateFollowLabel ?? "Seguir agora"}
+                defaultValue={
+                  initial?.followGateFollowLabel ?? DEFAULT_FOLLOW_LABEL
+                }
                 className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
               />
               <FieldError message={errors.followGateFollowLabel} />
@@ -453,7 +457,9 @@ export function AutomationForm({
                   id="followGateConfirmLabel"
                   name="followGateConfirmLabel"
                   maxLength={20}
-                  defaultValue={initial?.followGateConfirmLabel ?? "Já segui"}
+                  defaultValue={
+                    initial?.followGateConfirmLabel ?? DEFAULT_CONFIRM_LABEL
+                  }
                   className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
                 />
                 <FieldError message={errors.followGateConfirmLabel} />

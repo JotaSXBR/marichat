@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "lint:ci": "eslint . --max-warnings=58",
+    "lint:ci": "eslint . --max-warnings=54",
     "typecheck": "tsc --noEmit",
     "typegen": "next typegen",
     "format": "prettier --write .",

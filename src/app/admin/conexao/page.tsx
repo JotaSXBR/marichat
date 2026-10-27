@@ -8,7 +8,7 @@ import {
   resubscribeWebhooks,
   testInstagramConnection,
   testZernioConnection,
-} from "@/app/admin/actions";
+} from "@/app/admin/conexao/actions";
 import { ConfirmSubmitButton } from "@/app/admin/confirm-submit-button";
 import { getActiveAccount, getAppStateValue } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
