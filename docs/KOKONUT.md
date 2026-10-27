@@ -193,6 +193,16 @@ Consequências práticas para o MARICHAT:
 - [Shape Hero](https://kokonutui.com/docs/backgrounds/shape-hero) — `@kokonutui/shape-hero`
 - [Topo Background](https://kokonutui.com/docs/backgrounds/topo-background) — `@kokonutui/topo-background`
 
+## Componentes avaliados e descartados
+
+| Componente | Por que ficou de fora |
+| :-- | :-- |
+| `smooth-drawer` | é um sheet de checkout (itens, velocidade de entrega, total). O menu mobile do painel é navegação simples, feita com `drawer` (vaul) do shadcn. |
+| `profile-dropdown` | assume troca de tema (claro/escuro/sistema) e multi-conta com cartão e cobrança. O MARICHAT é escuro fixo e tem uma conta só; o menu de conta usa `dropdown-menu` do shadcn. |
+
+Os dois arquivos foram apagados de `src/components/kokonutui/` para não ficarem
+como código morto.
+
 ## Componentes fora do catálogo
 
 O sitemap inclui `/docs/pro`, `/docs/templates` e `/docs/agents`, que não são
