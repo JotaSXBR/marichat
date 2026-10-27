@@ -54,6 +54,14 @@ export async function setAppStateValue(
     });
 }
 
+/**
+ * Apaga a chave. `value` é `jsonb NOT NULL`, então gravar `null` estoura —
+ * ausência de linha é a forma de dizer "sem valor".
+ */
+export async function clearAppStateValue(key: string): Promise<void> {
+  await getDb().delete(appState).where(eq(appState.key, key));
+}
+
 export async function getAppStateValue<T = unknown>(
   key: string,
 ): Promise<T | null> {

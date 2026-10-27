@@ -308,6 +308,27 @@ export type ZernioWebhookSettings = {
   isActive: boolean;
 };
 
+/** Endpoints de webhook já configurados na conta. */
+export async function listWebhookSettings(): Promise<
+  { id: string; url: string; secret: string | null }[]
+> {
+  const data = await requestJson("/v1/webhooks/settings", { method: "GET" });
+  const list = (data as { webhooks?: unknown[] } | null)?.webhooks ?? [];
+
+  return list.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const item = entry as Record<string, unknown>;
+    if (typeof item._id !== "string" || typeof item.url !== "string") return [];
+    return [
+      {
+        id: item._id,
+        url: item.url,
+        secret: typeof item.secret === "string" ? item.secret : null,
+      },
+    ];
+  });
+}
+
 /** Cria o endpoint de webhook da Zernio apontando para este app. */
 export async function createWebhookSettings(params: {
   name: string;

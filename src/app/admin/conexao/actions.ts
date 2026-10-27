@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  clearAppStateValue,
   getAccountToken,
   getActiveAccount,
   setAppStateValue,
@@ -25,6 +26,7 @@ import {
 import {
   createWebhookSettings,
   listInstagramAccounts,
+  listWebhookSettings,
   type ZernioAccount,
 } from "@/lib/zernio/client";
 import { ZERNIO, isZernioConfigured } from "@/lib/zernio/config";
@@ -102,7 +104,7 @@ async function subscribeMetaWebhooks(account: Account): Promise<void> {
         `A Meta aceitou a inscrição, mas estes campos não aparecem: ${missing.join(", ")}. Confira as assinaturas do app no painel da Meta.`,
       );
     } else {
-      await setAppStateValue("webhook_subscription_error", null);
+      await clearAppStateValue("webhook_subscription_error");
       await setAppStateValue("webhook_subscribed_at", new Date().toISOString());
     }
   } catch (error) {
@@ -170,8 +172,8 @@ export async function connectZernio(formData: FormData): Promise<void> {
     redirect("/admin/conexao?erro=zernio-salvar");
   }
 
-  await setAppStateValue("zernio_connection_error", null);
-  await setAppStateValue("webhook_subscription_error", null);
+  await clearAppStateValue("zernio_connection_error");
+  await clearAppStateValue("webhook_subscription_error");
   await setAppStateValue("webhook_subscribed_at", new Date().toISOString());
 
   revalidatePath(CONNECTION_PATH);
@@ -265,14 +267,32 @@ async function registerZernioWebhookFor(): Promise<void> {
   }
 
   try {
-    const created = await createWebhookSettings({
-      name: "MARICHAT",
-      url,
-      secret: ZERNIO.webhookSecret,
-      events: ZERNIO.webhookEvents,
-    });
-    await setAppStateValue("zernio_webhook_id", created.id);
-    await setAppStateValue("webhook_subscription_error", null);
+    // A Zernio não tem update nem delete de webhook: reaproveita o que já
+    // aponta para esta URL em vez de criar um endpoint duplicado.
+    const existing = await listWebhookSettings();
+    const match = existing.find((webhook) => webhook.url === url);
+
+    if (match && match.secret !== ZERNIO.webhookSecret) {
+      await setAppStateValue(
+        "webhook_subscription_error",
+        "Já existe um webhook com esta URL na Zernio usando outro segredo. Apague-o no painel da Zernio e registre de novo.",
+      );
+      return;
+    }
+
+    const id =
+      match?.id ??
+      (
+        await createWebhookSettings({
+          name: "MARICHAT",
+          url,
+          secret: ZERNIO.webhookSecret,
+          events: ZERNIO.webhookEvents,
+        })
+      ).id;
+
+    await setAppStateValue("zernio_webhook_id", id);
+    await clearAppStateValue("webhook_subscription_error");
     await setAppStateValue("webhook_subscribed_at", new Date().toISOString());
   } catch (error) {
     await setAppStateValue(

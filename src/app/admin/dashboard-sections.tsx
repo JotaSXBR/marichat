@@ -118,7 +118,7 @@ function buildAlerts({
       variant: "danger",
       icon: AlertTriangleIcon,
       title: "A inscrição dos webhooks falhou",
-      description: "A última tentativa não foi aceita pela Meta.",
+      description: "A última tentativa de registro falhou.",
       href: "/admin/conexao",
       action: "Ver detalhes",
     });
