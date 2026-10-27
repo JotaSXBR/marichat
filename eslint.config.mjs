@@ -94,6 +94,21 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    // Componentes copiados do registry do Kokonut UI e adaptados aos tokens.
+    // São arquivos grandes de terceiros: os orçamentos de tamanho e
+    // complexidade (pensados para o nosso código) não valem aqui, mas as
+    // regras de correção continuam ligadas.
+    files: ["src/components/kokonutui/**/*.{ts,tsx}"],
+    rules: {
+      "max-lines": "off",
+      "max-lines-per-function": "off",
+      "max-nested-callbacks": "off",
+      complexity: "off",
+      "sonarjs/cognitive-complexity": "off",
+      "react-hooks/exhaustive-deps": "off",
+    },
+  },
   // Desliga regras de estilo do ESLint que brigariam com o Prettier.
   eslintConfigPrettier,
 ]);

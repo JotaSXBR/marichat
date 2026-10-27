@@ -9,6 +9,7 @@ import {
   OperationsPanel,
   RecentCommentsSection,
 } from "@/app/admin/dashboard-sections";
+import { OverviewIsland } from "@/app/admin/overview-island";
 import { requireAdmin } from "@/lib/auth";
 
 // Painel depende do banco e da autenticação a cada acesso.
@@ -26,28 +27,39 @@ export default async function AdminDashboard() {
 
       <DashboardAlerts
         account={data.account}
-        webhookError={data.webhookError}
         tokenDaysLeft={data.tokenDaysLeft}
+        webhookError={data.webhookError}
       />
 
       <DashboardCards
         activeAutomations={data.activeAutomations}
-        totalAutomations={data.totalAutomations}
-        waitingReply={data.waitingReply}
         linkSent={data.linkSent}
         needAttention={data.needAttention}
+        totalAutomations={data.totalAutomations}
+        waitingReply={data.waitingReply}
       />
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section
+        aria-label="Conta e operação"
+        className="grid gap-4 lg:grid-cols-2"
+      >
         <AccountPanel account={data.account} />
         <OperationsPanel
-          queuedJobs={data.queuedJobs}
           lastTickAt={data.lastTickAt}
+          queuedJobs={data.queuedJobs}
           recentEvents={data.recentEvents}
         />
       </section>
 
       <RecentCommentsSection rows={data.recent} />
+
+      {data.account ? (
+        <OverviewIsland
+          connected={data.account.connectionStatus === "connected"}
+          handle={data.account.username}
+          queuedJobs={data.queuedJobs}
+        />
+      ) : null}
     </div>
   );
 }

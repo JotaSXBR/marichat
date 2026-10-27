@@ -248,16 +248,16 @@ entra automaticamente.
 | Tabela (densidade única) | `table` | shadcn | `ui/table.tsx` |
 | Chip de status | `badge` adaptado | shadcn | `ui/status-chip.tsx` |
 | Alerta R3 | `alert` | shadcn | `ui/alert.tsx` |
-| Toast | `sonner` | shadcn | `ui/toaster.tsx` |
+| Toast | `sonner` | shadcn | `ui/sonner.tsx` |
 | Diálogo de confirmação | `alert-dialog` | shadcn | `ui/alert-dialog.tsx` |
-| Drawer mobile | `smooth-drawer` | Kokonut | `kokonut/drawer.tsx` |
-| Menu de conta | `profile-dropdown` | Kokonut | `kokonut/account-menu.tsx` |
-| Comandos `Ctrl K` | `action-search-bar` | Kokonut | `kokonut/command-bar.tsx` |
-| Ilha de status R6 | `status-island` | Kokonut | `kokonut/status-island.tsx` |
-| Saúde da conexão (30 dias) | `uptime-card` | Kokonut | `kokonut/uptime-card.tsx` |
-| Checklist de ambiente | `onboarding-checklist` | Kokonut | `kokonut/env-checklist.tsx` |
-| Confirmação destrutiva | `hold-button` | Kokonut | `kokonut/hold-button.tsx` |
-| Ação reversível | `undo-button` | Kokonut | `kokonut/undo-button.tsx` |
+| Drawer mobile | `drawer` (vaul) | shadcn | `ui/drawer.tsx` |
+| Menu de conta | `dropdown-menu` | shadcn | `ui/dropdown-menu.tsx` |
+| Comandos `Ctrl K` | `action-search-bar` | Kokonut | `marichat/command-palette.tsx` + `kokonutui/action-search-bar.tsx` |
+| Ilha de status R6 | `status-island` | Kokonut | `kokonutui/status-island.tsx` |
+| Saúde da conexão (30 dias) | `uptime-card` | Kokonut | `kokonutui/uptime-card.tsx` |
+| Checklist de ambiente | `onboarding-checklist` | Kokonut | `kokonutui/env-checklist.tsx` |
+| Confirmação destrutiva | `hold-button` | Kokonut | `kokonutui/hold-button.tsx` |
+| Ação reversível | `undo-button` | Kokonut | `kokonutui/undo-button.tsx` |
 | Toggle de automação | `switch` | shadcn | `ui/switch.tsx` |
 | Porta de seguidor | `radio-group` em cards | shadcn | `ui/radio-group.tsx` |
 | Skeleton | `skeleton` | shadcn | `ui/skeleton.tsx` |
@@ -273,6 +273,8 @@ entra automaticamente.
 | `bento-grid` | composição trivial em CSS grid; não vale a dependência |
 | `notification-stack` | pilha de toasts decorativa; alerta é `alert` e toast é `sonner` |
 | `smooth-tab` | o produto não tem abas; filtro vive na URL |
+| `smooth-drawer` | é um sheet de checkout (itens, entrega, total), não um drawer de navegação; o menu mobile usa `drawer` (vaul) do shadcn |
+| `profile-dropdown` | trava a troca de tema e o multi-conta, ambos fora do escopo v1; o menu de conta usa `dropdown-menu` do shadcn |
 | `card-flip`, `card-stack`, `liquid-glass-card`, `page-flip`, `carousel-cards` | física/3D/carrossel: fora das leis |
 | Fundos (`particles`, `caustics`, `rain-glass`, `ink`, `topo`, `halftone`, `flow-field`, `drape`, `dot-field`) | performance, contraste e ruído |
 | Texto animado (`type-writer`, `glitch`, `split-flap`, `dynamic-text`, `kinetic-type-hero`, `swoosh-text`, …) | leitura instável |

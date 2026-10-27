@@ -1,5 +1,7 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+
+import { getActiveAccount } from "@/lib/accounts";
+import { AdminNav } from "@/components/marichat/admin-nav";
 
 export const metadata: Metadata = {
   title: "MARICHAT — painel",
@@ -10,35 +12,26 @@ export const metadata: Metadata = {
 // não há casca estática a pré-renderizar.
 export const instant = false;
 
-const navItems = [
-  { href: "/admin", label: "Visão geral" },
-  { href: "/admin/automacoes", label: "Automações" },
-  { href: "/admin/atividade", label: "Atividade" },
-  { href: "/admin/conexao", label: "Conexão" },
-];
+export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
+  const account = await getActiveAccount();
 
-export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-4">
-          <Link href="/admin" className="text-lg font-semibold tracking-tight">
-            MARICHAT
-          </Link>
-          <nav className="flex flex-wrap gap-4 text-sm">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-zinc-600 hover:text-zinc-900"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+    <div className="min-h-screen">
+      <a
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-popover focus:px-4 focus:py-2 focus:text-label focus:text-foreground"
+        href="#conteudo"
+      >
+        Pular para o conteúdo
+      </a>
+
+      <AdminNav
+        connected={account?.connectionStatus === "connected"}
+        handle={account?.username ?? null}
+      />
+
+      <main className="mx-auto max-w-[1240px] px-4 pt-32 pb-16" id="conteudo">
+        {children}
+      </main>
     </div>
   );
 }

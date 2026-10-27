@@ -41,6 +41,38 @@ export const webhookStatusLabels: Record<string, string> = {
   failed: "Falhou",
 };
 
+export type ChipTone =
+  "success" | "warning" | "danger" | "info" | "neutral" | "loading";
+
+/** Tom do chip por estado — sempre acompanhado de texto (§2.7). */
+export const interactionTones: Record<string, ChipTone> = {
+  queued: "neutral",
+  accepted: "info",
+  gate_pending: "warning",
+  link_sent: "success",
+  uncertain: "warning",
+  expired: "danger",
+  failed: "danger",
+  canceled: "neutral",
+};
+
+export const webhookTones: Record<string, ChipTone> = {
+  received: "info",
+  processed: "success",
+  ignored: "neutral",
+  failed: "danger",
+};
+
+export const jobTones: Record<string, ChipTone> = {
+  pending: "neutral",
+  processing: "loading",
+  accepted: "success",
+  failed: "danger",
+  uncertain: "warning",
+  expired: "danger",
+  canceled: "neutral",
+};
+
 export function formatDateTime(value: Date | null): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat("pt-BR", {
