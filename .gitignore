@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# stitch (local captures and preview artifacts)
+/.stitch/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
