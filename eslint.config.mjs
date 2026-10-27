@@ -46,6 +46,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Relatório do vitest --coverage.
+    "coverage/**",
   ]),
   {
     // Lint com informações de tipo: pega promessas esquecidas, `String()` de
