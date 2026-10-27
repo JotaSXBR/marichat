@@ -95,11 +95,6 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  {
-    // API falsa do demo local: um arquivo por rota seria exagero.
-    files: ["scripts/**/*.mjs"],
-    rules: { "max-lines-per-function": "off" },
-  },
   // Desliga regras de estilo do ESLint que brigariam com o Prettier.
   eslintConfigPrettier,
 ]);

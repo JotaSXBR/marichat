@@ -19,10 +19,10 @@ guiada dos arquivos grandes.
 | Métrica | Hoje | Limite sugerido |
 | --- | --- | --- |
 | Regras efetivas no lint | 113 + preset tipado + SonarJS | ~150, com tipos |
-| Arquivos `src` acima de 400 linhas | 1 (inclui `scripts`) | 0 (avisos) |
+| Arquivos `src` acima de 400 linhas | 0 | 0 (avisos) |
 | Funções acima de 60 linhas | 12 | 0 (avisos) |
-| Funções com complexidade > 12 | 12 | 0 (avisos) |
-| Avisos de orçamento no lint | 29 (baseline do CI) | 0 |
+| Funções com complexidade > 12 | 10 | 0 (avisos) |
+| Avisos de orçamento no lint | 26 (baseline do CI) | 0 |
 | Erros de lint | 0 | 0 |
 | Formatação | Prettier verificado no CI | manter |
 | CI / GitHub Actions | lint + tipos + testes + build | manter |
@@ -116,36 +116,35 @@ caminho é **ratchet**: o código novo não pode piorar, e cada arquivo tocado
 reduz a dívida.
 
 **Como o portão funciona:** o `npm run lint:ci` roda
-`eslint . --max-warnings=29`. Esse 29 é o baseline medido depois das cinco
+`eslint . --max-warnings=26`. Esse 26 é o baseline medido depois das seis
 primeiras partes da Fase 5 (divisão de `admin/actions.ts`, de
-`webhook/process.ts`, de `admin/conexao/page.tsx`, do formulário de automação e
-do motor da fila em `src/lib/queue/`).
+`webhook/process.ts`, de `admin/conexao/page.tsx`, do formulário de automação,
+do motor da fila em `src/lib/queue/` e do demo local em `scripts/demo/`).
 Um aviso novo faz o CI falhar; corrigir avisos nunca quebra o CI. Quando o
 número cair, baixe o valor em `package.json` (e aqui). Quando chegar a zero, os
 limites podem virar `error`.
 
-Baseline por regra (2026-10-26, após a Fase 5 parte 5):
+Baseline por regra (2026-10-26, após a Fase 5 parte 6):
 
 | Regra | Avisos |
 | --- | --- |
-| `complexity` (limite 12) | 12 |
 | `max-lines-per-function` (60) | 12 |
-| `max-lines` (400) | 1 |
+| `complexity` (limite 12) | 10 |
 | `sonarjs/cognitive-complexity` (15) | 3 |
 | `max-depth` (3) | 1 |
-| **Total** | **29** |
+| **Total** | **26** |
 
-Testes e scripts têm exceções conscientes:
+Somente os testes têm exceções conscientes:
 
 ```js
 // tests/**
 "max-lines": ["warn", 800],
 "max-lines-per-function": "off", // um describe inteiro conta como uma função
 "complexity": "off",
-
-// scripts/**
-"max-lines-per-function": "off", // a API falsa do demo é um bloco só
 ```
+
+Os scripts (`scripts/**/*.mjs`) seguem os mesmos orçamentos do código de
+produção; o demo local foi dividido para caber neles.
 
 ### 3. Duplicação e cheiros (SonarJS, aplicado)
 
@@ -240,9 +239,8 @@ Ordenado por retorno, não por tamanho.
 
 ### Prioridade 1 — arquivos que misturam responsabilidades
 
-| Arquivo | Linhas | Problema | Divisão sugerida |
-| --- | --- | --- | --- |
-| `scripts/local-demo.mjs` | 468 | API falsa + orquestração no mesmo `main` (complexidade 43) | `scripts/demo/mock-api.mjs` + `scripts/demo/run.mjs` |
+Nenhum arquivo passa mais do orçamento de 400 linhas. O que sobrou está em
+funções e telas específicas (Prioridade 2).
 
 **Já dividido na Fase 5:**
 
@@ -274,15 +272,28 @@ Ordenado por retorno, não por tamanho.
   (recuperação, expiração e limpeza) e `queue/types.ts`. Os nomes públicos
   (`drainQueue`, `runTick`, `recoverStuckJobs`, `expireOverdueJobs`,
   `cleanupOldData`, `refreshTokenIfNeeded`, `DrainSummary`) continuam iguais.
+- `scripts/local-demo.mjs` (468 → 30 linhas) virou a porta de entrada de
+  `scripts/demo/`: `env.mjs` (carrega `.env.local` e constantes), `util.mjs`
+  (verificações, assinatura e espera), `mock-api.mjs` (API falsa com um
+  tratador por rota), `payload.mjs` (leitura das mensagens capturadas),
+  `seed.mjs` (conta e automação) e `run.mjs` (uma função por etapa). O demo
+  agora avisa e para se `MESSAGING_PROVIDER` não for `meta`, porque ele simula
+  a API da Meta.
 
 ### Prioridade 2 — funções grandes
 
+- Telas que ainda concentram muita coisa no componente: `ActivityPage` (311
+  linhas, complexidade 18), `AdminDashboard` (237, complexidade 27),
+  `DataDeletionPage` (119), `PrivacyPage` (115), `AutomationsPage` (131) e
+  `EditAutomationPage` (67). Extrair blocos de dados e listas para componentes.
 - `processFollowCheck` (68 linhas): extrair `fetchFollowStatus(account,
   interaction)` (o bloco Meta/Zernio) e `applyFollowResult(...)`.
 - `toZernioMessage` (complexidade 27): separar extração de texto e de botões
   em funções pequenas e testáveis.
-- `runConnectionTest` / `runZernioConnectionTest`: separar coleta de fatos de
-  montagem da lista de problemas.
+- `runConnectionTest` / `runZernioConnectionTest` / `completeOAuth`: separar
+  coleta de fatos de montagem da lista de problemas.
+- `processInboundMessage`, `handleZernioEvent`, `handleMessage` e `requestJson`
+  passam pouco do limite de complexidade (13 a 16); pequenas extrações bastam.
 
 ### Prioridade 3 — robustez e testes
 
@@ -331,7 +342,8 @@ Três bugs encontrados ao revisar o código recém-integrado da Zernio:
    módulos (54 → 46). Parte 3: `admin/conexao/page.tsx` dividido em componentes
    (46 → 42). Parte 4: formulário de automação dividido em seções (42 → 39).
    Parte 5: motor da fila (`queue/drain.ts`) dividido em nove módulos
-   (39 → 29). 111 testes.
+   (39 → 29). Parte 6: demo local dividido em `scripts/demo/` (29 → 26).
+   111 testes.
 6. **Fase 6 — ratchet**: converter avisos em erro quando o baseline estiver
    limpo.
 

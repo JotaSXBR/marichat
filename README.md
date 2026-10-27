@@ -104,7 +104,7 @@ O lint usa `recommendedTypeChecked` (informações de tipo) e cobre `src` e
 
 Todo push em `master` e todo Pull Request rodam `.github/workflows/ci.yml`:
 PostgreSQL 18, migrations, `format:check`, `lint:ci`, `typecheck`, testes e
-build. Se o lint passar do baseline de avisos (29 em `package.json`) ou qualquer
+build. Se o lint passar do baseline de avisos (26 em `package.json`) ou qualquer
 etapa falhar, o PR fica vermelho. O build não recebe segredos e não acessa o
 banco, igual ao Dockerfile.
 
@@ -136,6 +136,11 @@ pelo endpoint de cron e confere:
   privada ao comentário;
 - a resposta da pessoa abrindo a segunda mensagem com o botão HTTPS;
 - o painel e a lista de publicações (incluindo a miniatura do vídeo).
+
+> O demo simula só a API da Meta. Se o `.env.local` estiver com
+> `MESSAGING_PROVIDER=zernio`, defina `MESSAGING_PROVIDER=meta` (ou remova a
+> linha) e reinicie o `npm run dev` antes de rodar o demo. O script avisa e
+> para se detectar a Zernio ligada.
 
 No fim ele imprime o JSON exato que seria enviado. Para isso o `.env.local`
 define `INSTAGRAM_GRAPH_BASE_URL=http://127.0.0.1:4010`; essa variável é
