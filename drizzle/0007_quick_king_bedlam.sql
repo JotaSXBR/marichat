@@ -1,0 +1,1 @@
+ALTER TABLE "automations" ADD COLUMN "first_dm_button_label" text;

@@ -68,6 +68,11 @@ export const automationSchema = z.object({
     .refine((value) => Buffer.byteLength(value, "utf8") <= 1000, {
       message: "A primeira mensagem pode ter no máximo 1.000 bytes.",
     }),
+  firstDmButtonLabel: z
+    .string()
+    .trim()
+    .max(20, "O texto do botão pode ter no máximo 20 caracteres.")
+    .optional(),
   secondDmText: z
     .string()
     .trim()
@@ -131,6 +136,7 @@ export function readAutomationForm(formData: FormData) {
     keyword: readText(formData, "keyword"),
     mediaId: readText(formData, "mediaId"),
     firstDmText: readText(formData, "firstDmText"),
+    firstDmButtonLabel: readText(formData, "firstDmButtonLabel"),
     secondDmText: readText(formData, "secondDmText"),
     linkButtonTitle: readText(formData, "linkButtonTitle"),
     linkUrl: readText(formData, "linkUrl"),
@@ -161,6 +167,10 @@ export function automationColumns(values: AutomationInput) {
     mediaId:
       values.mediaId && values.mediaId.length > 0 ? values.mediaId : null,
     firstDmText: values.firstDmText,
+    firstDmButtonLabel:
+      values.firstDmButtonLabel && values.firstDmButtonLabel.length > 0
+        ? values.firstDmButtonLabel
+        : null,
     secondDmText: values.secondDmText,
     linkButtonTitle: values.linkButtonTitle,
     linkUrl: values.linkUrl,

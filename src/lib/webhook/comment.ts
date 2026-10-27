@@ -45,19 +45,25 @@ async function createInteractionWithFirstDm(
           state: "queued",
         })
         .onConflictDoNothing({ target: commentInteractions.commentId })
-        .returning({ id: commentInteractions.id });
+        .returning({
+          id: commentInteractions.id,
+          token: commentInteractions.token,
+        });
 
       if (!interaction) return;
 
-      // Primeira DM em texto puro, conforme a documentação da Meta para
-      // respostas privadas. O botão deixaria de ser garantido e a pessoa
-      // responde livremente para abrir a janela de 24h.
+      // A primeira DM entra na mesma transação. Com botão, o postback carrega
+      // o token da interação para o toque cair na conversa certa.
       await tx.insert(outboundMessages).values({
         accountId: params.account.id,
         interactionId: interaction.id,
         kind: "private_reply",
         status: "pending",
-        payload: buildPrivateReplyPayload(params.settings, params.commentId),
+        payload: buildPrivateReplyPayload(
+          params.settings,
+          params.commentId,
+          interaction.token,
+        ),
       });
     });
     return "processed";

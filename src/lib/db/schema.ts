@@ -66,6 +66,12 @@ export const automations = pgTable(
     mediaId: text("media_id"),
     firstDmText: text("first_dm_text").notNull(),
     /**
+     * Rótulo do botão opcional da primeira DM (postback "continuar").
+     * NULL = texto puro. Botões podem ser recusados pela Meta para quem não
+     * segue a conta, e a recusa consome a resposta privada única do comentário.
+     */
+    firstDmButtonLabel: text("first_dm_button_label"),
+    /**
      * Campo legado da primeira versão (botão de quick reply na primeira DM).
      * Mantido para não perder dados; a primeira DM agora é sempre texto puro.
      */

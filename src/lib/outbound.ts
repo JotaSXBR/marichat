@@ -114,14 +114,45 @@ export function truncateChars(text: string, maxChars: number): string {
   return [...text].slice(0, maxChars).join("");
 }
 
-/** Primeira DM: resposta privada ao comentário, sempre em texto puro. */
+/**
+ * Primeira DM: resposta privada ao comentário.
+ *
+ * Sem botão, é texto puro (caminho mais seguro). Com botão, usa postback
+ * `link:<token>` para que o toque dispare a segunda mensagem sem a pessoa
+ * precisar digitar — a Meta pode recusar botões para quem não segue a conta.
+ */
 export function buildPrivateReplyPayload(
   settings: AutomationSettings,
   commentId: string,
+  token: string,
 ): unknown {
+  const label = settings.firstDmButtonLabel?.trim();
+
+  if (!label) {
+    return {
+      recipient: { comment_id: commentId },
+      message: { text: truncateUtf8(settings.firstDmText, MAX_TEXT_BYTES) },
+    };
+  }
+
   return {
     recipient: { comment_id: commentId },
-    message: { text: truncateUtf8(settings.firstDmText, MAX_TEXT_BYTES) },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "button",
+          text: truncateUtf8(settings.firstDmText, MAX_BUTTON_TEXT_BYTES),
+          buttons: [
+            {
+              type: "postback",
+              title: truncateChars(label, MAX_BUTTON_TITLE_CHARS),
+              payload: `link:${token}`,
+            },
+          ],
+        },
+      },
+    },
   };
 }
 

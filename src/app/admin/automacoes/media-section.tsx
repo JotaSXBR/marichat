@@ -10,7 +10,7 @@ import type {
 } from "@/app/admin/automacoes/form-types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { TriangleAlertIcon } from "lucide-react";
+import { ImageIcon, LayoutGridIcon, TriangleAlertIcon } from "lucide-react";
 
 type Props = {
   initial?: AutomationInitialValues;
@@ -19,76 +19,82 @@ type Props = {
   mediaError?: string;
 };
 
-const OPTION_CLASS =
-  "flex cursor-pointer items-start gap-3 rounded-md border border-line-subtle p-3 transition-colors duration-150 ease-out hover:bg-surface-hover has-checked:border-line-strong has-checked:bg-surface-hover";
+const CARD_CLASS =
+  "group relative block cursor-pointer overflow-hidden rounded-md border border-line-subtle transition-colors duration-150 ease-out hover:border-line-strong focus-within:ring-2 focus-within:ring-ring has-checked:border-ring has-checked:ring-2 has-checked:ring-ring";
 
-function MediaThumbnail({ option }: { option: MediaOption }) {
+function Thumbnail({ option }: { option: MediaOption }) {
   if (!option.thumbnailUrl) {
     return (
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-micro text-muted-soft">
-        sem foto
+      <span className="flex aspect-[4/5] w-full items-center justify-center bg-muted text-muted-soft">
+        <ImageIcon aria-hidden className="size-5" />
+        <span className="sr-only">Sem foto de capa</span>
       </span>
     );
   }
 
   return (
-    // Imagem hospedada pela Meta ou pela Zernio; usamos <img> para não precisar liberar
-    // domínios dinâmicos no otimizador.
+    // Imagem hospedada pela Meta ou pela Zernio; usamos <img> para não
+    // precisar liberar domínios dinâmicos no otimizador.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={option.thumbnailUrl}
       alt=""
       loading="lazy"
-      className="size-10 shrink-0 rounded-md object-cover"
+      className="aspect-[4/5] w-full bg-muted object-cover"
     />
   );
 }
 
-function MediaOptionList({
-  initial,
-  mediaOptions,
-}: Pick<Props, "initial" | "mediaOptions">) {
+function AnyPostOption({ initial }: Pick<Props, "initial">) {
   return (
-    <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-      <label className={OPTION_CLASS}>
-        <input
-          type="radio"
-          name="mediaId"
-          value=""
-          defaultChecked={!initial?.mediaId}
-          className="mt-1"
-        />
-        <span>
-          <span className="block text-label font-medium text-foreground">
-            Qualquer publicação
-          </span>
-          <span className="block text-label text-muted-foreground">
-            Responde a comentários em qualquer post ou reel.
-          </span>
+    <label className={`${CARD_CLASS} flex items-start gap-3 p-3`}>
+      <input
+        type="radio"
+        name="mediaId"
+        value=""
+        defaultChecked={!initial?.mediaId}
+        className="mt-1"
+      />
+      <LayoutGridIcon aria-hidden className="mt-0.5 size-5 text-muted-soft" />
+      <span className="min-w-0">
+        <span className="block text-label font-medium text-foreground">
+          Qualquer publicação
         </span>
-      </label>
+        <span className="block text-label text-muted-foreground">
+          Responde a comentários em qualquer post ou reel, inclusive nos que
+          forem publicados depois.
+        </span>
+      </span>
+    </label>
+  );
+}
 
-      {mediaOptions.map((option) => (
-        <label key={option.id} className={OPTION_CLASS}>
-          <input
-            type="radio"
-            name="mediaId"
-            value={option.id}
-            defaultChecked={initial?.mediaId === option.id}
-            className="mt-1"
-          />
-          <MediaThumbnail option={option} />
-          <span className="min-w-0">
-            <span className="block truncate text-label text-foreground">
-              {option.label}
-            </span>
-            <span className="block font-mono text-mono text-muted-soft">
-              {option.id}
-            </span>
-          </span>
-        </label>
-      ))}
-    </div>
+function MediaOptionCard({
+  option,
+  checked,
+}: {
+  option: MediaOption;
+  checked: boolean;
+}) {
+  return (
+    <label className={CARD_CLASS}>
+      <input
+        type="radio"
+        name="mediaId"
+        value={option.id}
+        defaultChecked={checked}
+        className="sr-only"
+      />
+      <Thumbnail option={option} />
+      <span className="block space-y-1 p-2">
+        <span className="line-clamp-2 block text-label text-foreground">
+          {option.label}
+        </span>
+        <span className="block truncate font-mono text-micro text-muted-soft">
+          {option.id}
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -111,7 +117,7 @@ function MediaIdField({ initial, errors }: Pick<Props, "initial" | "errors">) {
   );
 }
 
-/** Escolha do post (lista da API ou ID manual). */
+/** Escolha do post (grade da API ou ID manual). */
 export function MediaSection({
   initial,
   errors,
@@ -135,7 +141,31 @@ export function MediaSection({
       ) : null}
 
       {mediaOptions.length > 0 ? (
-        <MediaOptionList initial={initial} mediaOptions={mediaOptions} />
+        <div className="space-y-3">
+          <AnyPostOption initial={initial} />
+          <div className="max-h-[30rem] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {mediaOptions.map((option) => (
+                <MediaOptionCard
+                  key={option.id}
+                  option={option}
+                  checked={initial?.mediaId === option.id}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="text-label text-muted-foreground">
+            Publicação que não aparece na lista? Salve com o ID abaixo.
+          </p>
+          <details className="rounded-md border border-line-subtle p-3">
+            <summary className="cursor-pointer text-label text-muted-foreground">
+              Informar o ID manualmente
+            </summary>
+            <div className="pt-3">
+              <MediaIdField initial={initial} errors={errors} />
+            </div>
+          </details>
+        </div>
       ) : (
         <MediaIdField initial={initial} errors={errors} />
       )}

@@ -21,6 +21,7 @@ function settings(
     keyword: "Quero",
     mediaId: null,
     firstDmText: "Responda esta mensagem para receber o link.",
+    firstDmButtonLabel: null,
     quickReplyTitle: "Quero o link",
     secondDmText: "Aqui está o link que você pediu",
     linkButtonTitle: "Abrir link",
@@ -86,6 +87,7 @@ describe("outbound: corpos enviados à API", () => {
     const payload = buildPrivateReplyPayload(
       settings(),
       "comment-1",
+      "token-1",
     ) as PrivateReply;
 
     expect(payload.recipient).toEqual({ comment_id: "comment-1" });
@@ -99,11 +101,45 @@ describe("outbound: corpos enviados à API", () => {
     const payload = buildPrivateReplyPayload(
       settings({ firstDmText: "á".repeat(600) }),
       "comment-1",
+      "token-1",
     ) as PrivateReply;
 
     expect(Buffer.byteLength(payload.message.text, "utf8")).toBeLessThanOrEqual(
       1000,
     );
+  });
+
+  it("primeira DM com botão usa postback com o token da interação", () => {
+    const payload = buildPrivateReplyPayload(
+      settings({ firstDmButtonLabel: "Quero o link" }),
+      "comment-1",
+      "token-1",
+    ) as {
+      recipient: { comment_id: string };
+      message: {
+        attachment: {
+          type: string;
+          payload: {
+            template_type: string;
+            text: string;
+            buttons: Array<{
+              type: string;
+              title: string;
+              payload: string;
+            }>;
+          };
+        };
+      };
+    };
+
+    expect(payload.recipient).toEqual({ comment_id: "comment-1" });
+    expect(payload.message.attachment.payload.template_type).toBe("button");
+    expect(payload.message.attachment.payload.text).toBe(
+      "Responda esta mensagem para receber o link.",
+    );
+    expect(payload.message.attachment.payload.buttons).toEqual([
+      { type: "postback", title: "Quero o link", payload: "link:token-1" },
+    ]);
   });
 
   it("segunda DM é template genérico com botão HTTPS", () => {

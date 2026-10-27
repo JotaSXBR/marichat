@@ -13,6 +13,7 @@ export type AutomationInitialValues = {
   keyword: string;
   mediaId: string;
   firstDmText: string;
+  firstDmButtonLabel: string;
   secondDmText: string;
   linkButtonTitle: string;
   linkUrl: string;

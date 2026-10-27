@@ -27,15 +27,19 @@ type AutomationSettings = NonNullable<
   Awaited<ReturnType<typeof fullAutomation>>
 >;
 
-/** Payload do botão "Já segui" (aceita quick reply antigo e postback). */
+/** Payload do botão da primeira DM e do "Já segui" (aceita quick reply antigo). */
 function gateToken(message: InboundMessage): string | null {
   const quickReplyPayload = message.message?.quick_reply?.payload;
   if (quickReplyPayload) return quickReplyPayload;
 
   const postbackPayload = message.postback?.payload;
-  return postbackPayload?.startsWith("gate:")
-    ? postbackPayload.slice("gate:".length)
-    : null;
+  if (postbackPayload?.startsWith("gate:")) {
+    return postbackPayload.slice("gate:".length);
+  }
+  if (postbackPayload?.startsWith("link:")) {
+    return postbackPayload.slice("link:".length);
+  }
+  return null;
 }
 
 function isGateTap(message: InboundMessage, interaction: InteractionRow) {

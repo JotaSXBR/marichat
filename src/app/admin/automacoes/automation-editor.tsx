@@ -49,6 +49,7 @@ type Props = {
 function previewOf(initial?: AutomationInitialValues): PreviewValues {
   return {
     firstDmText: initial?.firstDmText ?? "",
+    firstDmButtonLabel: initial?.firstDmButtonLabel ?? "",
     secondDmText: initial?.secondDmText ?? "",
     linkButtonTitle: initial?.linkButtonTitle ?? "Abrir link",
   };
@@ -62,6 +63,7 @@ function fieldText(data: FormData, field: string): string {
 function previewFromForm(data: FormData): PreviewValues {
   return {
     firstDmText: fieldText(data, "firstDmText"),
+    firstDmButtonLabel: fieldText(data, "firstDmButtonLabel"),
     secondDmText: fieldText(data, "secondDmText"),
     linkButtonTitle: fieldText(data, "linkButtonTitle"),
   };
@@ -272,7 +274,7 @@ export function AutomationEditor({ initial, mediaOptions, mediaError }: Props) {
           error={state?.error}
         />
 
-        <aside className="hidden xl:sticky xl:top-24 xl:block">
+        <aside className="xl:sticky xl:top-24">
           <DmPreview values={preview} />
         </aside>
       </div>

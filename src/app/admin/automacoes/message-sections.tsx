@@ -7,8 +7,10 @@ import type {
   AutomationInitialValues,
   FieldErrors,
 } from "@/app/admin/automacoes/form-types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { TriangleAlertIcon } from "lucide-react";
 
 type Props = {
   initial?: AutomationInitialValues;
@@ -20,12 +22,12 @@ export function FirstMessageSection({ initial, errors }: Props) {
   return (
     <FormSection
       title="Primeira mensagem (privada)"
-      description="Sai como resposta privada ao comentário. A Meta permite uma resposta por comentário, em até 7 dias; ela é texto puro, então peça que a pessoa responda."
+      description="Sai como resposta privada ao comentário. A Meta permite uma resposta por comentário, em até 7 dias."
     >
       <div>
         <Label
           htmlFor="firstDmText"
-          hint="Até 1.000 bytes. Termine pedindo uma resposta, por exemplo: “Responda esta mensagem para eu enviar o link”."
+          hint="Até 1.000 bytes. Peça uma resposta, por exemplo: “Responda esta mensagem para eu enviar o link”."
         >
           Texto da DM
         </Label>
@@ -34,11 +36,40 @@ export function FirstMessageSection({ initial, errors }: Props) {
           name="firstDmText"
           rows={4}
           defaultValue={initial?.firstDmText ?? ""}
-          placeholder="Ex.: Que bom que você se interessou! Responda esta mensagem que eu envio o link."
+          placeholder="Ex.: Que bom que você se interessou! Toque no botão abaixo que eu envio o link."
           aria-invalid={errors.firstDmText ? true : undefined}
         />
         <FieldError message={errors.firstDmText} />
       </div>
+
+      <div>
+        <Label
+          htmlFor="firstDmButtonLabel"
+          hint="Até 20 caracteres. Em branco = mensagem sem botão."
+        >
+          Botão da primeira mensagem (opcional)
+        </Label>
+        <Input
+          id="firstDmButtonLabel"
+          name="firstDmButtonLabel"
+          maxLength={20}
+          defaultValue={initial?.firstDmButtonLabel ?? ""}
+          placeholder="Ex.: Quero o link"
+          aria-invalid={errors.firstDmButtonLabel ? true : undefined}
+        />
+        <FieldError message={errors.firstDmButtonLabel} />
+      </div>
+
+      <Alert variant="warning">
+        <TriangleAlertIcon aria-hidden />
+        <AlertTitle>O botão não é garantido para quem não segue</AlertTitle>
+        <AlertDescription>
+          Um toque no botão já dispara a segunda mensagem, sem a pessoa digitar.
+          Mas a Meta pode recusar botões para quem não segue o perfil, e a
+          recusa gasta a única resposta privada daquele comentário — a pessoa
+          não recebe nada. Só use se a maioria de quem comenta já segue a conta.
+        </AlertDescription>
+      </Alert>
     </FormSection>
   );
 }

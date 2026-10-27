@@ -86,6 +86,14 @@ describe("automationSchema", () => {
 
     expect(parsed.success).toBe(false);
   });
+
+  it("recusa botão da primeira DM acima de 20 caracteres", () => {
+    const parsed = automationSchema.safeParse(
+      readAutomationForm(validForm({ firstDmButtonLabel: "a".repeat(21) })),
+    );
+
+    expect(parsed.success).toBe(false);
+  });
 });
 
 describe("automationColumns", () => {
@@ -99,5 +107,19 @@ describe("automationColumns", () => {
     const columns = automationColumns(parsed);
     expect(columns.mediaId).toBeNull();
     expect(columns.followMode).toBe("off");
+  });
+
+  it("zera o botão da primeira DM quando vem vazio", () => {
+    const parsed = automationSchema.parse(readAutomationForm(validForm()));
+
+    expect(automationColumns(parsed).firstDmButtonLabel).toBeNull();
+  });
+
+  it("mantém o botão da primeira DM quando informado", () => {
+    const parsed = automationSchema.parse(
+      readAutomationForm(validForm({ firstDmButtonLabel: "Quero o link" })),
+    );
+
+    expect(automationColumns(parsed).firstDmButtonLabel).toBe("Quero o link");
   });
 });
