@@ -22,12 +22,31 @@ import type { DrainSummary } from "@/lib/queue/drain";
  */
 
 export const ACTIVITY_LIMIT = 30;
+/** Situações pelas quais a lista de interações pode ser filtrada. */
+export const ACTIVITY_FILTERS = [
+  "queued",
+  "accepted",
+  "gate_pending",
+  "link_sent",
+  "uncertain",
+  "expired",
+  "failed",
+  "canceled",
+] as const;
+
+export type ActivityFilter = (typeof ACTIVITY_FILTERS)[number];
+
+export function isActivityFilter(
+  value: string | undefined,
+): value is ActivityFilter {
+  return ACTIVITY_FILTERS.includes(value as ActivityFilter);
+}
 /** Se a tarefa agendada não roda, nada anda; avisamos depois deste tempo. */
 const STALE_TICK_MS = 5 * 60 * 1000;
 
 type Db = ReturnType<typeof getDb>;
 
-function loadInteractions(db: Db) {
+function loadInteractions(db: Db, situation?: ActivityFilter) {
   return db
     .select({
       id: commentInteractions.id,
@@ -43,6 +62,7 @@ function loadInteractions(db: Db) {
     })
     .from(commentInteractions)
     .leftJoin(automations, eq(automations.id, commentInteractions.automationId))
+    .where(situation ? eq(commentInteractions.state, situation) : undefined)
     .orderBy(desc(commentInteractions.createdAt))
     .limit(ACTIVITY_LIMIT);
 }
@@ -110,7 +130,9 @@ function isTickStale(tickDate: Date | null, dbNow: Date | null): boolean {
   return dbNow.getTime() - tickDate.getTime() > STALE_TICK_MS;
 }
 
-export async function loadActivity() {
+export async function loadActivity({
+  situation,
+}: { situation?: ActivityFilter } = {}) {
   const db = getDb();
   const account = await getActiveAccount();
   // Hora do banco: mantém a página determinística e alinhada ao cron.
@@ -120,7 +142,7 @@ export async function loadActivity() {
   const dbNow = nowRows[0]?.now ? new Date(nowRows[0].now) : null;
 
   const [interactions, jobs, events] = await Promise.all([
-    loadInteractions(db),
+    loadInteractions(db, situation),
     loadJobs(db),
     loadEvents(db),
   ]);

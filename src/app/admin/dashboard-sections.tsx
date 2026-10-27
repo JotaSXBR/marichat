@@ -178,7 +178,7 @@ export function DashboardAlerts({
 
 /* ------------------------------------------------------------------ R4 */
 
-function Metric({
+export function Metric({
   label,
   value,
   hint,

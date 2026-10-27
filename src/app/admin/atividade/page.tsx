@@ -1,16 +1,19 @@
 import { connection } from "next/server";
 
+import { isActivityFilter, loadActivity } from "@/app/admin/atividade/data";
 import {
   ActivityAlerts,
-  ActivityFooter,
+  ActivityFilterBar,
   ActivityHeader,
   ActivityStats,
   ConnectionTestNote,
+} from "@/app/admin/atividade/sections";
+import {
   EventsSection,
   InteractionsSection,
   JobsSection,
-} from "@/app/admin/atividade/sections";
-import { loadActivity } from "@/app/admin/atividade/data";
+} from "@/app/admin/atividade/tables";
+import { StatusToast } from "@/app/admin/status-toast";
 import { requireAdmin } from "@/lib/auth";
 
 /**
@@ -21,15 +24,20 @@ import { requireAdmin } from "@/lib/auth";
 
 export const instant = false;
 
-export default async function ActivityPage() {
+export default async function ActivityPage({
+  searchParams,
+}: PageProps<"/admin/atividade">) {
   await connection();
   await requireAdmin();
 
-  const data = await loadActivity();
+  const params = await searchParams;
+  const raw = typeof params.situacao === "string" ? params.situacao : undefined;
+  const situation = isActivityFilter(raw) ? raw : undefined;
+  const data = await loadActivity(situation ? { situation } : {});
 
   return (
     <div className="space-y-8">
-      <ActivityHeader />
+      <ActivityHeader {...(situation ? { situation } : {})} />
 
       <ActivityAlerts
         account={data.account}
@@ -49,10 +57,23 @@ export default async function ActivityPage() {
         <ConnectionTestNote result={data.connectionTest} />
       ) : null}
 
-      <InteractionsSection rows={data.interactions} />
+      <ActivityFilterBar {...(situation ? { situation } : {})} />
+
+      <InteractionsSection
+        rows={data.interactions}
+        {...(situation ? { situation } : {})}
+      />
       <JobsSection rows={data.jobs} />
       <EventsSection rows={data.events} />
-      <ActivityFooter />
+
+      <StatusToast
+        task={{
+          id: "activity",
+          label: "Fila",
+          detail: `Último dreno: ${data.drainSummary}`,
+          status: "done",
+        }}
+      />
     </div>
   );
 }

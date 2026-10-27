@@ -1,11 +1,4 @@
-"use client";
-
-import { useState } from "react";
-
-import {
-  StatusIsland,
-  type IslandTask,
-} from "@/components/kokonutui/status-island";
+import { StatusToast } from "@/app/admin/status-toast";
 
 /**
  * R6 — ilha de status da Visão geral (§9.1).
@@ -21,30 +14,15 @@ export function OverviewIsland({
   connected: boolean;
   queuedJobs: number;
 }) {
-  const [tasks, setTasks] = useState<IslandTask[]>([
-    {
-      id: "overview",
-      label: `@${handle}`,
-      detail: connected
-        ? queuedJobs === 0
-          ? "Conectado · Fila saudável"
-          : `Conectado · ${queuedJobs} na fila`
-        : "Desconectado · envios parados",
-      status: "done",
-    },
-  ]);
+  const detail = connected
+    ? queuedJobs === 0
+      ? "Conectado · Fila saudável"
+      : `Conectado · ${queuedJobs} na fila`
+    : "Desconectado · envios parados";
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
-      <div className="pointer-events-auto">
-        <StatusIsland
-          dismissAfter={8000}
-          onDismiss={(id) =>
-            setTasks((current) => current.filter((task) => task.id !== id))
-          }
-          tasks={tasks}
-        />
-      </div>
-    </div>
+    <StatusToast
+      task={{ id: "overview", label: `@${handle}`, detail, status: "done" }}
+    />
   );
 }
