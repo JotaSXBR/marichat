@@ -148,7 +148,7 @@ Testes e scripts têm exceções conscientes:
 
 ### 3. Duplicação e cheiros (SonarJS, aplicado)
 
-`eslint-plugin-sonarjs` 4.x (compatível com ESLint 9) foi instalado com um
+`eslint-plugin-sonarjs` 4.x (compatível com ESLint 9 e 10) foi instalado com um
 subconjunto, tudo como aviso:
 
 ```js
@@ -223,10 +223,10 @@ evita `console.log` esquecido.
 
 ### 7. O que **não** adotar agora
 
-- **`eslint-plugin-unicorn`**: a versão atual (79) exige ESLint ≥ 10.4 e o
-  projeto está no 9.39. Além disso, é altamente opinativo (renomeia
-  identificadores, proíbe `null`), o que gera ruído sem pegar os bugs que
-  importam aqui. Reavaliar só depois de subir o ESLint.
+- **`eslint-plugin-unicorn`**: o ESLint já está no 10.13 e atende ao requisito
+  técnico, mas o plugin continua altamente opinativo (renomeia identificadores,
+  proíbe `null`), o que gera ruído sem pegar os bugs que importam aqui.
+  Reavaliar apenas as regras de correção, uma a uma, se houver interesse.
 - **Ligar todos os limites como `error` de uma vez**: bloqueia o deploy por
   dívida antiga e incentiva `eslint-disable` em massa.
 - **`strict-type-checked` completo**: o `recommendedTypeChecked` já pega o que
