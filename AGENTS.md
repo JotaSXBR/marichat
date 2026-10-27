@@ -13,7 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 Para funcionalidades ("features") que você não domina ou nunca implementou
 neste projeto, **não comece escrevendo código do zero**. Primeiro:
 
-1. Busque no GitHub projetos open source que já resolvam o mesmo problema.
+1. Busque no GitHub projetos open source que já resolvam o mesmo problema com filtro de estrelas e atividade recente.
 2. Compare as abordagens ("approaches") usadas: trade-offs, licença,
    manutenção do projeto e aderência ao stack deste repositório.
 3. Só então implemente, seguindo a abordagem escolhida — e registre no commit

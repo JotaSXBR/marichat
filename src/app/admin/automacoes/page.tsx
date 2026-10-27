@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { connection } from "next/server";
+import { PlusIcon } from "lucide-react";
 
 import { AutomationCard } from "@/app/admin/automacoes/automation-card";
 import {
@@ -12,6 +13,7 @@ import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations } from "@/lib/db/schema";
+import { Button } from "@/components/ui/button";
 
 export const instant = false;
 
@@ -36,20 +38,20 @@ export default async function AutomationsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Automações</h1>
-          <p className="mt-1 text-sm text-zinc-600">
+      <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="max-w-2xl">
+          <h1 className="text-display text-foreground">Automações</h1>
+          <p className="mt-2 text-body text-muted-foreground">
             Cada automação escuta uma palavra-chave nos comentários e responde
             com uma DM.
           </p>
         </div>
-        <Link
-          href="/admin/automacoes/nova"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-        >
-          Nova automação
-        </Link>
+        <Button asChild size="lg">
+          <Link href="/admin/automacoes/nova">
+            <PlusIcon aria-hidden />
+            Nova automação
+          </Link>
+        </Button>
       </div>
 
       {saved ? <SavedNotice /> : null}
@@ -57,7 +59,7 @@ export default async function AutomationsPage({
       {account && rows.length === 0 ? <EmptyAutomations /> : null}
 
       {rows.length > 0 ? (
-        <ul className="space-y-3">
+        <ul className="grid gap-3">
           {rows.map((automation) => (
             <AutomationCard key={automation.id} automation={automation} />
           ))}

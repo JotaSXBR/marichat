@@ -1,82 +1,75 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-import { toggleAutomation } from "@/app/admin/actions";
+import { AutomationToggle } from "@/app/admin/automacoes/automation-toggle";
 import type { automations } from "@/lib/db/schema";
 import { FOLLOW_MODE_LABELS, isFollowMode } from "@/lib/follow-mode";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { StatusChip } from "@/components/ui/status-chip";
+import { cn } from "@/lib/utils";
 
 type Automation = typeof automations.$inferSelect;
 
-function AutomationDetails({ automation }: { automation: Automation }) {
-  return (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-medium">{automation.name}</h2>
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs ${
-            automation.isActive
-              ? "bg-green-100 text-green-800"
-              : "bg-zinc-100 text-zinc-600"
-          }`}
-        >
-          {automation.isActive ? "Ativa" : "Desativada"}
-        </span>
-      </div>
-      <p className="mt-1 text-sm text-zinc-600">
-        Palavra-chave: <strong>{automation.keyword}</strong>
-      </p>
-      <p className="text-sm text-zinc-500">
-        Publicação:{" "}
-        {automation.mediaId
-          ? `específica (${automation.mediaId})`
-          : "qualquer publicação"}
-      </p>
-      <p className="text-sm text-zinc-500">
-        Porta de seguidor:{" "}
-        {isFollowMode(automation.followMode)
-          ? FOLLOW_MODE_LABELS[automation.followMode].title
-          : "Sem porta de seguidor"}
-      </p>
-      <p className="mt-1 truncate text-xs text-zinc-500">
-        Link: {automation.linkUrl}
-      </p>
-    </div>
-  );
+/** Host do link; se a URL estiver quebrada, mostra o valor cru. */
+function linkHost(url: string) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
 }
 
-function AutomationActions({ automation }: { automation: Automation }) {
+function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <form action={toggleAutomation}>
-        <input type="hidden" name="id" value={automation.id} />
-        <input
-          type="hidden"
-          name="activate"
-          value={automation.isActive ? "0" : "1"}
-        />
-        <button
-          type="submit"
-          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-        >
-          {automation.isActive ? "Desativar" : "Ativar"}
-        </button>
-      </form>
-      <Link
-        href={`/admin/automacoes/${automation.id}`}
-        className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
-      >
-        Editar
-      </Link>
+    <div className="flex flex-wrap items-baseline gap-x-1.5">
+      <dt className="text-label text-muted-foreground">{label}:</dt>
+      <dd className="text-body text-card-foreground">{children}</dd>
     </div>
   );
 }
 
 export function AutomationCard({ automation }: { automation: Automation }) {
   return (
-    <li className="rounded-lg border border-zinc-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <AutomationDetails automation={automation} />
-        <AutomationActions automation={automation} />
+    <Card
+      className={cn("gap-4 p-5", !automation.isActive && "opacity-70")}
+      variant="interactive"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h2 className="truncate text-title text-foreground">
+            {automation.name}
+          </h2>
+          <StatusChip tone={automation.isActive ? "success" : "neutral"}>
+            {automation.isActive ? "Ativa" : "Desativada"}
+          </StatusChip>
+        </div>
+
+        <AutomationToggle id={automation.id} isActive={automation.isActive} />
       </div>
-    </li>
+
+      <dl className="grid gap-1">
+        <Detail label="Palavra-chave">
+          <span className="font-mono text-mono">{automation.keyword}</span>
+        </Detail>
+        <Detail label="Publicação">
+          {automation.mediaId
+            ? `específica (${automation.mediaId})`
+            : "qualquer publicação"}
+        </Detail>
+        <Detail label="Porta de seguidor">
+          {isFollowMode(automation.followMode)
+            ? FOLLOW_MODE_LABELS[automation.followMode].title
+            : "Sem porta de seguidor"}
+        </Detail>
+        <Detail label="Link">{linkHost(automation.linkUrl)}</Detail>
+      </dl>
+
+      <div className="flex justify-end border-t border-line-subtle pt-4">
+        <Button asChild size="sm" variant="secondary">
+          <Link href={`/admin/automacoes/${automation.id}`}>Editar</Link>
+        </Button>
+      </div>
+    </Card>
   );
 }

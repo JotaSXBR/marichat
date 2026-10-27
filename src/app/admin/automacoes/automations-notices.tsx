@@ -1,37 +1,50 @@
 import Link from "next/link";
+import { CheckCircle2Icon, PlugZapIcon, WorkflowIcon } from "lucide-react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function SavedNotice() {
   return (
-    <div className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">
-      Automação salva. A primeira DM já agendada mantém o texto antigo; os
-      demais textos valem para os próximos envios.
-    </div>
+    <Alert variant="success">
+      <CheckCircle2Icon aria-hidden />
+      <AlertTitle>Automação salva</AlertTitle>
+      <AlertDescription>
+        A primeira DM já agendada mantém o texto antigo; os demais textos valem
+        para os próximos envios.
+      </AlertDescription>
+    </Alert>
   );
 }
 
 export function NoAccountNotice() {
   return (
-    <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-      Conecte o Instagram antes de criar automações.{" "}
-      <Link href="/admin/conexao" className="font-medium underline">
-        Ir para Conexão
-      </Link>
-    </div>
+    <Alert variant="warning">
+      <PlugZapIcon aria-hidden />
+      <AlertTitle>Conecte o Instagram antes de criar automações</AlertTitle>
+      <AlertDescription>
+        <Link className="font-medium text-current" href="/admin/conexao">
+          Ir para Conexão
+        </Link>
+      </AlertDescription>
+    </Alert>
   );
 }
 
 export function EmptyAutomations() {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-8 text-center">
-      <p className="text-sm text-zinc-600">
-        Nenhuma automação criada ainda. A primeira leva menos de dois minutos.
-      </p>
-      <Link
-        href="/admin/automacoes/nova"
-        className="mt-4 inline-block rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700"
-      >
-        Criar automação
-      </Link>
-    </div>
+    <Card className="items-center gap-4 py-12 text-center" variant="empty">
+      <WorkflowIcon aria-hidden className="size-6 text-muted-soft" />
+      <div>
+        <p className="text-title text-foreground">Nenhuma automação ainda</p>
+        <p className="mt-1 text-label text-muted-foreground">
+          A primeira leva menos de dois minutos.
+        </p>
+      </div>
+      <Button asChild>
+        <Link href="/admin/automacoes/nova">Criar automação</Link>
+      </Button>
+    </Card>
   );
 }
