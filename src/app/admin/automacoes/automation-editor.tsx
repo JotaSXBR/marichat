@@ -115,11 +115,21 @@ function EditorHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button type="button" variant="ghost" onClick={onBack}>
+        <Button
+          className="h-12 md:h-10"
+          type="button"
+          variant="ghost"
+          onClick={onBack}
+        >
           <ArrowLeftIcon aria-hidden />
           Voltar
         </Button>
-        <Button type="submit" form={FORM_ID} loading={pending}>
+        <Button
+          type="submit"
+          className="hidden md:inline-flex"
+          form={FORM_ID}
+          loading={pending}
+        >
           Salvar automação
         </Button>
       </div>
@@ -293,6 +303,18 @@ export function AutomationEditor({ initial, mediaOptions, mediaError }: Props) {
         <aside className="xl:sticky xl:top-24">
           <DmPreview values={preview} />
         </aside>
+      </div>
+
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line-subtle bg-background/95 p-3 backdrop-blur md:hidden">
+        <Button
+          className="w-full"
+          form={FORM_ID}
+          loading={pending}
+          size="lg"
+          type="submit"
+        >
+          Salvar automação
+        </Button>
       </div>
 
       <DiscardDialog open={confirming} onOpenChange={setConfirming} />

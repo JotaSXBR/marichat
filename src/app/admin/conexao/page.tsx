@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { ChevronDownIcon } from "lucide-react";
 
 import { AccountCard } from "@/app/admin/conexao/account-card";
 import { ConnectionHeader } from "@/app/admin/conexao/connection-header";
@@ -66,9 +67,26 @@ export default async function ConnectionPage({
         ) : null}
       </section>
 
-      <WebhookSetupCard isZernio={isZernio} appUrl={data.appUrl} />
-      <EnvChecklist requirements={data.requiredEnv} />
-      <RecentWebhooks events={data.lastEvents} />
+      <details className="group">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
+          <span>
+            Avançado
+            <span className="ml-2 font-sans text-label font-normal text-muted-foreground">
+              Webhook, variáveis e últimos eventos
+            </span>
+          </span>
+          <ChevronDownIcon
+            aria-hidden
+            className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-open:rotate-180"
+          />
+        </summary>
+
+        <div className="mt-4 space-y-4">
+          <WebhookSetupCard isZernio={isZernio} appUrl={data.appUrl} />
+          <EnvChecklist requirements={data.requiredEnv} />
+          <RecentWebhooks events={data.lastEvents} />
+        </div>
+      </details>
     </div>
   );
 }

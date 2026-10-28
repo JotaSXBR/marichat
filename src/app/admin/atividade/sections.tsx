@@ -16,27 +16,42 @@ import { formatDateTime, interactionLabels } from "@/app/admin/labels";
 import type { ActivityData } from "@/app/admin/atividade/data";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export const ACTIVITY_TABS = ["interacoes", "envios", "webhooks"] as const;
+export type ActivityTab = (typeof ACTIVITY_TABS)[number];
+
+export function isActivityTab(value: string | undefined): value is ActivityTab {
+  return ACTIVITY_TABS.includes(value as ActivityTab);
+}
+
+const TAB_ITEMS: { id: ActivityTab; label: string }[] = [
+  { id: "interacoes", label: "Interações" },
+  { id: "envios", label: "Envios" },
+  { id: "webhooks", label: "Webhooks" },
+];
+
+function tabHref(tab: ActivityTab, situation?: ActivityFilter) {
+  const params = new URLSearchParams();
+  if (tab !== "interacoes") params.set("aba", tab);
+  if (tab === "interacoes" && situation) params.set("situacao", situation);
+  const query = params.toString();
+  return query ? `/admin/atividade?${query}` : "/admin/atividade";
+}
 
 /* ------------------------------------------------------------------ R2 */
 
-export function ActivityHeader({ situation }: { situation?: ActivityFilter }) {
+export function ActivityHeader({ href }: { href: string }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-6">
       <div className="max-w-2xl">
         <h1 className="text-display text-foreground">Atividade</h1>
         <p className="mt-2 text-body text-muted-foreground">
-          Últimos registros de interações, envios e webhooks. Use esta página
-          para acompanhar o primeiro teste em produção.
+          Interações, envios e webhooks do primeiro teste em produção.
         </p>
       </div>
-      <Button asChild size="lg">
-        <Link
-          href={
-            situation
-              ? `/admin/atividade?situacao=${situation}`
-              : "/admin/atividade"
-          }
-        >
+      <Button asChild className="w-full sm:w-auto" size="lg">
+        <Link href={href}>
           <RefreshCwIcon aria-hidden />
           Atualizar
         </Link>
@@ -141,6 +156,41 @@ export function ActivityAlerts(props: Parameters<typeof buildAlerts>[0]) {
 
 /* ------------------------------------------------------------------ R4 */
 
+/** As três listas vivem em abas; o estado fica na URL. */
+export function ActivityTabs({
+  tab,
+  situation,
+}: {
+  tab: ActivityTab;
+  situation?: ActivityFilter;
+}) {
+  return (
+    <nav
+      aria-label="Tipo de registro"
+      className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1"
+    >
+      {TAB_ITEMS.map((item) => {
+        const active = tab === item.id;
+        return (
+          <Link
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "flex min-h-12 items-center justify-center rounded-md px-2 text-label transition-colors duration-150 ease-out",
+              active
+                ? "bg-secondary text-primary"
+                : "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
+            )}
+            href={tabHref(item.id, situation)}
+            key={item.id}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function ActivityStats({
   lastTickAt,
   lastDrainAt,
@@ -153,7 +203,7 @@ export function ActivityStats({
   return (
     <section
       aria-label="Estado da operação"
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
     >
       <Metric
         hint="Se parar, a fila para"
@@ -186,34 +236,62 @@ export function ActivityFilterBar({
   situation?: ActivityFilter;
 }) {
   return (
-    <nav
-      aria-label="Filtrar interações por situação"
-      className="flex flex-wrap items-center gap-2"
-    >
-      <Button asChild size="sm" variant={situation ? "ghost" : "secondary"}>
-        <Link
-          aria-current={situation ? undefined : "page"}
-          href="/admin/atividade"
+    <>
+      <form
+        action="/admin/atividade"
+        className="flex items-end gap-2 sm:hidden"
+        method="get"
+      >
+        <label className="sr-only" htmlFor="situacao">
+          Situação
+        </label>
+        <select
+          className="h-12 min-w-0 flex-1 rounded-md border border-input bg-muted px-3 text-body text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          defaultValue={situation ?? ""}
+          id="situacao"
+          name="situacao"
         >
-          Todas
-        </Link>
-      </Button>
-      {ACTIVITY_FILTERS.map((filter) => (
-        <Button
-          key={filter}
-          asChild
-          size="sm"
-          variant={situation === filter ? "secondary" : "ghost"}
-        >
+          <option value="">Todas as situações</option>
+          {ACTIVITY_FILTERS.map((filter) => (
+            <option key={filter} value={filter}>
+              {interactionLabels[filter] ?? filter}
+            </option>
+          ))}
+        </select>
+        <Button className="h-12" type="submit" variant="secondary">
+          Filtrar
+        </Button>
+      </form>
+
+      <nav
+        aria-label="Filtrar interações por situação"
+        className="hidden flex-wrap items-center gap-2 sm:flex"
+      >
+        <Button asChild size="sm" variant={situation ? "ghost" : "secondary"}>
           <Link
-            aria-current={situation === filter ? "page" : undefined}
-            href={`/admin/atividade?situacao=${filter}`}
+            aria-current={situation ? undefined : "page"}
+            href="/admin/atividade"
           >
-            {interactionLabels[filter] ?? filter}
+            Todas
           </Link>
         </Button>
-      ))}
-    </nav>
+        {ACTIVITY_FILTERS.map((filter) => (
+          <Button
+            key={filter}
+            asChild
+            size="sm"
+            variant={situation === filter ? "secondary" : "ghost"}
+          >
+            <Link
+              aria-current={situation === filter ? "page" : undefined}
+              href={`/admin/atividade?situacao=${filter}`}
+            >
+              {interactionLabels[filter] ?? filter}
+            </Link>
+          </Button>
+        ))}
+      </nav>
+    </>
   );
 }
 

@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { ChevronDownIcon } from "lucide-react";
 
 import { isActivityFilter, loadActivity } from "@/app/admin/atividade/data";
 import {
@@ -6,7 +7,9 @@ import {
   ActivityFilterBar,
   ActivityHeader,
   ActivityStats,
+  ActivityTabs,
   ConnectionTestNote,
+  isActivityTab,
 } from "@/app/admin/atividade/sections";
 import {
   EventsSection,
@@ -31,13 +34,23 @@ export default async function ActivityPage({
   await requireAdmin();
 
   const params = await searchParams;
-  const raw = typeof params.situacao === "string" ? params.situacao : undefined;
-  const situation = isActivityFilter(raw) ? raw : undefined;
+  const rawFilter =
+    typeof params.situacao === "string" ? params.situacao : undefined;
+  const situation = isActivityFilter(rawFilter) ? rawFilter : undefined;
+  const rawTab = typeof params.aba === "string" ? params.aba : undefined;
+  const tab = isActivityTab(rawTab) ? rawTab : "interacoes";
   const data = await loadActivity(situation ? { situation } : {});
 
+  const query = new URLSearchParams();
+  if (tab !== "interacoes") query.set("aba", tab);
+  if (tab === "interacoes" && situation) query.set("situacao", situation);
+  const refreshHref = query.size
+    ? `/admin/atividade?${query.toString()}`
+    : "/admin/atividade";
+
   return (
-    <div className="space-y-8">
-      <ActivityHeader {...(situation ? { situation } : {})} />
+    <div className="space-y-6 md:space-y-8">
+      <ActivityHeader href={refreshHref} />
 
       <ActivityAlerts
         account={data.account}
@@ -46,25 +59,42 @@ export default async function ActivityPage({
         webhookError={data.webhookError}
       />
 
-      <ActivityStats
-        lastTickAt={data.lastTickAt}
-        lastDrainAt={data.lastDrainAt}
-        drainSummary={data.drainSummary}
-        lastSendAt={data.lastSendAt}
-      />
+      <ActivityTabs situation={situation} tab={tab} />
 
-      {data.connectionTest ? (
-        <ConnectionTestNote result={data.connectionTest} />
+      {tab === "interacoes" ? (
+        <>
+          <ActivityFilterBar {...(situation ? { situation } : {})} />
+          <InteractionsSection
+            rows={data.interactions}
+            {...(situation ? { situation } : {})}
+          />
+        </>
       ) : null}
 
-      <ActivityFilterBar {...(situation ? { situation } : {})} />
+      {tab === "envios" ? <JobsSection rows={data.jobs} /> : null}
+      {tab === "webhooks" ? <EventsSection rows={data.events} /> : null}
 
-      <InteractionsSection
-        rows={data.interactions}
-        {...(situation ? { situation } : {})}
-      />
-      <JobsSection rows={data.jobs} />
-      <EventsSection rows={data.events} />
+      <details className="group rounded-lg border border-border bg-card">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
+          Ver diagnóstico
+          <ChevronDownIcon
+            aria-hidden
+            className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-180"
+          />
+        </summary>
+        <div className="space-y-4 border-t border-line-subtle p-4 md:p-5">
+          <ActivityStats
+            drainSummary={data.drainSummary}
+            lastDrainAt={data.lastDrainAt}
+            lastSendAt={data.lastSendAt}
+            lastTickAt={data.lastTickAt}
+          />
+
+          {data.connectionTest ? (
+            <ConnectionTestNote result={data.connectionTest} />
+          ) : null}
+        </div>
+      </details>
 
       <StatusToast
         task={{

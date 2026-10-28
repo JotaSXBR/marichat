@@ -1,13 +1,10 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { AutomationToggle } from "@/app/admin/automacoes/automation-toggle";
 import type { automations } from "@/lib/db/schema";
-import { FOLLOW_MODE_LABELS, isFollowMode } from "@/lib/follow-mode";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
-import { cn } from "@/lib/utils";
 
 type Automation = typeof automations.$inferSelect;
 
@@ -20,21 +17,9 @@ function linkHost(url: string) {
   }
 }
 
-function Detail({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-1.5">
-      <dt className="text-label text-muted-foreground">{label}:</dt>
-      <dd className="text-body text-card-foreground">{children}</dd>
-    </div>
-  );
-}
-
 export function AutomationCard({ automation }: { automation: Automation }) {
   return (
-    <Card
-      className={cn("gap-4 p-5", !automation.isActive && "opacity-70")}
-      variant="interactive"
-    >
+    <Card className="gap-4 p-5" variant="interactive">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h2 className="truncate text-title text-foreground">
@@ -48,25 +33,23 @@ export function AutomationCard({ automation }: { automation: Automation }) {
         <AutomationToggle id={automation.id} isActive={automation.isActive} />
       </div>
 
-      <dl className="grid gap-1">
-        <Detail label="Palavra-chave">
-          <span className="font-mono text-mono">{automation.keyword}</span>
-        </Detail>
-        <Detail label="Publicação">
-          {automation.mediaId
-            ? `específica (${automation.mediaId})`
-            : "qualquer publicação"}
-        </Detail>
-        <Detail label="Porta de seguidor">
-          {isFollowMode(automation.followMode)
-            ? FOLLOW_MODE_LABELS[automation.followMode].title
-            : "Sem porta de seguidor"}
-        </Detail>
-        <Detail label="Link">{linkHost(automation.linkUrl)}</Detail>
+      <dl className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+        <div className="flex items-baseline gap-1.5">
+          <dt className="text-label text-muted-foreground">Palavra-chave</dt>
+          <dd className="font-mono text-mono text-card-foreground">
+            {automation.keyword}
+          </dd>
+        </div>
+        <div className="flex min-w-0 items-baseline gap-1.5">
+          <dt className="text-label text-muted-foreground">Link</dt>
+          <dd className="truncate text-body text-card-foreground">
+            {linkHost(automation.linkUrl)}
+          </dd>
+        </div>
       </dl>
 
       <div className="flex justify-end border-t border-line-subtle pt-4">
-        <Button asChild size="sm" variant="secondary">
+        <Button asChild className="h-12 sm:h-8" size="sm" variant="secondary">
           <Link href={`/admin/automacoes/${automation.id}`}>Editar</Link>
         </Button>
       </div>

@@ -23,11 +23,13 @@ export function ConfirmSubmitButton({
   message,
   title = "Desconectar o Instagram?",
   confirmLabel = "Desconectar",
+  className,
 }: {
   children: ReactNode;
   message: string;
   title?: string;
   confirmLabel?: string;
+  className?: string;
 }) {
   const submitRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -38,6 +40,7 @@ export function ConfirmSubmitButton({
         ref={submitRef}
         type="button"
         variant="destructive"
+        className={className}
         onClick={() => setOpen(true)}
       >
         {children}

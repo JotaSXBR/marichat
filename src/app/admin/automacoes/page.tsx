@@ -13,6 +13,7 @@ import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { getDb } from "@/lib/db/client";
 import { automations } from "@/lib/db/schema";
+import { MobileActionBar } from "@/components/marichat/mobile-action-bar";
 import { Button } from "@/components/ui/button";
 
 export const instant = false;
@@ -47,7 +48,7 @@ export default async function AutomationsPage({
             com uma DM.
           </p>
         </div>
-        <Button asChild size="lg">
+        <Button asChild className="hidden md:inline-flex" size="lg">
           <Link href="/admin/automacoes/nova">
             <PlusIcon aria-hidden />
             Nova automação
@@ -62,10 +63,14 @@ export default async function AutomationsPage({
       {rows.length > 0 ? (
         <ul className="grid gap-3">
           {rows.map((automation) => (
-            <AutomationCard key={automation.id} automation={automation} />
+            <li key={automation.id}>
+              <AutomationCard automation={automation} />
+            </li>
           ))}
         </ul>
       ) : null}
+
+      <MobileActionBar href="/admin/automacoes/nova" />
     </div>
   );
 }

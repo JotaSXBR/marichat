@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, ShieldCheck, Trash2, User2, Link2 } from "lucide-react";
+import {
+  ActivityIcon,
+  LayoutDashboard,
+  Link2,
+  Plug,
+  ShieldCheck,
+  Trash2,
+  User2,
+  Workflow,
+} from "lucide-react";
 
 import { CommandPalette } from "@/components/marichat/command-palette";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,15 +23,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/status-chip";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/admin", label: "Visão geral" },
-  { href: "/admin/automacoes", label: "Automações" },
-  { href: "/admin/atividade", label: "Atividade" },
-  { href: "/admin/conexao", label: "Conexão" },
+  { href: "/admin", label: "Visão geral", icon: LayoutDashboard },
+  { href: "/admin/automacoes", label: "Automações", icon: Workflow },
+  { href: "/admin/atividade", label: "Atividade", icon: ActivityIcon },
+  { href: "/admin/conexao", label: "Conexão", icon: Plug },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -46,7 +45,10 @@ function initials(handle: string | null) {
   return handle.slice(0, 2).toUpperCase();
 }
 
-/** R1 — navegação única, em pílula de vidro fixa no topo (§3, §4). */
+/**
+ * R1 — uma navegação só. Desktop: pílula de vidro no topo. Mobile: barra
+ * plana no topo + 4 abas fixas no polegar (§3, §4).
+ */
 export function AdminNav({
   handle,
   connected,
@@ -57,28 +59,30 @@ export function AdminNav({
   const pathname = usePathname();
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 px-4 pt-6">
-      <div className="mx-auto flex h-16 max-w-[1240px] items-center gap-3 rounded-xl glass px-3 sm:px-4">
-        <Link
-          className="shrink-0 font-heading text-title tracking-[-0.02em] text-foreground"
-          href="/admin"
-        >
-          MARICHAT
-        </Link>
+    <>
+      <header className="fixed inset-x-0 top-0 z-40 md:px-4 md:pt-6">
+        <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur md:h-16 md:gap-3 md:rounded-xl md:border md:bg-card md:px-4">
+          <Link
+            className="flex h-12 shrink-0 items-center font-heading text-title tracking-[-0.02em] text-foreground md:h-auto"
+            href="/admin"
+          >
+            MARICHAT
+          </Link>
 
-        <DesktopNav pathname={pathname} />
+          <DesktopNav pathname={pathname} />
 
-        <div className="ml-auto flex items-center gap-2">
-          <ConnectionChip connected={connected} handle={handle} />
+          <div className="ml-auto flex min-w-0 items-center gap-2">
+            <ConnectionChip connected={connected} handle={handle} />
 
-          <CommandPalette className="hidden w-64 xl:block" />
+            <CommandPalette className="hidden w-64 xl:block" />
 
-          <MobileNav pathname={pathname} />
-
-          <AccountMenu handle={handle} />
+            <AccountMenu handle={handle} />
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <MobileTabBar pathname={pathname} />
+    </>
   );
 }
 
@@ -110,6 +114,43 @@ function DesktopNav({ pathname }: { pathname: string }) {
   );
 }
 
+function MobileTabBar({ pathname }: { pathname: string }) {
+  return (
+    <nav
+      aria-label="Seções do painel"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+    >
+      <ul className="grid grid-cols-4">
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(pathname, item.href);
+          const Icon = item.icon;
+          return (
+            <li key={item.href}>
+              <Link
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-label transition-colors duration-150 ease-out",
+                  active ? "text-primary" : "text-muted-foreground",
+                )}
+                href={item.href}
+              >
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                  />
+                ) : null}
+                <Icon aria-hidden className="size-5" />
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 function ConnectionChip({
   handle,
   connected,
@@ -119,7 +160,7 @@ function ConnectionChip({
 }) {
   return (
     <Link
-      className="hidden lg:block"
+      className="flex h-12 items-center md:h-auto"
       href="/admin/conexao"
       title={
         handle
@@ -127,67 +168,24 @@ function ConnectionChip({
           : "Nenhuma conta conectada"
       }
     >
-      <StatusChip tone={connected ? "success" : handle ? "warning" : "neutral"}>
-        {handle ? `@${handle}` : "Sem conta"}
+      <StatusChip
+        className="max-md:gap-1 max-md:px-2 max-md:tracking-normal"
+        tone={connected ? "success" : handle ? "warning" : "neutral"}
+      >
+        <span className="truncate">
+          {handle ? (
+            <>
+              <span className="md:hidden">
+                {connected ? "Conectado" : "Atenção"}
+              </span>
+              <span className="hidden md:inline">@{handle}</span>
+            </>
+          ) : (
+            "Sem conta"
+          )}
+        </span>
       </StatusChip>
     </Link>
-  );
-}
-
-function MobileNav({ pathname }: { pathname: string }) {
-  return (
-    <Drawer>
-      <DrawerTrigger asChild>
-        <Button
-          aria-label="Abrir navegação"
-          className="md:hidden"
-          size="icon"
-          variant="ghost"
-        >
-          <Menu />
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle>MARICHAT</DrawerTitle>
-          <DrawerDescription>Ir para</DrawerDescription>
-        </DrawerHeader>
-        <nav
-          aria-label="Seções do painel"
-          className="flex flex-col gap-1 px-3 pb-4"
-        >
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(pathname, item.href);
-            return (
-              <DrawerClose asChild key={item.href}>
-                <Link
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex h-11 items-center rounded-md px-3 text-body",
-                    active
-                      ? "bg-secondary text-primary"
-                      : "text-card-foreground hover:bg-surface-hover",
-                  )}
-                  href={item.href}
-                >
-                  {item.label}
-                </Link>
-              </DrawerClose>
-            );
-          })}
-        </nav>
-        <div className="border-t border-line-subtle p-3">
-          <DrawerClose asChild>
-            <Link
-              className="flex h-11 items-center rounded-md px-3 text-body text-card-foreground hover:bg-surface-hover"
-              href="/admin/automacoes/nova"
-            >
-              Nova automação
-            </Link>
-          </DrawerClose>
-        </div>
-      </DrawerContent>
-    </Drawer>
   );
 }
 
@@ -198,8 +196,8 @@ function AccountMenu({ handle }: { handle: string | null }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          aria-label="Menu da conta"
-          className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label={`Menu da conta · ${initials(handle)}`}
+          className="flex size-12 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:size-8"
           type="button"
         >
           <Avatar className="size-8">

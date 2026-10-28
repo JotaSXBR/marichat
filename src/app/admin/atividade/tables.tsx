@@ -87,34 +87,30 @@ function InteractionRow({
 }) {
   return (
     <TableRow>
-      <TableCell className="text-label text-muted-foreground">
+      <TableCell
+        className="text-label text-muted-foreground"
+        data-label="Quando"
+      >
         {formatDateTime(row.createdAt)}
       </TableCell>
-      <TableCell>{row.automationName ?? "—"}</TableCell>
-      <TableCell className="max-w-[280px] whitespace-normal">
+      <TableCell data-label="Automação">{row.automationName ?? "—"}</TableCell>
+      <TableCell
+        className="max-w-[320px] whitespace-normal"
+        data-label="Comentário"
+      >
         {short(row.commentText)}
-        <span className="block text-label text-muted-foreground">
-          {row.commenterUsername ? `@${row.commenterUsername}` : row.commenter}
-        </span>
-        <span className="block font-mono text-mono text-muted-soft">
-          {row.commenterUsername ? row.commenter : null} · mídia {row.mediaId}
+        <span className="mt-0.5 block text-label text-muted-foreground">
+          {row.commenterUsername
+            ? `@${row.commenterUsername}`
+            : "Autor não identificado"}
         </span>
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Situação">
         <Chip
           labels={interactionLabels}
           status={row.state}
           tones={interactionTones}
         />
-      </TableCell>
-      <TableCell className="text-label text-muted-foreground" data-numeric>
-        {row.followChecks}
-      </TableCell>
-      <TableCell className="text-label text-muted-foreground">
-        {formatDateTime(row.userLastMessageAt)}
-      </TableCell>
-      <TableCell className="text-label text-muted-foreground">
-        {formatDateTime(row.secondDmAcceptedAt)}
       </TableCell>
     </TableRow>
   );
@@ -140,16 +136,13 @@ export function InteractionsSection({
             : "Nenhum comentário recebido ainda."}
         </Empty>
       ) : (
-        <Table>
+        <Table className="table-stack">
           <TableHeader>
             <TableRow>
               <TableHead>Quando</TableHead>
               <TableHead>Automação</TableHead>
-              <TableHead>Quem comentou</TableHead>
+              <TableHead>Comentário</TableHead>
               <TableHead>Situação</TableHead>
-              <TableHead>Checagens</TableHead>
-              <TableHead>Resposta</TableHead>
-              <TableHead>Link</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -166,35 +159,31 @@ export function InteractionsSection({
 function JobRow({ row }: { row: ActivityData["jobs"][number] }) {
   return (
     <TableRow>
-      <TableCell className="text-label text-muted-foreground">
+      <TableCell
+        className="text-label text-muted-foreground"
+        data-label="Atualizado"
+      >
         {formatDateTime(row.updatedAt)}
       </TableCell>
-      <TableCell>{jobKindLabels[row.kind] ?? row.kind}</TableCell>
-      <TableCell className="font-mono text-mono text-muted-foreground">
+      <TableCell data-label="Tipo">
+        {jobKindLabels[row.kind] ?? row.kind}
+      </TableCell>
+      <TableCell
+        className="font-mono text-mono text-muted-foreground"
+        data-label="Quem"
+      >
         {row.commenterUsername
           ? `@${row.commenterUsername}`
           : (row.commenter ?? "—")}
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Situação">
         <Chip labels={jobStatusLabels} status={row.status} tones={jobTones} />
       </TableCell>
-      <TableCell className="text-label text-muted-foreground" data-numeric>
-        {row.attempts}/{row.maxAttempts}
-      </TableCell>
-      <TableCell className="text-label text-muted-foreground">
-        {row.status === "pending" ? formatDateTime(row.nextAttemptAt) : "—"}
-      </TableCell>
-      <TableCell className="max-w-[280px] whitespace-normal text-label">
-        {row.errorMessage ? (
-          <>
-            <span className="font-mono text-mono text-muted-soft">
-              {row.errorCode ?? "ERRO"}
-            </span>{" "}
-            {short(row.errorMessage, 120)}
-          </>
-        ) : (
-          "—"
-        )}
+      <TableCell
+        className="max-w-[320px] whitespace-normal text-label"
+        data-label="Erro"
+      >
+        {row.errorMessage ? short(row.errorMessage, 120) : "—"}
       </TableCell>
     </TableRow>
   );
@@ -204,21 +193,19 @@ export function JobsSection({ rows }: { rows: ActivityData["jobs"] }) {
   return (
     <Shell
       count={rows.length}
-      description="Cada DM e cada checagem de seguidor, com tentativas e erro."
+      description="Cada DM e cada checagem de seguidor, com o erro quando existe."
       title="Envios e tarefas da fila"
     >
       {rows.length === 0 ? (
         <Empty>Nenhuma tarefa criada ainda.</Empty>
       ) : (
-        <Table>
+        <Table className="table-stack">
           <TableHeader>
             <TableRow>
               <TableHead>Atualizado</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Quem</TableHead>
               <TableHead>Situação</TableHead>
-              <TableHead>Tentativas</TableHead>
-              <TableHead>Próxima</TableHead>
               <TableHead>Erro</TableHead>
             </TableRow>
           </TableHeader>
@@ -243,11 +230,10 @@ export function EventsSection({ rows }: { rows: ActivityData["events"] }) {
       {rows.length === 0 ? (
         <Empty>Nenhum evento recebido ainda.</Empty>
       ) : (
-        <Table>
+        <Table className="table-stack">
           <TableHeader>
             <TableRow>
               <TableHead>Quando</TableHead>
-              <TableHead>Evento</TableHead>
               <TableHead>Campo</TableHead>
               <TableHead>Situação</TableHead>
               <TableHead>Erro</TableHead>
@@ -256,23 +242,24 @@ export function EventsSection({ rows }: { rows: ActivityData["events"] }) {
           <TableBody>
             {rows.map((row) => (
               <TableRow key={row.eventKey}>
-                <TableCell className="text-label text-muted-foreground">
+                <TableCell
+                  className="text-label text-muted-foreground"
+                  data-label="Quando"
+                >
                   {formatDateTime(row.receivedAt)}
                 </TableCell>
-                <TableCell className="font-mono text-mono">
-                  {row.eventKey}
-                </TableCell>
-                <TableCell className="text-label text-muted-foreground">
-                  {row.field}
-                </TableCell>
-                <TableCell>
+                <TableCell data-label="Campo">{row.field}</TableCell>
+                <TableCell data-label="Situação">
                   <Chip
                     labels={webhookStatusLabels}
                     status={row.status}
                     tones={webhookTones}
                   />
                 </TableCell>
-                <TableCell className="max-w-[280px] whitespace-normal text-label">
+                <TableCell
+                  className="max-w-[320px] whitespace-normal text-label"
+                  data-label="Erro"
+                >
                   {row.errorMessage ? short(row.errorMessage, 120) : "—"}
                 </TableCell>
               </TableRow>

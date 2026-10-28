@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 import Link from "next/link";
 import {
   AlertTriangleIcon,
@@ -11,14 +9,12 @@ import {
 } from "lucide-react";
 
 import {
-  connectionLabels,
   formatDateTime,
   interactionLabels,
   interactionTones,
 } from "@/app/admin/labels";
 import type { DashboardData } from "@/app/admin/dashboard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,7 +45,7 @@ export function DashboardHeader() {
           Comentário com a palavra-chave → DM pedindo resposta → link.
         </p>
       </div>
-      <Button asChild size="lg">
+      <Button asChild className="hidden md:inline-flex" size="lg">
         <Link href="/admin/automacoes/nova">
           <PlusIcon aria-hidden />
           Nova automação
@@ -206,112 +202,26 @@ export function Metric({
 }
 
 export function DashboardCards({
-  activeAutomations,
-  totalAutomations,
   waitingReply,
-  linkSent,
   needAttention,
-}: Pick<
-  DashboardData,
-  | "activeAutomations"
-  | "totalAutomations"
-  | "waitingReply"
-  | "linkSent"
-  | "needAttention"
->) {
+}: Pick<DashboardData, "waitingReply" | "needAttention">) {
   return (
     <section
       aria-label="Resumo do período"
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid grid-cols-2 gap-3 md:gap-4"
     >
-      <Metric
-        hint={`${totalAutomations} no total`}
-        label="Automações ativas"
-        value={activeAutomations}
-      />
-      <Metric
-        hint="Primeira DM aceita, link ainda não enviado"
-        label="Aguardando resposta"
-        value={waitingReply}
-      />
-      <Metric
-        hint="Segunda mensagem aceita"
-        label="Links enviados"
-        value={linkSent}
-      />
       <Metric
         hint="Falhas, incertezas ou expirações"
         label="Precisam de atenção"
         tone={needAttention > 0 ? "warning" : undefined}
         value={needAttention}
       />
+      <Metric
+        hint="Primeira DM aceita, link ainda não enviado"
+        label="Aguardando resposta"
+        value={waitingReply}
+      />
     </section>
-  );
-}
-
-function InfoRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-label text-muted-foreground">{label}</dt>
-      <dd className="text-right text-body text-foreground">{children}</dd>
-    </div>
-  );
-}
-
-function initials(handle: string) {
-  return handle.slice(0, 2).toUpperCase();
-}
-
-export function AccountPanel({ account }: Pick<DashboardData, "account">) {
-  const status = account
-    ? (connectionLabels[account.connectionStatus] ?? {
-        label: account.connectionStatus,
-        tone: "neutral",
-      })
-    : null;
-
-  return (
-    <Card className="gap-5">
-      <CardHeader>
-        <CardTitle>Conta conectada</CardTitle>
-        <CardDescription>
-          O perfil que recebe os comentários e envia as DMs.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {account ? (
-          <div className="flex items-center gap-3">
-            <Avatar size="lg">
-              <AvatarFallback>{initials(account.username)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="truncate font-mono text-mono text-foreground">
-                @{account.username}
-              </p>
-              {status ? (
-                <StatusChip className="mt-2" tone={status.tone}>
-                  {status.label}
-                </StatusChip>
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <p className="text-body text-muted-foreground">
-            Nenhuma conta conectada ainda.
-          </p>
-        )}
-      </CardContent>
-      {account ? (
-        <dl className="grid gap-2">
-          <InfoRow label="Token expira em">
-            {formatDateTime(account.tokenExpiresAt)}
-          </InfoRow>
-        </dl>
-      ) : null}
-      <Button asChild className="w-fit" size="sm" variant="secondary">
-        <Link href="/admin/conexao">Gerenciar</Link>
-      </Button>
-    </Card>
   );
 }
 
@@ -321,30 +231,44 @@ export function OperationsPanel({
   recentEvents,
 }: Pick<DashboardData, "queuedJobs" | "lastTickAt" | "recentEvents">) {
   return (
-    <Card className="gap-5">
+    <Card className="gap-4 p-5">
       <CardHeader>
         <CardTitle>Operação</CardTitle>
-        <CardDescription>
-          Fila de mensagens e a última vez que o sistema rodou.
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <dl className="grid gap-2">
-          <InfoRow label="Mensagens na fila">
-            <span data-numeric>{queuedJobs}</span>
-          </InfoRow>
-          <InfoRow label="Última tarefa agendada">
-            {lastTickAt ? formatDateTime(new Date(lastTickAt)) : "—"}
-          </InfoRow>
-          <InfoRow label="Último webhook">
-            {recentEvents[0] ? formatDateTime(recentEvents[0].receivedAt) : "—"}
-          </InfoRow>
+        <dl className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <dt className="text-micro text-muted-foreground uppercase">
+              Mensagens na fila
+            </dt>
+            <dd className="mt-1 text-section text-foreground" data-numeric>
+              {queuedJobs}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-micro text-muted-foreground uppercase">
+              Última tarefa
+            </dt>
+            <dd className="mt-1 text-body text-foreground">
+              {lastTickAt ? formatDateTime(new Date(lastTickAt)) : "—"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-micro text-muted-foreground uppercase">
+              Último webhook
+            </dt>
+            <dd className="mt-1 text-body text-foreground">
+              {recentEvents[0]
+                ? formatDateTime(recentEvents[0].receivedAt)
+                : "—"}
+            </dd>
+          </div>
         </dl>
+        <p className="mt-4 text-label text-muted-soft">
+          &quot;Aceita&quot; significa que a Meta recebeu a solicitação; não é
+          confirmação de leitura.
+        </p>
       </CardContent>
-      <p className="text-label text-muted-soft">
-        &quot;Aceita&quot; significa que a Meta recebeu a solicitação. O
-        Instagram não informa confirmação de entrega nem de leitura.
-      </p>
     </Card>
   );
 }
@@ -352,6 +276,7 @@ export function OperationsPanel({
 /* ------------------------------------------------------------------ R4 */
 
 const RECENT_LIMIT = 5;
+const MOBILE_LIMIT = 3;
 
 export function RecentCommentsSection({
   rows,
@@ -362,7 +287,7 @@ export function RecentCommentsSection({
 
   return (
     <Card className="gap-0 overflow-hidden p-0">
-      <CardHeader className="px-6 pt-6">
+      <CardHeader className="px-5 pt-5 md:px-6 md:pt-6">
         <CardTitle>Últimos comentários atendidos</CardTitle>
         <CardDescription>
           {rows.length === 0
@@ -373,7 +298,7 @@ export function RecentCommentsSection({
 
       {visible.length > 0 ? (
         <div className="mt-4">
-          <Table>
+          <Table className="table-stack">
             <caption className="sr-only">
               Últimos comentários atendidos, com data, automação, autor e
               situação
@@ -387,18 +312,27 @@ export function RecentCommentsSection({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visible.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="text-muted-foreground">
+              {visible.map((row, index) => (
+                <TableRow
+                  className={cn(index >= MOBILE_LIMIT && "table-stack-extra")}
+                  key={row.id}
+                >
+                  <TableCell
+                    className="text-muted-foreground"
+                    data-label="Quando"
+                  >
                     {formatDateTime(row.createdAt)}
                   </TableCell>
-                  <TableCell className="text-foreground">
+                  <TableCell className="text-foreground" data-label="Automação">
                     {row.automationName ?? "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-mono text-muted-foreground">
+                  <TableCell
+                    className="font-mono text-mono text-muted-foreground"
+                    data-label="Quem comentou"
+                  >
                     {row.commenter}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="Situação">
                     <StatusChip tone={interactionTones[row.state] ?? "neutral"}>
                       {interactionLabels[row.state] ?? row.state}
                     </StatusChip>

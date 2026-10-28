@@ -1,12 +1,17 @@
-# MARICHAT — Design System v4
+# MARICHAT — Design System v5
 
-Fonte única de verdade visual do painel. Substitui a v3 por completo.
+Fonte única de verdade visual do painel. Substitui a v4 por completo.
 
-A diferença central: **o visual nasce do Kokonut UI OSS** (registry do shadcn),
-com a base neutra escura e o vidro que ele já usa, e tudo o que o Kokonut não
-tem vem do **shadcn/ui** — que é a dependência que o próprio Kokonut assume. O
-produto, as telas e as leis de UX continuam os mesmos; o que muda é de onde vêm
-os componentes e como eles são adaptados.
+A v5 é a v4 implementada e enxugada: o mesmo cockpit escuro, agora com barra de
+abas no polegar no celular, corpo em 16 px, duas métricas na Visão geral, abas na
+Atividade e o diagnóstico técnico atrás de um disclosure. Nada de dado técnico
+que não ajude a decidir.
+
+A diferença central da v4: **o visual nasce do Kokonut UI OSS** (registry do
+shadcn), com a base neutra escura e o vidro que ele já usa, e tudo o que o
+Kokonut não tem vem do **shadcn/ui** — que é a dependência que o próprio Kokonut
+assume. O produto, as telas e as leis de UX continuam os mesmos; o que muda é de
+onde vêm os componentes e como eles são adaptados.
 
 - Catálogo e regras do Kokonut: [`docs/KOKONUT.md`](docs/KOKONUT.md).
 - Brief original do produto: [`docs/PROMPT-INICIAL.md`](docs/PROMPT-INICIAL.md).
@@ -41,7 +46,7 @@ relatórios, tema claro.
 ## 2. Leis
 
 1. **Uma ação primária por tela.** Ação primária no canto superior direito, a
-   40 px (alvo de 44 px).
+   48 px, e na barra do polegar no celular.
 2. **Números não mentem.** "Aceita" não é "entregue": todo status de DM diz
    "aceita pela Meta". Métrica sem dado mostra `—` e "sem dados no período".
 3. **Nada destrutivo sem confirmação.** Desconectar, excluir automação e
@@ -61,9 +66,12 @@ relatórios, tema claro.
 
 ## 3. Navegação e informação
 
-Uma navegação só, em pílula de vidro no topo: **4 itens**, marca `MARICHAT`,
-indicador de conexão (`@handle`), botão de comandos `Ctrl K` e menu de conta.
-Sem sidebar, sem topbar duplicada, sem seletor de tema.
+Uma navegação só: no desktop, pílula de vidro no topo com **4 itens**, marca
+`MARICHAT`, indicador de conexão (`@handle`), botão de comandos `Ctrl K` e menu
+de conta. No celular, barra plana no topo (marca, chip de conexão e conta) e
+**4 abas fixas no rodapé**, com alvo de 64 px; a ação primária das telas que
+criam algo sobe para uma barra acima das abas, na zona do polegar. Sem sidebar,
+sem topbar duplicada, sem seletor de tema.
 
 Profundidade máxima: 2 níveis (nav → página → drawer). O editor tem URL própria.
 Filtros e busca vivem na URL (`?q=&status=`).
@@ -89,9 +97,10 @@ campos, 12 px entre controles.
 
 **Responsivo:** ≤1279 px o trilho vai para 320 px ou abaixo do conteúdo; ≤1023 px
 nav compacta + drawer, tabela com scroll e primeira coluna fixa; <768 px uma
-coluna, linhas de tabela viram blocos rotulados, ação primária em barra inferior
-de 44 px com `safe-area-inset-bottom`. Em 320 px e 200% de zoom não há scroll
-horizontal.
+coluna, abas fixas no rodapé, linhas de tabela viram blocos rotulados com
+`data-label`, ação primária em barra inferior de 48 px com
+`safe-area-inset-bottom`. Em 320 px e 200% de zoom não há scroll horizontal.
+Editores mostram a prévia depois do formulário e uma barra fixa de salvar.
 
 ---
 
@@ -197,16 +206,17 @@ timestamps e números tabulares. Ambos via `next/font`, `display: swap`.
 
 | Token | Tamanho/linha | Peso | Uso |
 | :-- | :-- | :-- | :-- |
-| `display` | 40/44, -0.03em | 600 | `h1` de página |
+| `display` | `clamp(30, 40)` px / 1.15, -0.03em | 600 | `h1` de página |
 | `section` | 20/28, -0.02em | 600 | título de seção |
-| `card` | 15/22 | 500 | título de card |
-| `body` | 14/20 | 400 | corpo |
-| `label` | 13/18 | 500 | label, botão, nav |
-| `micro` | 11/14, +0.08em | 600 | label de tabela/métrica |
-| `mono` | 13/18 | 400 | dados técnicos |
+| `title` | 16/22 | 500 | título de card |
+| `body` | 16/24 | 400 | corpo |
+| `label` | 14/20 | 500 | label, botão, nav |
+| `micro` | 12/16, +0.08em | 600 | label de tabela/métrica |
+| `mono` | 14/20 | 400 | dados técnicos |
 
 Máximo dois pesos por card; sem itálico; `tabular-nums` em métricas; linha de
-68ch; títulos com `text-wrap: balance`.
+68ch; títulos com `text-wrap: balance`. **16 px é o piso do texto corrido**;
+`micro` só existe em caixa alta curta (cabeçalho de tabela, chip, métrica).
 
 ### 5.5 Espaço, raio, ícones
 
@@ -325,7 +335,7 @@ tabela vazio.
 ## 8. Acessibilidade (WCAG 2.2 AA)
 
 - Contraste do §5.2 em todos os pares; texto de chip sobre o tint de 12%.
-- Foco visível em todo elemento interativo; alvo mínimo 24×24, 44×44 no mobile.
+- Foco visível em todo elemento interativo; alvo mínimo 24×24, 48×48 no mobile.
 - Um `h1` por tela; landmarks `nav`, `main`, `aside`; tabela com `caption`
   oculto e `scope="col"`.
 - Métricas em `dl`; status com texto; ilha em `aria-live="polite"`; erro de
@@ -338,20 +348,23 @@ tabela vazio.
 
 ## 9. Especificação das telas
 
-### 9.1 Visão geral (`/admin`) — R1, R2, R3, R4, R6
+### 9.1 Visão geral (`/admin`) — R1, R2, R3, R4
 
 - **R2:** `h1` "Visão geral"; subtítulo "Comentário com a palavra-chave → DM
-  pedindo resposta → link."; CTA "Nova automação".
+  pedindo resposta → link."; CTA "Nova automação" (no celular, barra fixa acima
+  das abas).
 - **R3:** no máximo 2 alertas. Exemplos: "2 DMs falharam e serão tentadas de
   novo" (warning, ação "Revisar"); "Token expira em 6 dias" (info, ação
   "Conexão").
-- **R4:** 4 tiles (`card` shadcn, sem gráfico): Automações ativas 12 de 14;
-  Aguardando resposta 38; Links enviados 1.284 (30 dias); Precisam de atenção 3
-  (borda esquerda warning). Depois, painel Conta conectada (avatar, `@handle`,
-  chip, expiração, "Gerenciar") e painel Operação (fila, última tarefa, último
-  webhook, nota "aceita ≠ entregue"), lado a lado. Por último, tabela "Últimos
-  comentários atendidos" com 5 linhas e rodapé "Mostrando 5 de 1.284".
-- **R6:** ilha `@handle · Conectado há 2 h · Fila saudável`, some em 8 s.
+- **R4:** **duas** tiles (`card` shadcn, sem gráfico): Precisam de atenção 3
+  (borda esquerda warning) e Aguardando resposta 38. Nada de "links enviados"
+  nem "automações ativas": o que não pede ação não ocupa a primeira dobra.
+  Depois, um resumo compacto de operação (fila, última tarefa, último webhook,
+  em uma linha no desktop) e a lista "Últimos comentários atendidos" com 3
+  linhas no celular e 5 no desktop; no desktop, `table`; no celular, blocos
+  rotulados.
+- **Fora da tela:** painel de conta (o chip `@handle` já resolve), token com
+  data, ilha flutuante de status e métricas duplicadas.
 - **Estados:** sem conta → vazio com "Conectar Instagram"; erro de webhook/token
   → alerta danger com link para Conexão; carregando → skeletons; parcial →
   "Carregar mais".
@@ -359,10 +372,13 @@ tabela vazio.
 ### 9.2 Automações (`/admin/automacoes`) — R1, R2, R3, R4
 
 - Lista de cards (não tabela): chip de status + `switch`, nome, palavra-chave em
-  mono, publicação, porta de seguidor, host do link, duas métricas, "Editar".
-- Card pausado: superfície apagada, chip neutral, sem lime.
+  mono, host do link e "Editar". Publicação, porta de seguidor e IDs ficam no
+  editor.
+- Card pausado: chip neutral, borda apagada, sem lime; nada de `opacity` no
+  texto (contraste).
 - Busca e filtro na URL; vazio com "Nova automação"; erro de carregamento com
-  "Tentar novamente"; pausar oferece desfazer de 8 s (`undo-button`).
+  "Tentar novamente"; pausar oferece desfazer de 8 s (`undo-button`). No
+  celular, "Nova automação" vive na barra fixa acima das abas.
 
 ### 9.3 Editor (`/admin/automacoes/nova`, `/[id]`) — R1, R2, R3, R4, R5
 
@@ -377,12 +393,18 @@ tabela vazio.
   tecla (a prévia é leve; sem debounce).
 - Sair com alterações não salvas → diálogo; descartar é destrutivo.
 
-### 9.4 Atividade (`/admin/atividade`) — R1, R2, R3, R4, R6
+### 9.4 Atividade (`/admin/atividade`) — R1, R2, R3, R4
 
-- Tabela de interações (Quando, Automação, Quem comentou, Situação com chip),
-  fila de tarefas e webhooks recentes, incluindo erro com texto.
-- Filtro por situação na URL; "Atualizar" como ação primária; R6 reporta a
-  rodada da fila.
+- **Abas na URL:** Interações (`?situacao=`), Envios, Webhooks. Uma lista por
+  vez; o filtro de situação só existe em Interações.
+- Interações: Quando, Automação, Comentário (texto + `@autor`), Situação.
+  Envios: Atualizado, Tipo, Quem, Situação, Erro. Webhooks: Quando, Campo,
+  Situação, Erro. Sem ID de mídia, ID cru de quem comentou, contagem de
+  checagens, próxima tentativa nem código cru de erro.
+- **Diagnóstico** (última tarefa, dreno, resultado, último envio e teste de
+  conexão) fica dentro de "Ver diagnóstico", fechado por padrão.
+- "Atualizar" é a ação primária e preserva aba e filtro; R6 reporta a rodada da
+  fila.
 
 ### 9.5 Conexão (`/admin/conexao`) — R1, R2, R3, R4, R5
 
@@ -390,10 +412,9 @@ tabela vazio.
   "Desconectar" (hold-button + diálogo).
 - Diagnóstico com lista de checagens (ícone + texto), último teste e "Testar
   conexão".
-- Webhook: URL em mono, botão copiar, campos assinados, token e link para o
-  painel da Meta/Zernio.
-- Checklist de ambiente (`onboarding-checklist`): 6 variáveis com chip ok/faltando.
-- `uptime-card` de 30 dias para webhooks recebidos.
+- **Avançado** (fechado): endereço do webhook, campos assinados, checklist de
+  ambiente (`onboarding-checklist`), `uptime-card` de 30 dias e últimos
+  webhooks. A tela padrão mostra conta, diagnóstico e a ação de testar.
 - **R5:** ajuda curta por modo de transporte, sem repetir o README.
 
 ---
@@ -415,7 +436,7 @@ tabela vazio.
 
 - [ ] Cabe nas regiões do §4; nav com 4 itens.
 - [ ] Uma ação primária; destrutivas com confirmação.
-- [ ] AA, foco visível, alvos de 44 px no mobile.
+- [ ] AA, foco visível, alvos de 48 px no mobile.
 - [ ] 320 px e 200% sem scroll horizontal.
 - [ ] Vazio, loading (<400 ms percebidos) e erro existem.
 - [ ] Copy pt-BR, sem emoji e sem exclamação.
@@ -423,14 +444,17 @@ tabela vazio.
 
 ### 10.3 Stitch
 
-O projeto Stitch anterior foi apagado. Ao regerar:
+O projeto Stitch atual é **MARICHAT — Painel v5** (`8856489533725603480`), com o
+design system **MARICHAT v5** (`8408865358604461237`). Prompts, saídas e capturas
+ficam em `.stitch/v5/`; os scripts `generate.mjs` e `edit.mjs` regeneram uma tela
+sem refazer o projeto.
 
-- Criar um projeto novo e vincular com `stitch config set project <id>`.
-- Enviar este `DESIGN.md` e o design system antes de gerar telas.
+- Antes de gerar, enviar este `DESIGN.md` e o design system do projeto.
 - Declarar no prompt apenas os componentes do §6.2 pelo nome (ex.: "status
   island", "uptime card"), sem repetir cores, fontes ou raios.
-- Desktop 1440 px, tema escuro fixo, 4 itens de nav, 6 regiões, gutter 24 px.
-- Pedir foco visível, erro inline, skeleton, vazio e alvos de 44 px.
+- Desktop 1440 px e mobile 390 px, tema escuro fixo, 4 itens de nav (abas no
+  rodapé no mobile), gutter 24 px.
+- Pedir foco visível, erro inline, skeleton, vazio e alvos de 48 px.
 - Limitar a 5–7 linhas/cards visíveis, no máximo 2 alertas, uma ação primária.
 - Nunca pedir hero, ilustração, emoji, 3D, partículas, carrossel, chat lateral,
   segundo acento, sidebar + topbar.

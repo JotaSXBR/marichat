@@ -55,8 +55,9 @@
   --font-heading: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
 
-  --text-display: 2.5rem;
-  --text-display--line-height: 2.75rem;
+  /* v5: corpo em 16 px e título que encolhe no celular. */
+  --text-display: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem);
+  --text-display--line-height: 1.15;
   --text-display--letter-spacing: -0.03em;
   --text-display--font-weight: 600;
 
@@ -65,24 +66,24 @@
   --text-section--letter-spacing: -0.02em;
   --text-section--font-weight: 600;
 
-  --text-title: 0.9375rem;
+  --text-title: 1rem;
   --text-title--line-height: 1.375rem;
   --text-title--font-weight: 500;
 
-  --text-body: 0.875rem;
-  --text-body--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
 
-  --text-label: 0.8125rem;
-  --text-label--line-height: 1.125rem;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.25rem;
   --text-label--font-weight: 500;
 
-  --text-micro: 0.6875rem;
-  --text-micro--line-height: 0.875rem;
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1rem;
   --text-micro--letter-spacing: 0.08em;
   --text-micro--font-weight: 600;
 
-  --text-mono: 0.8125rem;
-  --text-mono--line-height: 1.125rem;
+  --text-mono: 0.875rem;
+  --text-mono--line-height: 1.25rem;
 
   /* Movimento — §5.3 */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -134,6 +135,54 @@
       rgb(163 230 53 / 0.08),
       transparent 70%
     );
+  }
+
+  /* Abaixo de 768 px a tabela vira blocos rotulados (§4). */
+  @media (width < 48rem) {
+    .table-stack {
+      display: block;
+      width: 100%;
+    }
+
+    .table-stack thead {
+      display: none;
+    }
+
+    .table-stack tbody,
+    .table-stack tr,
+    .table-stack td {
+      display: block;
+      width: 100%;
+    }
+
+    .table-stack tr {
+      padding-block: 12px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+
+    .table-stack .table-stack-extra {
+      display: none;
+    }
+
+    .table-stack td {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      height: auto;
+      padding: 4px 20px;
+      white-space: normal;
+    }
+
+    .table-stack td::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      color: var(--muted-foreground);
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
   }
 }
 

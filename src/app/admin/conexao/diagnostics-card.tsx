@@ -133,8 +133,13 @@ export function DiagnosticsCard({ isZernio, test }: Props) {
         </CardHeader>
         <form
           action={isZernio ? testZernioConnection : testInstagramConnection}
+          className="max-sm:w-full"
         >
-          <Button type="submit" variant="secondary">
+          <Button
+            className="max-sm:h-12 max-sm:w-full"
+            type="submit"
+            variant="secondary"
+          >
             Testar conexão
           </Button>
         </form>

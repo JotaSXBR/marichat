@@ -33,7 +33,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         handle={account?.username ?? null}
       />
 
-      <main className="mx-auto max-w-[1240px] px-4 pt-32 pb-16" id="conteudo">
+      <main
+        className="mx-auto max-w-[1240px] px-4 pt-20 pb-36 md:pt-32 md:pb-16"
+        id="conteudo"
+      >
         {children}
       </main>
     </div>

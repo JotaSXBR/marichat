@@ -16,7 +16,6 @@ import {
  * e os cálculos ficam aqui, cada um com nome.
  */
 
-type AutomationStat = { isActive: boolean; total: number | string };
 type InteractionStat = { state: string; total: number | string };
 type JobStat = { status: string; total: number | string };
 
@@ -55,10 +54,6 @@ function sumJobs(rows: JobStat[]): Map<string, number> {
   return new Map(rows.map((row) => [row.status, Number(row.total)]));
 }
 
-function totalOf(rows: { total: number | string }[]): number {
-  return rows.reduce((sum, row) => sum + Number(row.total), 0);
-}
-
 export function tokenDaysLeft(
   account: Awaited<ReturnType<typeof getActiveAccount>>,
   dbNow: Date | null,
@@ -69,7 +64,6 @@ export function tokenDaysLeft(
 }
 
 function computeMetrics(params: {
-  automationStats: AutomationStat[];
   interactionStats: InteractionStat[];
   jobStats: JobStat[];
   account: Awaited<ReturnType<typeof getActiveAccount>>;
@@ -79,12 +73,8 @@ function computeMetrics(params: {
   const byJob = sumJobs(params.jobStats);
 
   return {
-    totalAutomations: totalOf(params.automationStats),
-    activeAutomations:
-      params.automationStats.find((row) => row.isActive)?.total ?? 0,
     waitingReply:
       (byState.get("accepted") ?? 0) + (byState.get("gate_pending") ?? 0),
-    linkSent: byState.get("link_sent") ?? 0,
     queuedJobs: byJob.get("pending") ?? 0,
     needAttention:
       (byState.get("failed") ?? 0) +
@@ -105,23 +95,18 @@ export async function loadDashboard() {
   const rawNow = nowRows[0]?.now ?? null;
   const dbNow = rawNow ? new Date(rawNow) : null;
 
-  const [automationStats, interactionStats, jobStats, recent, recentEvents] =
-    await Promise.all([
-      db
-        .select({ isActive: automations.isActive, total: count() })
-        .from(automations)
-        .groupBy(automations.isActive),
-      db
-        .select({ state: commentInteractions.state, total: count() })
-        .from(commentInteractions)
-        .groupBy(commentInteractions.state),
-      db
-        .select({ status: outboundMessages.status, total: count() })
-        .from(outboundMessages)
-        .groupBy(outboundMessages.status),
-      loadRecentInteractions(db),
-      loadRecentEvents(db),
-    ]);
+  const [interactionStats, jobStats, recent, recentEvents] = await Promise.all([
+    db
+      .select({ state: commentInteractions.state, total: count() })
+      .from(commentInteractions)
+      .groupBy(commentInteractions.state),
+    db
+      .select({ status: outboundMessages.status, total: count() })
+      .from(outboundMessages)
+      .groupBy(outboundMessages.status),
+    loadRecentInteractions(db),
+    loadRecentEvents(db),
+  ]);
 
   const [lastTickAt, webhookError] = await Promise.all([
     getAppStateValue<string>("last_tick_at"),
@@ -135,7 +120,6 @@ export async function loadDashboard() {
     lastTickAt,
     webhookError,
     ...computeMetrics({
-      automationStats,
       interactionStats,
       jobStats,
       account,

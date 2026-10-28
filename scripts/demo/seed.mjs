@@ -49,11 +49,11 @@ async function removePreviousDemo(sql, accountId) {
 async function insertAutomation(sql, accountId) {
   const [automation] = await sql`
     INSERT INTO automations (
-      account_id, name, keyword, keyword_normalized, media_id,
+      account_id, name, keyword, media_id,
       first_dm_text, second_dm_text, link_button_title,
       link_url, is_active
     ) VALUES (
-      ${accountId}, 'Demonstração local', 'quero', 'quero', NULL,
+      ${accountId}, 'Demonstração local', 'quero', NULL,
       'Que bom que você se interessou! Responda esta mensagem para receber o link.',
       'Aqui está o link que você pediu',
       'Abrir link', ${DEMO_LINK}, true

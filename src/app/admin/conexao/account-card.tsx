@@ -70,7 +70,7 @@ function AccountActions({ isZernio }: Pick<Props, "isZernio">) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {isZernio ? null : (
-        <Button asChild>
+        <Button asChild className="max-sm:h-12">
           <a href="/api/auth/instagram/start">
             <RefreshCwIcon aria-hidden />
             Reconectar
@@ -78,12 +78,15 @@ function AccountActions({ isZernio }: Pick<Props, "isZernio">) {
         </Button>
       )}
       <form action={isZernio ? registerZernioWebhook : resubscribeWebhooks}>
-        <Button type="submit" variant="secondary">
+        <Button className="max-sm:h-12" type="submit" variant="secondary">
           {isZernio ? "Registrar webhook na Zernio" : "Reassinar webhooks"}
         </Button>
       </form>
       <form action={disconnectInstagram}>
-        <ConfirmSubmitButton message="As automações param imediatamente e nenhuma mensagem será enviada até reconectar.">
+        <ConfirmSubmitButton
+          className="max-sm:h-12"
+          message="As automações param imediatamente e nenhuma mensagem será enviada até reconectar."
+        >
           Desconectar
         </ConfirmSubmitButton>
       </form>

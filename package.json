@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "demo:local": "node scripts/local-demo.mjs",
+    "a11y": "node scripts/a11y.mjs",
     "clean": "node scripts/clean.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -43,7 +44,9 @@
     }
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@next/env": "16.4.3",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
