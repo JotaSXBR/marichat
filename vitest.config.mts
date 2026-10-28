@@ -24,16 +24,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text-summary", "html"],
-      // Componentes de UI (shadcn/Kokonut) são cola visual, não regra de
-      // negócio: cobrar cobertura deles só empurra teste sem valor.
+      // Componentes de UI (shadcn/Kokonut) e as páginas/seções são cola
+      // visual, não regra de negócio: cobrar cobertura deles só empurra teste
+      // sem valor. Consultas e server actions (`.ts`) continuam medidos.
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/components/**"],
-      // Pisos logo abaixo do medido hoje (43/30/39/44): CI quebra se cair.
+      exclude: ["src/components/**", "src/app/**/*.tsx"],
+      // Pisos logo abaixo do medido hoje (53/46/61/54): CI quebra se cair.
       thresholds: {
-        statements: 42,
-        branches: 29,
-        functions: 38,
-        lines: 43,
+        statements: 51,
+        branches: 44,
+        functions: 59,
+        lines: 53,
       },
     },
   },
