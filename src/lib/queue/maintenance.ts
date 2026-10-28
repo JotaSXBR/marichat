@@ -93,10 +93,12 @@ export async function expireOverdueJobs(): Promise<number> {
  * Retenção: some com eventos antigos (o dedupe só precisa de ~7 dias), apaga
  * o texto dos comentários velhos e esvazia payloads de mensagens concluídas.
  */
-export async function cleanupOldData(): Promise<void> {
+/**
+ * Preenche o @ de interações antigas a partir do evento guardado — a Meta não
+ * deixa consultar perfil por ID. Idempotente e só toca em quem está vazio.
+ */
+export async function backfillCommenterUsernames(): Promise<void> {
   const db = getDb();
-  // Preenche o @ de interações antigas a partir do evento guardado (a Meta não
-  // deixa consultar perfil por ID). Só funciona enquanto o evento existir.
   await db.execute(sql`
     UPDATE comment_interactions ci
     SET commenter_username = we.payload #>> '{comment,author,username}',
@@ -106,6 +108,11 @@ export async function cleanupOldData(): Promise<void> {
       AND we.payload #>> '{comment,id}' = ci.comment_id
       AND we.payload #>> '{comment,author,username}' IS NOT NULL
   `);
+}
+
+export async function cleanupOldData(): Promise<void> {
+  const db = getDb();
+  await backfillCommenterUsernames();
   await db.execute(sql`
     DELETE FROM webhook_events
     WHERE received_at < now() - interval '30 days'

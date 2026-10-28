@@ -15,6 +15,7 @@ import {
   type ConnectionTestResult,
 } from "@/lib/instagram/diagnostics";
 import type { DrainSummary } from "@/lib/queue/drain";
+import { backfillCommenterUsernames } from "@/lib/queue/maintenance";
 
 /**
  * Consultas da página de Atividade. Ficam fora do componente para a página
@@ -136,6 +137,9 @@ export async function loadActivity({
   situation,
 }: { situation?: ActivityFilter } = {}) {
   const db = getDb();
+  // Quem comentou antes desta versão ganha o @ na primeira visita, sem esperar
+  // o ciclo de limpeza (que roda a cada 20h).
+  await backfillCommenterUsernames();
   const account = await getActiveAccount();
   // Hora do banco: mantém a página determinística e alinhada ao cron.
   const nowRows = await db.execute<{ now: Date | string }>(
