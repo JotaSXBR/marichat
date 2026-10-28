@@ -95,6 +95,17 @@ export async function expireOverdueJobs(): Promise<number> {
  */
 export async function cleanupOldData(): Promise<void> {
   const db = getDb();
+  // Preenche o @ de interações antigas a partir do evento guardado (a Meta não
+  // deixa consultar perfil por ID). Só funciona enquanto o evento existir.
+  await db.execute(sql`
+    UPDATE comment_interactions ci
+    SET commenter_username = we.payload #>> '{comment,author,username}',
+        updated_at = now()
+    FROM webhook_events we
+    WHERE ci.commenter_username IS NULL
+      AND we.payload #>> '{comment,id}' = ci.comment_id
+      AND we.payload #>> '{comment,author,username}' IS NOT NULL
+  `);
   await db.execute(sql`
     DELETE FROM webhook_events
     WHERE received_at < now() - interval '30 days'

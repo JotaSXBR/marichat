@@ -19,6 +19,7 @@ type CommentCreation = {
   commentId: string;
   mediaId: string;
   commenterId: string;
+  commenterUsername: string | null | undefined;
   commentText: string;
   commentCreatedAt: Date;
   replyDeadlineAt: Date;
@@ -39,6 +40,7 @@ async function createInteractionWithFirstDm(
           commentId: params.commentId,
           mediaId: params.mediaId,
           commenterIgsid: params.commenterId,
+          commenterUsername: params.commenterUsername?.trim() || null,
           commentText: params.commentText,
           commentCreatedAt: params.commentCreatedAt,
           replyDeadlineAt: params.replyDeadlineAt,
@@ -90,6 +92,11 @@ async function createInteractionWithFirstDm(
   }
 }
 
+/** @ do comentarista quando o webhook manda; a Meta não permite buscar por ID. */
+function usernameOf(value: CommentValue): string | null {
+  return value.from?.username ?? null;
+}
+
 /**
  * Comentário que casa com uma automação ativa: cria a interação e a primeira
  * DM (texto puro) na mesma transação.
@@ -137,6 +144,7 @@ export async function processComment(params: {
     commentId,
     mediaId,
     commenterId,
+    commenterUsername: usernameOf(value),
     commentText,
     commentCreatedAt,
     replyDeadlineAt,

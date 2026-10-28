@@ -93,8 +93,11 @@ function InteractionRow({
       <TableCell>{row.automationName ?? "—"}</TableCell>
       <TableCell className="max-w-[280px] whitespace-normal">
         {short(row.commentText)}
+        <span className="block text-label text-muted-foreground">
+          {row.commenterUsername ? `@${row.commenterUsername}` : row.commenter}
+        </span>
         <span className="block font-mono text-mono text-muted-soft">
-          {row.commenter} · mídia {row.mediaId}
+          {row.commenterUsername ? row.commenter : null} · mídia {row.mediaId}
         </span>
       </TableCell>
       <TableCell>
@@ -168,7 +171,9 @@ function JobRow({ row }: { row: ActivityData["jobs"][number] }) {
       </TableCell>
       <TableCell>{jobKindLabels[row.kind] ?? row.kind}</TableCell>
       <TableCell className="font-mono text-mono text-muted-foreground">
-        {row.commenter ?? "—"}
+        {row.commenterUsername
+          ? `@${row.commenterUsername}`
+          : (row.commenter ?? "—")}
       </TableCell>
       <TableCell>
         <Chip labels={jobStatusLabels} status={row.status} tones={jobTones} />

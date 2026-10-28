@@ -51,6 +51,7 @@ function loadInteractions(db: Db, situation?: ActivityFilter) {
     .select({
       id: commentInteractions.id,
       commenter: commentInteractions.commenterIgsid,
+      commenterUsername: commentInteractions.commenterUsername,
       commentText: commentInteractions.commentText,
       state: commentInteractions.state,
       followChecks: commentInteractions.followChecks,
@@ -73,6 +74,7 @@ function loadJobs(db: Db) {
       id: outboundMessages.id,
       interactionId: outboundMessages.interactionId,
       commenter: commentInteractions.commenterIgsid,
+      commenterUsername: commentInteractions.commenterUsername,
       kind: outboundMessages.kind,
       status: outboundMessages.status,
       attempts: outboundMessages.attempts,

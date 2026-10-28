@@ -1,0 +1,1 @@
+ALTER TABLE "comment_interactions" ADD COLUMN "commenter_username" text;

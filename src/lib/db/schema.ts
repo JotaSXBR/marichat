@@ -172,6 +172,11 @@ export const commentInteractions = pgTable(
     /** Instagram-scoped ID de quem comentou. */
     commenterIgsid: text("commenter_igsid").notNull(),
     /**
+     * @ do Instagram de quem comentou, como veio no webhook. NULL nas
+     * interações antigas (a Meta não permite consultar perfil por ID).
+     */
+    commenterUsername: text("commenter_username"),
+    /**
      * ID da conversa no provedor (hoje só a Zernio usa). A DM 2 é enviada
      * nessa conversa; na Meta o destinatário é o próprio IGSID.
      */

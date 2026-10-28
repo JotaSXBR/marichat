@@ -157,6 +157,7 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     expect(interaction.automationId).toBe(automation.id);
     expect(interaction.state).toBe("queued");
     expect(interaction.commenterIgsid).toBe("user-123");
+    expect(interaction.commenterUsername).toBe("pessoa");
     expect(interaction.commentCreatedAt.getTime()).toBe(time * 1000);
     // Prazo: 7 dias menos 2 minutos de margem.
     expect(interaction.replyDeadlineAt.getTime()).toBe(
