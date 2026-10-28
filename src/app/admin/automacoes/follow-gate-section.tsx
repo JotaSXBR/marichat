@@ -39,7 +39,7 @@ function FollowModeOptions({
   onFollowModeChange,
 }: Pick<Props, "followMode" | "onFollowModeChange">) {
   return (
-    <div className="space-y-2">
+    <div>
       {FOLLOW_MODES.map((mode) => {
         const option = FOLLOW_MODE_LABELS[mode];
         const selected = followMode === mode;
@@ -47,10 +47,8 @@ function FollowModeOptions({
           <label
             key={mode}
             className={cn(
-              "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors duration-150 ease-out",
-              selected
-                ? "border-line-strong bg-surface-hover"
-                : "border-line-subtle hover:bg-surface-hover",
+              "flex cursor-pointer items-start gap-3 border-b border-line-subtle py-3 transition-colors duration-150 ease-out last:border-b-0 hover:bg-surface-hover",
+              selected ? "text-foreground" : "text-muted-foreground",
             )}
           >
             <input
@@ -59,13 +57,13 @@ function FollowModeOptions({
               value={mode}
               checked={selected}
               onChange={() => onFollowModeChange(mode)}
-              className="mt-1"
+              className="mt-1 size-3.5 shrink-0 accent-foreground"
             />
             <span>
-              <span className="block text-label font-medium text-foreground">
+              <span className="block text-[0.875rem] font-medium text-foreground">
                 {option.title}
               </span>
-              <span className="block text-label text-muted-foreground">
+              <span className="block text-[0.8125rem] leading-5 text-muted-soft">
                 {option.description}
               </span>
             </span>

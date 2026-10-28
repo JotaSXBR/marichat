@@ -1,10 +1,4 @@
 import type { EnvRequirement } from "@/app/admin/conexao/connection-utils";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 
 type Props = {
@@ -14,28 +8,28 @@ type Props = {
 /** Checklist de variáveis, mostrando só presença (nunca o valor). */
 export function EnvChecklist({ requirements }: Props) {
   return (
-    <Card className="gap-4">
-      <CardHeader>
-        <CardTitle>Variáveis de ambiente</CardTitle>
-        <CardDescription>
-          Só a presença aparece aqui; os valores nunca são exibidos. Altere no
-          Coolify e reinicie a aplicação.
-        </CardDescription>
-      </CardHeader>
+    <section className="border-b border-border py-4">
+      <h2 className="text-[0.875rem] font-semibold text-foreground">
+        Variáveis de ambiente
+      </h2>
+      <p className="mt-1 text-[0.8125rem] leading-5 text-muted-soft">
+        Só a presença aparece aqui; os valores nunca são exibidos. Altere no
+        Coolify e reinicie a aplicação.
+      </p>
 
-      <ul className="grid gap-2 sm:grid-cols-2">
+      <ul className="mt-2 grid sm:grid-cols-2 sm:gap-x-8">
         {requirements.map(([name, description]) => {
           const present = Boolean(process.env[name]?.trim());
           return (
             <li
               key={name}
-              className="flex items-start justify-between gap-3 rounded-md border border-line-subtle px-3 py-2"
+              className="flex items-start justify-between gap-3 border-b border-line-subtle py-2.5"
             >
               <span className="min-w-0">
-                <code className="block truncate font-mono text-mono text-foreground">
+                <code className="block truncate font-mono text-[0.8125rem] text-foreground">
                   {name}
                 </code>
-                <span className="block text-label text-muted-foreground">
+                <span className="block text-[0.75rem] leading-[1.125rem] text-muted-soft">
                   {description}
                 </span>
               </span>
@@ -46,6 +40,6 @@ export function EnvChecklist({ requirements }: Props) {
           );
         })}
       </ul>
-    </Card>
+    </section>
   );
 }

@@ -1,20 +1,32 @@
+import {
+  testInstagramConnection,
+  testZernioConnection,
+} from "@/app/admin/conexao/actions";
 import { PageHeader } from "@/components/marichat/page-header";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   isZernio: boolean;
+  canTest: boolean;
 };
 
-/** R2: título, promessa de privacidade e o transporte ativo em mono. */
-export function ConnectionHeader({ isZernio }: Props) {
+/** R2: título, transporte ativo e a ação de teste onde ela pertence. */
+export function ConnectionHeader({ isZernio, canTest }: Props) {
   return (
     <PageHeader
-      description={
-        isZernio
-          ? "A conexão passa pela Zernio, que já tem um app aprovado pela Meta. O MARICHAT nunca vê sua senha do Instagram."
-          : "A conexão usa o login oficial da Meta. O MARICHAT nunca vê sua senha do Instagram."
+      action={
+        canTest ? (
+          <form
+            action={isZernio ? testZernioConnection : testInstagramConnection}
+          >
+            <Button size="lg" type="submit">
+              Testar conexão
+            </Button>
+          </form>
+        ) : undefined
       }
       meta={`transporte: ${isZernio ? "zernio" : "meta"}`}
-      title="Conexão com o Instagram"
+      title="Conexão"
     />
   );
 }

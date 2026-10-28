@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { Card } from "@/components/ui/card";
 import type { FollowMode } from "@/lib/follow-mode";
 import { cn } from "@/lib/utils";
 
@@ -39,17 +38,17 @@ function Bubble({
   return (
     <div
       className={cn(
-        "ml-auto max-w-[88%] overflow-hidden rounded-2xl rounded-br-md",
+        "ml-auto max-w-[88%] overflow-hidden rounded-xl rounded-br-sm",
         muted
           ? "border border-dashed border-line-subtle text-muted-soft"
-          : "bg-muted text-foreground",
+          : "bg-accent text-foreground",
       )}
     >
-      <div className="px-3 py-2 text-body break-words whitespace-pre-line">
+      <div className="px-3 py-2 text-[0.8125rem] leading-5 break-words whitespace-pre-line">
         {children}
       </div>
       {button ? (
-        <div className="border-t border-line-subtle px-3 py-2 text-center text-label font-medium text-primary">
+        <div className="mx-2 mb-2 rounded-sm border border-line-strong px-2 py-2 text-center text-[0.8125rem] font-medium text-foreground">
           {button}
         </div>
       ) : null}
@@ -63,32 +62,32 @@ export function DmPreview({ values }: { values: PreviewValues }) {
   const second = secondText(values);
 
   return (
-    <Card className="gap-4 p-5">
-      <div>
-        <h2 className="text-title text-foreground">Prévia da DM</h2>
-        <p className="text-label text-muted-foreground">
-          Como a conversa deve chegar.
-        </p>
-      </div>
+    <div className="rounded-lg border border-border bg-card p-4">
+      <h2 className="text-[0.875rem] font-semibold text-foreground">
+        Prévia da DM
+      </h2>
+      <p className="text-[0.75rem] text-muted-soft">
+        Como a conversa deve chegar.
+      </p>
 
-      <div className="overflow-hidden rounded-2xl border border-line-subtle bg-background/40">
-        <div className="flex items-center gap-3 border-b border-line-subtle px-4 py-3">
+      <div className="mt-3 overflow-hidden rounded-lg border border-line-subtle">
+        <div className="flex items-center gap-2.5 border-b border-line-subtle px-3 py-2.5">
           <span
             aria-hidden
-            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-label font-semibold text-primary-foreground"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground text-[0.6875rem] font-semibold text-background"
           >
             J
           </span>
           <div className="min-w-0">
-            <p className="truncate text-label font-medium text-foreground">
+            <p className="truncate text-[0.8125rem] font-medium text-foreground">
               @jotasx
             </p>
-            <p className="text-micro text-muted-soft">Instagram</p>
+            <p className="text-[0.6875rem] text-muted-soft">Instagram</p>
           </div>
         </div>
 
-        <div className="space-y-3 p-4">
-          <p className="text-center text-micro text-muted-soft">
+        <div className="space-y-2.5 p-3">
+          <p className="text-center text-[0.6875rem] text-muted-soft">
             Enviada como resposta ao comentário
           </p>
 
@@ -105,17 +104,17 @@ export function DmPreview({ values }: { values: PreviewValues }) {
               {second}
             </Bubble>
           ) : (
-            <Bubble muted button="Abrir link">
+            <Bubble button="Abrir link" muted>
               O texto da mensagem com o link aparece aqui.
             </Bubble>
           )}
         </div>
       </div>
 
-      <p className="text-label text-muted-foreground">
+      <p className="mt-3 text-[0.75rem] leading-[1.125rem] text-muted-soft">
         Prévia aproximada. O Instagram pode alterar a aparência e a ordem dos
         botões.
       </p>
-    </Card>
+    </div>
   );
 }

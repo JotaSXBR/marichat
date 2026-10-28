@@ -3,7 +3,6 @@ import { CheckCircle2Icon, PlugZapIcon, WorkflowIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
 export function SavedNotice() {
   return (
@@ -32,19 +31,31 @@ export function NoAccountNotice() {
   );
 }
 
+export function NoMatchesNotice() {
+  return (
+    <p className="border-b border-line-subtle py-4 text-sm text-muted-foreground">
+      Nenhuma automação com esse filtro.{" "}
+      <Link
+        className="text-foreground underline decoration-border underline-offset-[3px]"
+        href="/admin/automacoes"
+      >
+        Limpar
+      </Link>
+    </p>
+  );
+}
+
 export function EmptyAutomations() {
   return (
-    <Card className="items-center gap-4 py-12 text-center" variant="empty">
-      <WorkflowIcon aria-hidden className="size-6 text-muted-soft" />
-      <div>
-        <p className="text-title text-foreground">Nenhuma automação ainda</p>
-        <p className="mt-1 text-label text-muted-foreground">
-          A primeira leva menos de dois minutos.
-        </p>
-      </div>
-      <Button asChild>
+    <div className="border-b border-border py-10">
+      <WorkflowIcon aria-hidden className="size-5 text-muted-soft" />
+      <p className="mt-3 text-title text-foreground">Nenhuma automação ainda</p>
+      <p className="mt-1 text-[0.875rem] text-muted-foreground">
+        A primeira leva menos de dois minutos.
+      </p>
+      <Button asChild className="mt-4">
         <Link href="/admin/automacoes/nova">Criar automação</Link>
       </Button>
-    </Card>
+    </div>
   );
 }

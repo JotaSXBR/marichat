@@ -92,3 +92,25 @@ export function formatDateTime(value: Date | null): string {
     timeZone: "America/Sao_Paulo",
   }).format(value);
 }
+
+/** Por que a interação pede atenção, na voz do painel. */
+export const attentionReasons: Record<string, string> = {
+  failed: "A Meta recusou a resposta privada",
+  uncertain: "Sem resposta da Meta no envio",
+  expired: "Janela de 7 dias do comentário expirou",
+  gate_pending: "Link retido aguardando confirmação de seguidor",
+};
+
+/** Tempo relativo curto para a fila de atenção. */
+export function formatRelative(value: Date, now: Date): string {
+  const minutes = Math.max(
+    0,
+    Math.round((now.getTime() - value.getTime()) / 60_000),
+  );
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `há ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `há ${hours} h`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? "ontem" : `há ${days} dias`;
+}

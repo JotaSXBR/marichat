@@ -12,6 +12,7 @@ import {
   webhookTones,
   type ChipTone,
 } from "@/app/admin/labels";
+import { SectionHeading } from "@/components/marichat/page-header";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
@@ -21,6 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+type Interaction = ActivityData["interactions"][number];
+type Job = ActivityData["jobs"][number];
+type Event = ActivityData["events"][number];
 
 function short(value: string | null, max = 80): string {
   if (!value) return "—";
@@ -40,23 +45,25 @@ function Shell({
   children: ReactNode;
 }) {
   return (
-    <section className="border-t border-border pt-5">
-      <div className="pb-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h2 className="text-section text-foreground">{title}</h2>
-          <span className="font-mono text-micro text-muted-foreground">
-            {count} {count === 1 ? "registro" : "registros"}
-          </span>
-        </div>
-        <p className="mt-1 text-label text-muted-foreground">{description}</p>
-      </div>
+    <section className="pt-6">
+      <SectionHeading
+        meta={`${count} ${count === 1 ? "registro" : "registros"}`}
+        title={title}
+      />
+      <p className="mt-2 max-w-[70ch] text-[0.8125rem] leading-5 text-muted-soft">
+        {description}
+      </p>
       {children}
     </section>
   );
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-4 text-body text-muted-foreground">{children}</p>;
+  return (
+    <p className="border-b border-line-subtle py-4 text-sm text-muted-foreground">
+      {children}
+    </p>
+  );
 }
 
 function Chip({
@@ -75,39 +82,143 @@ function Chip({
   );
 }
 
-function InteractionRow({
-  row,
+function who(row: {
+  commenterUsername: string | null;
+  commenter: string | null;
+}) {
+  if (row.commenterUsername) return `@${row.commenterUsername}`;
+  return row.commenter ?? "—";
+}
+
+/** Duas linhas de dado pequeno: quem, e quando. */
+function Meta({ left, right }: { left: string; right: string }) {
+  return (
+    <div className="mt-0.5 flex items-baseline justify-between gap-3">
+      <span className="truncate font-mono text-[0.75rem] text-muted-soft">
+        {left}
+      </span>
+      <span className="font-mono text-[0.75rem] text-muted-soft">{right}</span>
+    </div>
+  );
+}
+
+function ErrorLine({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p className="mt-1 line-clamp-2 text-[0.75rem] leading-[1.125rem] text-danger">
+      {short(message, 120)}
+    </p>
+  );
+}
+
+type Column<T> = { head: string; cell: (row: T) => ReactNode };
+
+/** Tabela no desktop, registro de duas linhas no mobile (§4). */
+function Records<T>({
+  rows,
+  columns,
+  mobile,
+  keyOf,
 }: {
-  row: ActivityData["interactions"][number];
+  rows: T[];
+  columns: Column<T>[];
+  mobile: (row: T) => ReactNode;
+  keyOf: (row: T) => string;
 }) {
   return (
-    <TableRow>
-      <TableCell
-        className="font-mono text-mono text-muted-foreground"
-        data-label="Quando"
-      >
-        {formatDateTime(row.createdAt)}
-      </TableCell>
-      <TableCell data-label="Automação">{row.automationName ?? "—"}</TableCell>
-      <TableCell
-        className="max-w-[320px] whitespace-normal"
-        data-label="Comentário"
-      >
-        {short(row.commentText)}
-        <span className="mt-0.5 block text-label text-muted-foreground">
-          {row.commenterUsername
-            ? `@${row.commenterUsername}`
-            : "Autor não identificado"}
+    <>
+      <div className="hidden md:block">
+        <Table className="[&_td:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:first-child]:pl-0 [&_th:last-child]:pr-0">
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead key={column.head}>{column.head}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={keyOf(row)}>
+                {columns.map((column) => (
+                  <TableCell key={column.head}>{column.cell(row)}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <ul className="md:hidden">
+        {rows.map((row) => (
+          <li className="border-b border-line-subtle py-3" key={keyOf(row)}>
+            {mobile(row)}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+const MONO_CELL = "font-mono text-[0.75rem] text-muted-foreground";
+const ERROR_CELL =
+  "block max-w-[320px] font-mono text-[0.75rem] text-muted-soft";
+
+const interactionColumns: Column<Interaction>[] = [
+  {
+    head: "Quando",
+    cell: (row) => (
+      <span className={MONO_CELL}>{formatDateTime(row.createdAt)}</span>
+    ),
+  },
+  {
+    head: "Automação",
+    cell: (row) => (
+      <span className="font-medium text-foreground">
+        {row.automationName ?? "—"}
+      </span>
+    ),
+  },
+  {
+    head: "Comentário",
+    cell: (row) => (
+      <span className="block max-w-[360px]">
+        <span className="block truncate">{short(row.commentText)}</span>
+        <span className="block font-mono text-[0.75rem] text-muted-soft">
+          {who(row)}
         </span>
-      </TableCell>
-      <TableCell data-label="Situação">
+      </span>
+    ),
+  },
+  {
+    head: "Situação",
+    cell: (row) => (
+      <Chip
+        labels={interactionLabels}
+        status={row.state}
+        tones={interactionTones}
+      />
+    ),
+  },
+];
+
+function InteractionRecord({ row }: { row: Interaction }) {
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="min-w-0 truncate text-sm font-medium text-foreground">
+          {row.automationName ?? "—"}
+        </span>
         <Chip
           labels={interactionLabels}
           status={row.state}
           tones={interactionTones}
         />
-      </TableCell>
-    </TableRow>
+      </div>
+      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+        {short(row.commentText, 120)}
+      </p>
+      <Meta left={who(row)} right={formatDateTime(row.createdAt)} />
+    </>
   );
 }
 
@@ -115,7 +226,7 @@ export function InteractionsSection({
   rows,
   situation,
 }: {
-  rows: ActivityData["interactions"];
+  rows: Interaction[];
   situation?: ActivityFilter;
 }) {
   return (
@@ -131,60 +242,68 @@ export function InteractionsSection({
             : "Nenhum comentário recebido ainda."}
         </Empty>
       ) : (
-        <Table className="table-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Quando</TableHead>
-              <TableHead>Automação</TableHead>
-              <TableHead>Comentário</TableHead>
-              <TableHead>Situação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <InteractionRow key={row.id} row={row} />
-            ))}
-          </TableBody>
-        </Table>
+        <Records
+          columns={interactionColumns}
+          keyOf={(row) => row.id}
+          mobile={(row) => <InteractionRecord row={row} />}
+          rows={rows}
+        />
       )}
     </Shell>
   );
 }
 
-function JobRow({ row }: { row: ActivityData["jobs"][number] }) {
-  return (
-    <TableRow>
-      <TableCell
-        className="font-mono text-mono text-muted-foreground"
-        data-label="Atualizado"
-      >
-        {formatDateTime(row.updatedAt)}
-      </TableCell>
-      <TableCell data-label="Tipo">
+const jobColumns: Column<Job>[] = [
+  {
+    head: "Atualizado",
+    cell: (row) => (
+      <span className={MONO_CELL}>{formatDateTime(row.updatedAt)}</span>
+    ),
+  },
+  {
+    head: "Tipo",
+    cell: (row) => (
+      <span className="font-medium text-foreground">
         {jobKindLabels[row.kind] ?? row.kind}
-      </TableCell>
-      <TableCell
-        className="font-mono text-mono text-muted-foreground"
-        data-label="Quem"
-      >
-        {row.commenterUsername
-          ? `@${row.commenterUsername}`
-          : (row.commenter ?? "—")}
-      </TableCell>
-      <TableCell data-label="Situação">
-        <Chip labels={jobStatusLabels} status={row.status} tones={jobTones} />
-      </TableCell>
-      <TableCell
-        className="max-w-[320px] whitespace-normal text-label"
-        data-label="Erro"
-      >
+      </span>
+    ),
+  },
+  {
+    head: "Quem",
+    cell: (row) => <span className={MONO_CELL}>{who(row)}</span>,
+  },
+  {
+    head: "Situação",
+    cell: (row) => (
+      <Chip labels={jobStatusLabels} status={row.status} tones={jobTones} />
+    ),
+  },
+  {
+    head: "Erro",
+    cell: (row) => (
+      <span className={ERROR_CELL}>
         {row.errorMessage ? short(row.errorMessage, 120) : "—"}
-      </TableCell>
-    </TableRow>
+      </span>
+    ),
+  },
+];
+
+function JobRecord({ row }: { row: Job }) {
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="min-w-0 truncate text-sm font-medium text-foreground">
+          {jobKindLabels[row.kind] ?? row.kind}
+        </span>
+        <Chip labels={jobStatusLabels} status={row.status} tones={jobTones} />
+      </div>
+      <Meta left={who(row)} right={formatDateTime(row.updatedAt)} />
+      <ErrorLine message={row.errorMessage} />
+    </>
   );
 }
 
-export function JobsSection({ rows }: { rows: ActivityData["jobs"] }) {
+export function JobsSection({ rows }: { rows: Job[] }) {
   return (
     <Shell
       count={rows.length}
@@ -194,28 +313,72 @@ export function JobsSection({ rows }: { rows: ActivityData["jobs"] }) {
       {rows.length === 0 ? (
         <Empty>Nenhuma tarefa criada ainda.</Empty>
       ) : (
-        <Table className="table-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Atualizado</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Quem</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead>Erro</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <JobRow key={row.id} row={row} />
-            ))}
-          </TableBody>
-        </Table>
+        <Records
+          columns={jobColumns}
+          keyOf={(row) => row.id}
+          mobile={(row) => <JobRecord row={row} />}
+          rows={rows}
+        />
       )}
     </Shell>
   );
 }
 
-export function EventsSection({ rows }: { rows: ActivityData["events"] }) {
+const eventColumns: Column<Event>[] = [
+  {
+    head: "Quando",
+    cell: (row) => (
+      <span className={MONO_CELL}>{formatDateTime(row.receivedAt)}</span>
+    ),
+  },
+  {
+    head: "Campo",
+    cell: (row) => (
+      <span className="font-mono text-[0.75rem] text-foreground">
+        {row.field}
+      </span>
+    ),
+  },
+  {
+    head: "Situação",
+    cell: (row) => (
+      <Chip
+        labels={webhookStatusLabels}
+        status={row.status}
+        tones={webhookTones}
+      />
+    ),
+  },
+  {
+    head: "Erro",
+    cell: (row) => (
+      <span className={ERROR_CELL}>
+        {row.errorMessage ? short(row.errorMessage, 120) : "—"}
+      </span>
+    ),
+  },
+];
+
+function EventRecord({ row }: { row: Event }) {
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="font-mono text-[0.8125rem] text-foreground">
+          {row.field}
+        </span>
+        <Chip
+          labels={webhookStatusLabels}
+          status={row.status}
+          tones={webhookTones}
+        />
+      </div>
+      <Meta left={row.eventKey} right={formatDateTime(row.receivedAt)} />
+      <ErrorLine message={row.errorMessage} />
+    </>
+  );
+}
+
+export function EventsSection({ rows }: { rows: Event[] }) {
   return (
     <Shell
       count={rows.length}
@@ -225,42 +388,12 @@ export function EventsSection({ rows }: { rows: ActivityData["events"] }) {
       {rows.length === 0 ? (
         <Empty>Nenhum evento recebido ainda.</Empty>
       ) : (
-        <Table className="table-stack">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Quando</TableHead>
-              <TableHead>Campo</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead>Erro</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.eventKey}>
-                <TableCell
-                  className="font-mono text-mono text-muted-foreground"
-                  data-label="Quando"
-                >
-                  {formatDateTime(row.receivedAt)}
-                </TableCell>
-                <TableCell data-label="Campo">{row.field}</TableCell>
-                <TableCell data-label="Situação">
-                  <Chip
-                    labels={webhookStatusLabels}
-                    status={row.status}
-                    tones={webhookTones}
-                  />
-                </TableCell>
-                <TableCell
-                  className="max-w-[320px] whitespace-normal text-label"
-                  data-label="Erro"
-                >
-                  {row.errorMessage ? short(row.errorMessage, 120) : "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Records
+          columns={eventColumns}
+          keyOf={(row) => row.eventKey}
+          mobile={(row) => <EventRecord row={row} />}
+          rows={rows}
+        />
       )}
     </Shell>
   );

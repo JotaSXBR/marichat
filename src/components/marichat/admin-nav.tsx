@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { CommandPalette } from "@/components/marichat/command-palette";
+import { ThemeMenuItems } from "@/components/marichat/theme-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +46,7 @@ function initials(handle: string | null) {
 }
 
 /**
- * R1 — uma navegação só. Desktop: masthead de 64 px com régua e item ativo
+ * R1 — uma navegação só. Desktop: masthead de 56 px com régua e item ativo
  * sublinhado. Mobile: a mesma barra sem itens + 4 abas fixas (§3, §4).
  */
 export function AdminNav({
@@ -60,18 +61,18 @@ export function AdminNav({
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-[1240px] items-center gap-5 px-4 md:gap-8">
+        <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-4 px-4 md:gap-8 md:px-8">
           <Link
-            className="flex h-12 shrink-0 items-center gap-2.5 font-heading text-title font-semibold tracking-[0.06em] text-foreground"
+            className="flex h-11 shrink-0 items-center gap-2.5 text-[0.75rem] font-semibold tracking-[0.16em] text-foreground"
             href="/admin"
           >
-            <span aria-hidden className="size-2.5 rounded-sm bg-primary" />
+            <span aria-hidden className="size-2.5 bg-foreground" />
             MARICHAT
           </Link>
 
           <DesktopNav pathname={pathname} />
 
-          <div className="ml-auto flex min-w-0 items-center gap-3">
+          <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-4">
             <ConnectionStatus connected={connected} handle={handle} />
 
             <CommandPalette className="hidden w-56 lg:block" />
@@ -90,7 +91,7 @@ function DesktopNav({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Seções do painel"
-      className="hidden h-16 items-stretch gap-6 md:flex"
+      className="hidden h-14 items-stretch gap-6 md:flex"
     >
       {NAV_ITEMS.map((item) => {
         const active = isActive(pathname, item.href);
@@ -98,7 +99,7 @@ function DesktopNav({ pathname }: { pathname: string }) {
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex items-center text-label transition-colors duration-150 ease-out",
+              "relative flex items-center text-[0.875rem] transition-colors duration-150 ease-out",
               active
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground",
@@ -110,7 +111,7 @@ function DesktopNav({ pathname }: { pathname: string }) {
             {active ? (
               <span
                 aria-hidden
-                className="absolute inset-x-0 bottom-0 h-0.5 bg-primary"
+                className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground"
               />
             ) : null}
           </Link>
@@ -126,7 +127,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
       aria-label="Seções do painel"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid h-16 grid-cols-4">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           const Icon = item.icon;
@@ -135,18 +136,18 @@ function MobileTabBar({ pathname }: { pathname: string }) {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-micro font-medium tracking-normal transition-colors duration-150 ease-out",
-                  active ? "text-primary" : "text-muted-foreground",
+                  "relative flex h-full flex-col items-center justify-center gap-1.5 px-1 text-[0.75rem] transition-colors duration-150 ease-out",
+                  active ? "text-foreground" : "text-muted-foreground",
                 )}
                 href={item.href}
               >
                 {active ? (
                   <span
                     aria-hidden
-                    className="absolute inset-x-4 top-0 h-0.5 bg-primary"
+                    className="absolute inset-x-4 top-0 h-0.5 bg-foreground"
                   />
                 ) : null}
-                <Icon aria-hidden className="size-5" />
+                <Icon aria-hidden className="size-4" />
                 {item.label}
               </Link>
             </li>
@@ -166,7 +167,7 @@ function ConnectionStatus({
 }) {
   return (
     <Link
-      className="flex h-12 min-w-0 items-center gap-2 md:h-10"
+      className="flex h-11 min-w-0 items-center gap-2"
       href="/admin/conexao"
       title={
         handle
@@ -181,13 +182,8 @@ function ConnectionStatus({
           connected ? "bg-success" : handle ? "bg-warning" : "bg-line-strong",
         )}
       />
-      <span className="truncate text-label text-muted-foreground">
-        <span className="md:hidden">
-          {connected ? "Conectado" : handle ? "Atenção" : "Sem conta"}
-        </span>
-        <span className="hidden font-mono text-mono md:inline">
-          {handle ? `@${handle}` : "sem conta"}
-        </span>
+      <span className="truncate font-mono text-[0.75rem] text-muted-foreground">
+        {handle ? `@${handle}` : "sem conta"}
       </span>
     </Link>
   );
@@ -201,11 +197,11 @@ function AccountMenu({ handle }: { handle: string | null }) {
       <DropdownMenuTrigger asChild>
         <button
           aria-label={`Menu da conta · ${initials(handle)}`}
-          className="flex size-12 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:size-8"
+          className="flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:size-8"
           type="button"
         >
-          <Avatar className="size-8">
-            <AvatarFallback className="text-micro">
+          <Avatar className="size-7 border border-border">
+            <AvatarFallback className="text-[0.625rem]">
               {initials(handle)}
             </AvatarFallback>
           </Avatar>
@@ -233,6 +229,8 @@ function AccountMenu({ handle }: { handle: string | null }) {
           <Trash2 aria-hidden />
           Exclusão de dados
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <ThemeMenuItems />
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
           <User2 aria-hidden />

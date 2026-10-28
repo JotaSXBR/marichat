@@ -23,10 +23,10 @@ function ActiveToggle({
   onIsActiveChange,
 }: Pick<Props, "isActive" | "onIsActiveChange">) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-md border border-line-subtle px-3 py-3">
+    <div className="flex items-center justify-between gap-4 border-t border-line-subtle pt-4">
       <div>
-        <p className="text-label font-medium text-foreground">Ativa</p>
-        <p className="text-label text-muted-foreground">
+        <p className="text-[0.875rem] font-medium text-foreground">Ativa</p>
+        <p className="text-[0.8125rem] text-muted-soft">
           Responde a novos comentários agora.
         </p>
       </div>

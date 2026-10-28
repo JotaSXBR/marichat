@@ -1,68 +1,120 @@
 /*
- * Tokens do MARICHAT — DESIGN.md v5, §5.
+ * Tokens do MARICHAT — DESIGN.md v7.
  *
  * Este é o único arquivo do projeto com hex, rgb() ou px de cor.
  * Os nomes são os slots do shadcn/ui, para que todo componente instalado
  * pelo CLI (shadcn e Kokonut) herde o tema sem retrabalho.
  *
- * Tema escuro fixo: o painel não tem versão clara.
+ * Identidade "instrumento": papel quente e tinta, cor só para estado.
+ * Claro é o padrão do CSS; `.dark` troca o mesmo conjunto de slots. O tema
+ * inicial é escolhido antes da pintura por `theme-script` no layout raiz.
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* ---- slots do shadcn/ui ---- */
-  --background: #09090b;
-  --foreground: #fafafa;
+  --background: #f2efe7;
+  --foreground: #191712;
 
-  --card: rgb(255 255 255 / 0.04);
-  --card-foreground: #d4d4d8;
+  --card: #faf8f2;
+  --card-foreground: #191712;
 
-  --popover: #131315;
-  --popover-foreground: #fafafa;
+  --popover: #fdfbf6;
+  --popover-foreground: #191712;
 
-  --primary: #a3e635;
-  --primary-foreground: #0a0a0a;
+  --primary: #191712;
+  --primary-foreground: #f7f4ec;
 
-  --secondary: rgb(255 255 255 / 0.07);
-  --secondary-foreground: #fafafa;
+  --secondary: #e7e2d7;
+  --secondary-foreground: #191712;
 
-  --muted: #0f0f11;
-  --muted-foreground: #a1a1aa;
+  --muted: #fbf9f4;
+  --muted-foreground: #5c564d;
 
   /* No shadcn, `accent` é o hover de item — NÃO é o acento da marca. */
-  --accent: rgb(255 255 255 / 0.1);
-  --accent-foreground: #fafafa;
+  --accent: #e3ded2;
+  --accent-foreground: #191712;
+
+  --destructive: #b42318;
+
+  --border: #d8d2c5;
+  --input: #8c8375;
+  --ring: #191712;
+
+  --radius: 3px;
+
+  /* ---- extras do MARICHAT ---- */
+  --surface-hover: rgb(25 23 18 / 0.05);
+  --line-subtle: #e4dfd3;
+  --line-strong: #c4bcac;
+
+  --text-tertiary: #5c564d;
+  --text-muted: #6e675c;
+
+  --success: #0f6b3f;
+  --warning: #7a4f00;
+  --danger: #b42318;
+  --info: #0a5f84;
+
+  /* Botão do switch: claro nos dois temas, para não virar um furo no trilho. */
+  --switch-thumb: #fdfbf6;
+
+  --radius-control: 3px;
+  --radius-inner: 6px;
+  --radius-card: 6px;
+  --radius-frame: 10px;
+
+  /* Elevação: só overlay. Card não tem sombra (§5.3). */
+  --shadow-overlay: 0 24px 64px rgb(24 20 12 / 0.18);
+
+  /* Trilho de diagnóstico/prévia (§4, R5). */
+  --rail-width: 360px;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0b0b0a;
+  --foreground: #f3f0e9;
+
+  --card: #131210;
+  --card-foreground: #f3f0e9;
+
+  --popover: #171613;
+  --popover-foreground: #f3f0e9;
+
+  --primary: #f3f0e9;
+  --primary-foreground: #0b0b0a;
+
+  --secondary: #1b1917;
+  --secondary-foreground: #f3f0e9;
+
+  --muted: #141311;
+  --muted-foreground: #a6a099;
+
+  --accent: #1e1c19;
+  --accent-foreground: #f3f0e9;
 
   --destructive: #f87171;
 
-  --border: rgb(255 255 255 / 0.1);
-  --input: #66666d;
-  --ring: #a3e635;
+  --border: #2b2825;
+  --input: #6e6862;
+  --ring: #f3f0e9;
 
-  --radius: 8px;
+  --surface-hover: rgb(243 240 233 / 0.05);
+  --line-subtle: #201e1b;
+  --line-strong: #3a3632;
 
-  /* ---- extras do MARICHAT ---- */
-  --surface-hover: rgb(255 255 255 / 0.07);
-  --line-subtle: rgb(255 255 255 / 0.06);
-  --line-strong: rgb(255 255 255 / 0.18);
+  --text-tertiary: #a6a099;
+  --text-muted: #8c867f;
 
-  --text-tertiary: #a1a1aa;
-  --text-muted: #8a8a93;
-
-  --success: #34d399;
+  --success: #5fd08a;
   --warning: #fbbf24;
   --danger: #f87171;
-  --info: #60a5fa;
+  --info: #7dd3fc;
 
-  --radius-control: 8px;
-  --radius-inner: 10px;
-  --radius-card: 12px;
-  --radius-frame: 16px;
+  --switch-thumb: #f3f0e9;
 
-  /* Elevação: só overlay. Card não tem sombra (§5.3). */
-  --shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.45);
-
-  /* Trilho de diagnóstico/prévia (§4, R5). */
-  --rail-width: 380px;
+  --shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.55);
 }

@@ -4,22 +4,23 @@ import { Loader2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Chip de status â€” `badge` do shadcn adaptado (Â§6.2).
+ * Situação — DESIGN.md v7 §6.2.
  *
- * Estado nunca sÃ³ por cor (Â§2.7): todo chip tem ponto ou spinner e texto.
- * O ponto usa `currentColor`, entÃ£o acompanha o tom sem classe extra.
+ * Estado nunca só por cor (§2.7): todo estado tem ponto e texto. O ponto usa
+ * `currentColor`, então acompanha o tom sem classe extra. Sem pílula: é
+ * leitura de instrumento, não badge de SaaS.
  */
 const statusChipVariants = cva(
-  "inline-flex h-6 w-fit shrink-0 items-center gap-1.5 rounded-sm border px-2 text-micro tracking-[0.04em] whitespace-nowrap uppercase [&>svg]:size-3 [&>svg]:shrink-0",
+  "inline-flex w-fit shrink-0 items-center gap-1.5 text-label whitespace-nowrap [&>svg]:size-3 [&>svg]:shrink-0",
   {
     variants: {
       tone: {
-        success: "border-success/25 bg-success/12 text-success",
-        warning: "border-warning/25 bg-warning/12 text-warning",
-        danger: "border-danger/25 bg-danger/12 text-danger",
-        info: "border-info/25 bg-info/12 text-info",
-        neutral: "border-line-subtle bg-secondary text-muted-foreground",
-        loading: "border-info/25 bg-info/12 text-info",
+        success: "text-success",
+        warning: "text-warning",
+        danger: "text-danger",
+        info: "text-info",
+        neutral: "text-muted-foreground",
+        loading: "text-info",
       },
     },
     defaultVariants: {

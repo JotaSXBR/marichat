@@ -16,10 +16,11 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-surface-hover",
-        ghost: "text-foreground hover:bg-surface-hover hover:text-foreground",
+          "border-border bg-transparent text-foreground hover:border-line-strong hover:bg-surface-hover",
+        ghost:
+          "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
         destructive:
-          "border-danger/30 bg-danger/10 text-danger hover:border-danger/50 hover:bg-danger/20",
+          "border-danger/40 bg-transparent text-danger hover:border-danger hover:bg-danger/10",
       },
       size: {
         sm: "h-8 px-3",

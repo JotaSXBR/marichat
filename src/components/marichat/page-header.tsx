@@ -1,36 +1,52 @@
 import type { ReactNode } from "react";
 
 /**
- * R2 da v6: título, uma linha de contexto e a ação primária na mesma régua.
- * `meta` é dado do produto (contagem, transporte), em mono, nunca um eyebrow.
+ * R2 da v7: título, uma linha de dado real e a ação primária na mesma régua.
+ * `meta` é contagem ou transporte em mono — nunca um eyebrow decorativo.
  */
 export function PageHeader({
   title,
-  description,
-  action,
   meta,
+  action,
 }: {
   title: string;
-  description: ReactNode;
-  action?: ReactNode;
   meta?: ReactNode;
+  action?: ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between md:gap-8">
+    <header className="flex items-start gap-6 border-b border-border pb-5">
       <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <h1 className="text-display text-foreground text-balance">{title}</h1>
-          {meta ? (
-            <span className="font-mono text-mono text-muted-foreground">
-              {meta}
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-2 max-w-[62ch] text-pretty text-body text-muted-foreground">
-          {description}
-        </p>
+        <h1 className="text-display text-foreground text-balance">{title}</h1>
+        {meta ? (
+          <p className="mt-2 font-mono text-mono text-muted-foreground">
+            {meta}
+          </p>
+        ) : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? (
+        <div className="ml-auto flex shrink-0 items-center gap-2">{action}</div>
+      ) : null}
     </header>
+  );
+}
+
+/** Régua de seção: título, contagem em mono e link de saída à direita. */
+export function SectionHeading({
+  title,
+  meta,
+  action,
+}: {
+  title: string;
+  meta?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-border pb-2.5">
+      <h2 className="text-section text-foreground">{title}</h2>
+      {meta ? (
+        <span className="font-mono text-[0.75rem] text-muted-soft">{meta}</span>
+      ) : null}
+      {action ? <div className="ml-auto">{action}</div> : null}
+    </div>
   );
 }

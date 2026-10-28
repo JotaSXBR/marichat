@@ -1,6 +1,6 @@
 import "server-only";
 
-import { count, desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { getActiveAccount, getAppStateValue } from "@/lib/accounts";
 import { interactionFlow, type InteractionStat } from "@/app/admin/flow";
@@ -19,11 +19,37 @@ import {
 
 type JobStat = { status: string; total: number | string };
 
+/** Estados que pedem decisão humana, na ordem em que aparecem na tela. */
+const ATTENTION_STATES = [
+  "failed",
+  "uncertain",
+  "expired",
+  "gate_pending",
+] as const;
+
+function loadAttentionInteractions(db: ReturnType<typeof getDb>) {
+  return db
+    .select({
+      id: commentInteractions.id,
+      commenter: commentInteractions.commenterIgsid,
+      commenterUsername: commentInteractions.commenterUsername,
+      state: commentInteractions.state,
+      createdAt: commentInteractions.createdAt,
+      automationName: automations.name,
+    })
+    .from(commentInteractions)
+    .leftJoin(automations, eq(automations.id, commentInteractions.automationId))
+    .where(inArray(commentInteractions.state, [...ATTENTION_STATES]))
+    .orderBy(desc(commentInteractions.createdAt))
+    .limit(4);
+}
+
 function loadRecentInteractions(db: ReturnType<typeof getDb>) {
   return db
     .select({
       id: commentInteractions.id,
       commenter: commentInteractions.commenterIgsid,
+      commenterUsername: commentInteractions.commenterUsername,
       state: commentInteractions.state,
       createdAt: commentInteractions.createdAt,
       automationName: automations.name,
@@ -97,18 +123,20 @@ export async function loadDashboard() {
   const rawNow = nowRows[0]?.now ?? null;
   const dbNow = rawNow ? new Date(rawNow) : null;
 
-  const [interactionStats, jobStats, recent, recentEvents] = await Promise.all([
-    db
-      .select({ state: commentInteractions.state, total: count() })
-      .from(commentInteractions)
-      .groupBy(commentInteractions.state),
-    db
-      .select({ status: outboundMessages.status, total: count() })
-      .from(outboundMessages)
-      .groupBy(outboundMessages.status),
-    loadRecentInteractions(db),
-    loadRecentEvents(db),
-  ]);
+  const [interactionStats, jobStats, recent, attention, recentEvents] =
+    await Promise.all([
+      db
+        .select({ state: commentInteractions.state, total: count() })
+        .from(commentInteractions)
+        .groupBy(commentInteractions.state),
+      db
+        .select({ status: outboundMessages.status, total: count() })
+        .from(outboundMessages)
+        .groupBy(outboundMessages.status),
+      loadRecentInteractions(db),
+      loadAttentionInteractions(db),
+      loadRecentEvents(db),
+    ]);
 
   const [lastTickAt, webhookError] = await Promise.all([
     getAppStateValue<string>("last_tick_at"),
@@ -118,9 +146,11 @@ export async function loadDashboard() {
   return {
     account,
     recent,
+    attention,
     recentEvents,
     lastTickAt,
     webhookError,
+    dbNow,
     ...computeMetrics({
       interactionStats,
       jobStats,

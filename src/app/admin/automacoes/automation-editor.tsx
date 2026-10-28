@@ -34,7 +34,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { StatusChip } from "@/components/ui/status-chip";
 import {
   DEFAULT_FOLLOW_DIRECT_TEXT,
   DEFAULT_FOLLOW_OPTIONAL_TEXT,
@@ -87,51 +86,58 @@ function previewFromForm(data: FormData): PreviewValues {
 /** R2: voltar, situação e a ação primária. */
 function EditorHeader({
   isEditing,
-  isActive,
+  dirty,
   pending,
   onBack,
 }: {
   isEditing: boolean;
-  isActive: boolean;
+  dirty: boolean;
   pending: boolean;
   onBack: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
+    <div>
+      <button
+        className="flex min-h-11 items-center gap-2 text-label text-muted-foreground hover:text-foreground"
+        onClick={onBack}
+        type="button"
+      >
+        <ArrowLeftIcon aria-hidden className="size-3.5" />
+        Automações
+      </button>
+
+      <div className="mt-1 flex items-start gap-6 border-b border-border pb-5">
+        <div className="min-w-0">
           <h1 className="text-display text-foreground text-balance">
             {isEditing ? "Editar automação" : "Nova automação"}
           </h1>
-          <StatusChip tone={isActive ? "success" : "neutral"}>
-            {isActive ? "Ativa" : "Desativada"}
-          </StatusChip>
+          <p className="mt-2 font-mono text-mono text-muted-foreground">
+            {isEditing
+              ? dirty
+                ? "alterações não salvas"
+                : "salva"
+              : "rascunho · nada foi salvo ainda"}
+          </p>
         </div>
-        <p className="max-w-2xl text-body text-muted-foreground">
-          {isEditing
-            ? "O texto da primeira DM fica congelado no comentário; a porta de seguidor e os textos do link valem para os próximos envios."
-            : "Defina o comentário que dispara a conversa e as duas mensagens."}
-        </p>
-      </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          className="h-12 md:h-10"
-          type="button"
-          variant="ghost"
-          onClick={onBack}
-        >
-          <ArrowLeftIcon aria-hidden />
-          Voltar
-        </Button>
-        <Button
-          type="submit"
-          className="hidden md:inline-flex"
-          form={FORM_ID}
-          loading={pending}
-        >
-          Salvar automação
-        </Button>
+        <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
+          <Button
+            className="h-10"
+            type="button"
+            variant="secondary"
+            onClick={onBack}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            className="h-10"
+            form={FORM_ID}
+            loading={pending}
+          >
+            Salvar automação
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -158,12 +164,7 @@ function EditorFields({ error, ...props }: FieldsProps) {
   const needsFollowButton = needsCheck || props.followMode === "optional";
 
   return (
-    <form
-      id={FORM_ID}
-      action={props.formAction}
-      onInput={props.onInput}
-      className="space-y-4"
-    >
+    <form id={FORM_ID} action={props.formAction} onInput={props.onInput}>
       {props.initial?.id ? (
         <input type="hidden" name="id" value={props.initial.id} />
       ) : null}
@@ -245,6 +246,23 @@ function useUnsavedWarning(dirty: boolean) {
   }, [dirty]);
 }
 
+/** Ação de salvar na zona do polegar, acima das abas (§4). */
+function EditorSaveBar({ pending }: { pending: boolean }) {
+  return (
+    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background p-3 md:hidden">
+      <Button
+        className="w-full"
+        form={FORM_ID}
+        loading={pending}
+        size="lg"
+        type="submit"
+      >
+        Salvar automação
+      </Button>
+    </div>
+  );
+}
+
 export function AutomationEditor({ initial, mediaOptions, mediaError }: Props) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<
@@ -276,13 +294,13 @@ export function AutomationEditor({ initial, mediaOptions, mediaError }: Props) {
   return (
     <div className="space-y-6">
       <EditorHeader
+        dirty={dirty}
         isEditing={Boolean(initial?.id)}
-        isActive={isActive}
         pending={pending}
         onBack={goBack}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start xl:gap-12">
         <EditorFields
           initial={initial}
           errors={state?.fieldErrors ?? {}}
@@ -300,22 +318,12 @@ export function AutomationEditor({ initial, mediaOptions, mediaError }: Props) {
           error={state?.error}
         />
 
-        <aside className="xl:sticky xl:top-24">
+        <aside className="min-w-0 xl:sticky xl:top-20">
           <DmPreview values={preview} />
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background p-3 md:hidden">
-        <Button
-          className="w-full"
-          form={FORM_ID}
-          loading={pending}
-          size="lg"
-          type="submit"
-        >
-          Salvar automação
-        </Button>
-      </div>
+      <EditorSaveBar pending={pending} />
 
       <DiscardDialog open={confirming} onOpenChange={setConfirming} />
     </div>

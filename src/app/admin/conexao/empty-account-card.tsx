@@ -1,12 +1,7 @@
 import { ZernioAccountPicker } from "@/app/admin/conexao/zernio-account-picker";
 import type { ZernioAccount } from "@/lib/zernio/client";
+import { SectionHeading } from "@/components/marichat/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Link2Icon } from "lucide-react";
 
 type Props = {
@@ -22,29 +17,29 @@ export function EmptyAccountCard({
   zernioListError,
 }: Props) {
   return (
-    <Card className="items-start gap-4">
-      <CardHeader>
-        <CardTitle>Nenhuma conta conectada</CardTitle>
-        <CardDescription>
-          {isZernio
-            ? "A conta do Instagram precisa estar conectada primeiro no painel da Zernio; depois escolha abaixo qual usar."
-            : "Use uma conta profissional do Instagram (criador ou empresa) com acesso às mensagens."}
-        </CardDescription>
-      </CardHeader>
+    <section aria-label="Conta atual" className="min-w-0">
+      <SectionHeading title="Conta atual" />
+      <p className="mt-3 text-[0.875rem] leading-6 text-muted-foreground">
+        {isZernio
+          ? "A conta do Instagram precisa estar conectada primeiro no painel da Zernio; depois escolha abaixo qual usar."
+          : "Use uma conta profissional do Instagram (criador ou empresa) com acesso às mensagens. O MARICHAT nunca vê sua senha."}
+      </p>
 
-      {isZernio ? (
-        <ZernioAccountPicker
-          accounts={zernioAccounts}
-          listError={zernioListError}
-        />
-      ) : (
-        <Button asChild>
-          <a href="/api/auth/instagram/start">
-            <Link2Icon aria-hidden />
-            Conectar Instagram
-          </a>
-        </Button>
-      )}
-    </Card>
+      <div className="mt-4">
+        {isZernio ? (
+          <ZernioAccountPicker
+            accounts={zernioAccounts}
+            listError={zernioListError}
+          />
+        ) : (
+          <Button asChild size="lg">
+            <a href="/api/auth/instagram/start">
+              <Link2Icon aria-hidden />
+              Conectar Instagram
+            </a>
+          </Button>
+        )}
+      </div>
+    </section>
   );
 }

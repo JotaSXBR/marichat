@@ -1,23 +1,24 @@
 import { connection } from "next/server";
-import { ChevronDownIcon } from "lucide-react";
+import Link from "next/link";
 
 import { isActivityFilter, loadActivity } from "@/app/admin/atividade/data";
 import {
   ActivityAlerts,
+  ActivityDiagnostics,
   ActivityFilterBar,
-  ActivityHeader,
-  ActivityStats,
   ActivityTabs,
-  ConnectionTestNote,
   isActivityTab,
+  type ActivityTab,
 } from "@/app/admin/atividade/sections";
 import {
   EventsSection,
   InteractionsSection,
   JobsSection,
 } from "@/app/admin/atividade/tables";
-import { StatusToast } from "@/app/admin/status-toast";
+import { PageHeader } from "@/components/marichat/page-header";
+import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
+import type { ActivityFilter } from "@/app/admin/atividade/data";
 
 /**
  * Página de diagnóstico: mostra o que o webhook gravou, o que a fila tentou
@@ -27,30 +28,49 @@ import { requireAdmin } from "@/lib/auth";
 
 export const instant = false;
 
+/** Aba e situação vivem na URL; valor inválido cai no padrão. */
+function readQuery(params: Record<string, string | string[] | undefined>) {
+  const rawTab = typeof params.aba === "string" ? params.aba : undefined;
+  const rawSituation =
+    typeof params.situacao === "string" ? params.situacao : undefined;
+  const tab: ActivityTab = isActivityTab(rawTab) ? rawTab : "interacoes";
+  const situation: ActivityFilter | undefined = isActivityFilter(rawSituation)
+    ? rawSituation
+    : undefined;
+
+  const query = new URLSearchParams();
+  if (tab !== "interacoes") query.set("aba", tab);
+  if (tab === "interacoes" && situation) query.set("situacao", situation);
+
+  return {
+    tab,
+    situation,
+    refreshHref: query.size
+      ? `/admin/atividade?${query.toString()}`
+      : "/admin/atividade",
+  };
+}
+
 export default async function ActivityPage({
   searchParams,
 }: PageProps<"/admin/atividade">) {
   await connection();
   await requireAdmin();
 
-  const params = await searchParams;
-  const rawFilter =
-    typeof params.situacao === "string" ? params.situacao : undefined;
-  const situation = isActivityFilter(rawFilter) ? rawFilter : undefined;
-  const rawTab = typeof params.aba === "string" ? params.aba : undefined;
-  const tab = isActivityTab(rawTab) ? rawTab : "interacoes";
+  const { tab, situation, refreshHref } = readQuery(await searchParams);
   const data = await loadActivity(situation ? { situation } : {});
 
-  const query = new URLSearchParams();
-  if (tab !== "interacoes") query.set("aba", tab);
-  if (tab === "interacoes" && situation) query.set("situacao", situation);
-  const refreshHref = query.size
-    ? `/admin/atividade?${query.toString()}`
-    : "/admin/atividade";
-
   return (
-    <div className="space-y-8">
-      <ActivityHeader href={refreshHref} />
+    <div className="space-y-6">
+      <PageHeader
+        action={
+          <Button asChild size="lg" variant="secondary">
+            <Link href={refreshHref}>Atualizar</Link>
+          </Button>
+        }
+        meta={`${data.interactions.length} interações · ${data.jobs.length} envios · ${data.events.length} webhooks`}
+        title="Atividade"
+      />
 
       <ActivityAlerts
         account={data.account}
@@ -74,36 +94,7 @@ export default async function ActivityPage({
       {tab === "envios" ? <JobsSection rows={data.jobs} /> : null}
       {tab === "webhooks" ? <EventsSection rows={data.events} /> : null}
 
-      <details className="group border-t border-border">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
-          Ver diagnóstico
-          <ChevronDownIcon
-            aria-hidden
-            className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-180"
-          />
-        </summary>
-        <div className="space-y-4 pb-2">
-          <ActivityStats
-            drainSummary={data.drainSummary}
-            lastDrainAt={data.lastDrainAt}
-            lastSendAt={data.lastSendAt}
-            lastTickAt={data.lastTickAt}
-          />
-
-          {data.connectionTest ? (
-            <ConnectionTestNote result={data.connectionTest} />
-          ) : null}
-        </div>
-      </details>
-
-      <StatusToast
-        task={{
-          id: "activity",
-          label: "Fila",
-          detail: `Último dreno: ${data.drainSummary}`,
-          status: "done",
-        }}
-      />
+      <ActivityDiagnostics data={data} />
     </div>
   );
 }

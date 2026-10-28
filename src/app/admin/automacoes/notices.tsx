@@ -2,12 +2,13 @@ import Link from "next/link";
 import { PlugZapIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHeader } from "@/components/marichat/page-header";
 
 /** Bloco exibido quando ainda não há conta conectada. */
 export function ConnectAccountNotice() {
   return (
     <div className="space-y-6">
-      <h1 className="text-display text-foreground text-balance">Editar automação</h1>
+      <PageHeader title="Editar automação" />
       <Alert variant="warning">
         <PlugZapIcon aria-hidden />
         <AlertTitle>Conecte o Instagram primeiro</AlertTitle>

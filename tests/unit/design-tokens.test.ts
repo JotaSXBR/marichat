@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Portão do DESIGN.md: os tokens são a única fonte de cor (§5) e o contraste
- * da tabela §5.2 precisa continuar valendo. Roda sem navegador: calcula o
- * mesmo que o axe mediria no fundo real.
+ * da tabela §5.2 precisa continuar valendo nos dois temas. Roda sem navegador:
+ * calcula o mesmo que o axe mediria no fundo real.
  */
 
 const srcDir = path.join(process.cwd(), "src");
@@ -17,8 +17,11 @@ const tokensCss = readFileSync(
 
 type Rgb = [number, number, number];
 
-function token(name: string): string {
-  const match = new RegExp(`--${name}:\\s*([^;]+);`).exec(tokensCss);
+const lightBlock = /:root\s*\{([\s\S]*?)\}/.exec(tokensCss)?.[1] ?? "";
+const darkBlock = /\.dark\s*\{([\s\S]*?)\}/.exec(tokensCss)?.[1] ?? "";
+
+function token(name: string, block: string): string {
+  const match = new RegExp(`--${name}:\\s*([^;]+);`).exec(block);
   if (!match?.[1]) throw new Error(`token --${name} não encontrado`);
   return match[1].trim();
 }
@@ -72,181 +75,99 @@ function contrast(a: Rgb, b: Rgb): number {
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
 }
 
-const canvas = parseColor(token("background")).rgb;
-const glass = composite(parseColor(token("card")), canvas);
-
-type Pair = {
-  label: string;
-  fg: string;
-  bg: "canvas" | "glass" | "primary";
-  expected: number;
-  min: number;
-};
-
-const backgrounds = {
-  canvas,
-  glass,
-  primary: parseColor(token("primary")).rgb,
-};
+type Pair = { label: string; fg: string; bg: string; min: number };
 
 const pairs: Pair[] = [
+  { label: "foreground no canvas", fg: "foreground", bg: "background", min: 7 },
+  { label: "foreground no card", fg: "foreground", bg: "card", min: 7 },
   {
-    label: "foreground no canvas",
-    fg: "foreground",
-    bg: "canvas",
-    expected: 19.06,
-    min: 7,
-  },
-  {
-    label: "foreground no vidro",
-    fg: "foreground",
-    bg: "glass",
-    expected: 17.78,
-    min: 7,
-  },
-  {
-    label: "card-foreground no canvas",
+    label: "card-foreground no card",
     fg: "card-foreground",
-    bg: "canvas",
-    expected: 13.46,
-    min: 7,
-  },
-  {
-    label: "card-foreground no vidro",
-    fg: "card-foreground",
-    bg: "glass",
-    expected: 12.56,
+    bg: "card",
     min: 7,
   },
   {
     label: "muted-foreground no canvas",
     fg: "muted-foreground",
-    bg: "canvas",
-    expected: 7.76,
+    bg: "background",
     min: 4.5,
   },
   {
-    label: "muted-foreground no vidro",
+    label: "muted-foreground no card",
     fg: "muted-foreground",
-    bg: "glass",
-    expected: 7.24,
+    bg: "card",
     min: 4.5,
   },
   {
     label: "text-muted no canvas",
     fg: "text-muted",
-    bg: "canvas",
-    expected: 5.81,
+    bg: "background",
     min: 4.5,
   },
-  {
-    label: "text-muted no vidro",
-    fg: "text-muted",
-    bg: "glass",
-    expected: 5.42,
-    min: 4.5,
-  },
-  {
-    label: "primary no canvas",
-    fg: "primary",
-    bg: "canvas",
-    expected: 13.19,
-    min: 4.5,
-  },
-  {
-    label: "primary no vidro",
-    fg: "primary",
-    bg: "glass",
-    expected: 12.31,
-    min: 4.5,
-  },
+  { label: "text-muted no card", fg: "text-muted", bg: "card", min: 4.5 },
+  { label: "primary no canvas", fg: "primary", bg: "background", min: 4.5 },
   {
     label: "primary-foreground no primary",
     fg: "primary-foreground",
     bg: "primary",
-    expected: 13.13,
     min: 4.5,
   },
-  {
-    label: "success no canvas",
-    fg: "success",
-    bg: "canvas",
-    expected: 10.35,
-    min: 4.5,
-  },
-  {
-    label: "success no vidro",
-    fg: "success",
-    bg: "glass",
-    expected: 9.65,
-    min: 4.5,
-  },
-  {
-    label: "warning no canvas",
-    fg: "warning",
-    bg: "canvas",
-    expected: 11.92,
-    min: 4.5,
-  },
-  {
-    label: "warning no vidro",
-    fg: "warning",
-    bg: "glass",
-    expected: 11.12,
-    min: 4.5,
-  },
-  {
-    label: "danger no canvas",
-    fg: "danger",
-    bg: "canvas",
-    expected: 7.19,
-    min: 4.5,
-  },
-  {
-    label: "danger no vidro",
-    fg: "danger",
-    bg: "glass",
-    expected: 6.71,
-    min: 4.5,
-  },
-  {
-    label: "info no canvas",
-    fg: "info",
-    bg: "canvas",
-    expected: 7.83,
-    min: 4.5,
-  },
-  { label: "info no vidro", fg: "info", bg: "glass", expected: 7.3, min: 4.5 },
-  {
-    label: "input no canvas (borda)",
-    fg: "input",
-    bg: "canvas",
-    expected: 3.49,
-    min: 3,
-  },
-  {
-    label: "input no vidro (borda)",
-    fg: "input",
-    bg: "glass",
-    expected: 3.26,
-    min: 3,
-  },
-  {
-    label: "ring no canvas (foco)",
-    fg: "ring",
-    bg: "canvas",
-    expected: 13.19,
-    min: 3,
-  },
+  { label: "success no canvas", fg: "success", bg: "background", min: 4.5 },
+  { label: "success no card", fg: "success", bg: "card", min: 4.5 },
+  { label: "warning no canvas", fg: "warning", bg: "background", min: 4.5 },
+  { label: "warning no card", fg: "warning", bg: "card", min: 4.5 },
+  { label: "danger no canvas", fg: "danger", bg: "background", min: 4.5 },
+  { label: "danger no card", fg: "danger", bg: "card", min: 4.5 },
+  { label: "info no canvas", fg: "info", bg: "background", min: 4.5 },
+  { label: "info no card", fg: "info", bg: "card", min: 4.5 },
+  { label: "input no canvas (borda)", fg: "input", bg: "background", min: 3 },
+  { label: "input no card (borda)", fg: "input", bg: "card", min: 3 },
+  { label: "ring no canvas (foco)", fg: "ring", bg: "background", min: 3 },
 ];
 
+const themes = [
+  { name: "claro", block: lightBlock },
+  { name: "escuro", block: darkBlock },
+];
+
+const stateColors = ["success", "warning", "danger", "info"];
+
+const tintCases = themes.flatMap((theme) =>
+  stateColors.map((name) => ({ name, theme: theme.name, block: theme.block })),
+);
+
 describe("tokens de cor (DESIGN.md §5.2)", () => {
-  it.each(pairs)(
-    "$label fica em $expected:1",
-    ({ label, fg, bg, expected, min }) => {
-      const measured = contrast(parseColor(token(fg)).rgb, backgrounds[bg]);
-      expect(measured, label).toBeGreaterThanOrEqual(min);
-      expect(Math.abs(measured - expected), label).toBeLessThan(0.05);
+  it.each(themes)("o tema $name define os slots", ({ block }) => {
+    expect(token("background", block)).toBeTruthy();
+    expect(token("foreground", block)).toBeTruthy();
+    expect(token("card", block)).toBeTruthy();
+  });
+
+  it.each(
+    themes.flatMap((theme) =>
+      pairs.map((pair) => ({ ...pair, theme: theme.name, block: theme.block })),
+    ),
+  )("$theme: $label ≥ $min:1", ({ fg, bg, block, min }) => {
+    const measured = contrast(
+      parseColor(token(fg, block)).rgb,
+      composite(parseColor(token(bg, block)), [255, 255, 255]),
+    );
+    expect(measured).toBeGreaterThanOrEqual(min);
+  });
+
+  // Chips e alertas pintam o texto de estado sobre 12% da mesma cor no fundo.
+  it.each(tintCases)(
+    "$theme: $name sobre o próprio tint ≥ 4.5:1",
+    ({ name, theme, block }) => {
+      const color = parseColor(token(name, block)).rgb;
+      for (const surface of ["background", "card"]) {
+        const canvas = parseColor(token(surface, block)).rgb;
+        const tint = composite({ rgb: color, alpha: 0.12 }, canvas);
+        expect(
+          contrast(color, tint),
+          `${theme}: ${name} no ${surface}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     },
   );
 

@@ -129,34 +129,36 @@ export function LinkMessageSection({ initial, errors }: Props) {
         <FieldError message={errors.secondDmText} />
       </div>
 
-      <div>
-        <Label htmlFor="linkButtonTitle" hint="Até 20 caracteres.">
-          Texto do botão do link
-        </Label>
-        <Input
-          id="linkButtonTitle"
-          name="linkButtonTitle"
-          maxLength={20}
-          defaultValue={initial?.linkButtonTitle ?? "Abrir link"}
-          aria-invalid={errors.linkButtonTitle ? true : undefined}
-        />
-        <FieldError message={errors.linkButtonTitle} />
-      </div>
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div>
+          <Label htmlFor="linkButtonTitle" hint="Até 20 caracteres.">
+            Texto do botão do link
+          </Label>
+          <Input
+            id="linkButtonTitle"
+            name="linkButtonTitle"
+            maxLength={20}
+            defaultValue={initial?.linkButtonTitle ?? "Abrir link"}
+            aria-invalid={errors.linkButtonTitle ? true : undefined}
+          />
+          <FieldError message={errors.linkButtonTitle} />
+        </div>
 
-      <div>
-        <Label htmlFor="linkUrl" hint="Somente endereços https://.">
-          URL do link
-        </Label>
-        <Input
-          id="linkUrl"
-          name="linkUrl"
-          type="url"
-          defaultValue={initial?.linkUrl ?? ""}
-          className="font-mono"
-          placeholder="https://www.exemplo.com"
-          aria-invalid={errors.linkUrl ? true : undefined}
-        />
-        <FieldError message={errors.linkUrl} />
+        <div>
+          <Label htmlFor="linkUrl" hint="Somente endereços https://.">
+            URL do link
+          </Label>
+          <Input
+            id="linkUrl"
+            name="linkUrl"
+            type="url"
+            defaultValue={initial?.linkUrl ?? ""}
+            className="font-mono"
+            placeholder="https://www.exemplo.com"
+            aria-invalid={errors.linkUrl ? true : undefined}
+          />
+          <FieldError message={errors.linkUrl} />
+        </div>
       </div>
     </FormSection>
   );

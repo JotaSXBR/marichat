@@ -8,15 +8,17 @@ import {
   ShieldAlertIcon,
 } from "lucide-react";
 
+import type { DashboardData } from "@/app/admin/dashboard";
 import {
+  attentionReasons,
   formatDateTime,
+  formatRelative,
   interactionLabels,
   interactionTones,
 } from "@/app/admin/labels";
-import type { DashboardData } from "@/app/admin/dashboard";
+import { SectionHeading } from "@/components/marichat/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/marichat/page-header";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
@@ -26,26 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-
-/* ------------------------------------------------------------------ R2 */
-
-export function DashboardHeader() {
-  return (
-    <PageHeader
-      action={
-        <Button asChild className="hidden md:inline-flex" size="lg">
-          <Link href="/admin/automacoes/nova">
-            <PlusIcon aria-hidden />
-            Nova automação
-          </Link>
-        </Button>
-      }
-      description="Comentário com a palavra-chave → DM pedindo resposta → link."
-      title="Visão geral"
-    />
-  );
-}
 
 /* ------------------------------------------------------------------ R3 */
 
@@ -138,7 +120,7 @@ export function DashboardAlerts({
   if (alerts.length === 0) return null;
 
   return (
-    <section aria-label="Avisos" className="grid gap-3">
+    <section aria-label="Avisos" className="grid gap-2">
       {alerts.map((alert) => {
         const Icon = alert.icon;
         return (
@@ -166,127 +148,197 @@ export function DashboardAlerts({
 
 /* ------------------------------------------------------------------ R4 */
 
-/** O caminho real do produto, com número de cada etapa. */
-export function FlowPanel({
-  totalInteractions,
-  acceptedDms,
-  linksSent,
-}: Pick<
-  DashboardData,
-  "totalInteractions" | "acceptedDms" | "linksSent"
->) {
-  const stages = [
-    {
-      step: "01",
-      label: "Comentários",
-      value: totalInteractions,
-      hint: "palavra-chave encontrada",
-    },
-    {
-      step: "02",
-      label: "DMs aceitas",
-      value: acceptedDms,
-      hint: "a Meta confirmou o envio",
-    },
-    {
-      step: "03",
-      label: "Links enviados",
-      value: linksSent,
-      hint: "a pessoa recebeu o link",
-    },
-  ];
+const ATTENTION_TONES: Record<string, "warning" | "danger"> = {
+  failed: "danger",
+  uncertain: "warning",
+  expired: "danger",
+  gate_pending: "warning",
+};
 
-  return (
-    <section aria-labelledby="fluxo-title" className="border-y border-border">
-      <h2 className="sr-only" id="fluxo-title">
-        Fluxo dos comentários
-      </h2>
-      <dl className="grid divide-y divide-line-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        {stages.map((stage) => (
-          <div
-            className="py-5 sm:px-5 sm:first:pl-0 sm:last:pr-0"
-            key={stage.step}
-          >
-            <dt className="flex items-baseline gap-2">
-              <span className="font-mono text-micro text-muted-foreground">
-                {stage.step}
-              </span>
-              <span className="text-label text-foreground">{stage.label}</span>
-            </dt>
-            <dd className="mt-3 text-figure text-foreground" data-numeric>
-              {stage.value}
-              <span className="mt-2 block font-sans text-label font-normal tracking-normal text-muted-soft">
-                {stage.hint}
-              </span>
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
+const ATTENTION_SHORT: Record<string, string> = {
+  failed: "falhou",
+  uncertain: "incerta",
+  expired: "expirada",
+  gate_pending: "aguardando",
+};
+
+function handleOf(row: DashboardData["attention"][number]) {
+  return row.commenterUsername ? `@${row.commenterUsername}` : row.commenter;
 }
 
-export function AttentionLedger({
-  needAttention,
-  waitingReply,
-}: Pick<DashboardData, "needAttention" | "waitingReply">) {
-  return (
-    <section aria-labelledby="pendencias-title">
-      <h2 className="sr-only" id="pendencias-title">
-        Pendências
-      </h2>
-      <dl className="divide-y divide-line-subtle border-b border-border">
-        <div className="flex items-baseline justify-between gap-6 py-4">
-          <dt>
-            <span className="text-body text-foreground">
-              Precisam de atenção
-            </span>
-            <span className="mt-0.5 block text-label text-muted-soft">
-              Falhas, incertezas ou expirações
-            </span>
-          </dt>
-          <dd
-            className={cn(
-              "text-figure",
-              needAttention > 0 ? "text-warning" : "text-foreground",
-            )}
-            data-numeric
-          >
-            {needAttention}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-6 py-4">
-          <dt>
-            <span className="text-body text-foreground">
-              Aguardando resposta
-            </span>
-            <span className="mt-0.5 block text-label text-muted-soft">
-              Primeira DM aceita, link ainda não enviado
-            </span>
-          </dt>
-          <dd className="text-figure text-foreground" data-numeric>
-            {waitingReply}
-          </dd>
-        </div>
-      </dl>
-    </section>
-  );
-}
-
-function Readout({
-  label,
-  value,
+/** O que o painel pede para uma pessoa resolver, com o caso real. */
+export function AttentionSection({
+  rows,
+  now,
 }: {
-  label: string;
-  value: number | string;
+  rows: DashboardData["attention"];
+  now: Date | null;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-3">
+    <section aria-label="Precisa de atenção">
+      <SectionHeading
+        action={
+          <Link
+            className="hidden text-[0.75rem] text-muted-soft hover:text-foreground md:block"
+            href="/admin/atividade"
+          >
+            Ver na atividade
+          </Link>
+        }
+        meta={`${rows.length} ${rows.length === 1 ? "interação" : "interações"}`}
+        title="Precisa de atenção"
+      />
+
+      {rows.length === 0 ? (
+        <p className="border-b border-line-subtle py-4 text-sm text-muted-foreground">
+          Nada precisa de atenção agora. A fila segue sozinha.
+        </p>
+      ) : (
+        <ul>
+          {rows.map((row) => (
+            <li key={row.id}>
+              <Link
+                className="-mx-2 block border-b border-line-subtle px-2 py-3.5 hover:bg-surface-hover md:flex md:flex-wrap md:items-baseline md:gap-x-3.5"
+                href={`/admin/atividade?situacao=${row.state}`}
+              >
+                <span className="block font-mono text-[0.8125rem] font-medium text-foreground md:min-w-[7.5rem]">
+                  {handleOf(row)}
+                </span>
+                <span className="mt-0.5 block text-sm text-muted-foreground md:mt-0 md:min-w-0 md:flex-1">
+                  {attentionReasons[row.state] ??
+                    interactionLabels[row.state] ??
+                    row.state}
+                </span>
+                <span className="mt-1 flex items-baseline gap-3 md:mt-0">
+                  <span className="font-mono text-[0.75rem] text-muted-soft">
+                    {now ? formatRelative(row.createdAt, now) : "—"}
+                  </span>
+                  <StatusChip tone={ATTENTION_TONES[row.state] ?? "warning"}>
+                    {ATTENTION_SHORT[row.state] ?? row.state}
+                  </StatusChip>
+                  <span className="ml-auto text-label text-foreground underline decoration-border underline-offset-[3px]">
+                    Revisar
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+const RECENT_LIMIT = 8;
+const MOBILE_LIMIT = 5;
+
+function stateOf(state: string) {
+  return (
+    <StatusChip tone={interactionTones[state] ?? "neutral"}>
+      {interactionLabels[state] ?? state}
+    </StatusChip>
+  );
+}
+
+type RecentComment = DashboardData["recent"][number];
+
+function RecentCommentsTable({ rows }: { rows: RecentComment[] }) {
+  return (
+    <div className="hidden md:block">
+      <Table className="[&_td:first-child]:pl-0 [&_td:last-child]:pr-0 [&_th:first-child]:pl-0 [&_th:last-child]:pr-0">
+        <caption className="sr-only">
+          Últimos comentários atendidos, com data, automação, autor e situação
+        </caption>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Quando</TableHead>
+            <TableHead>Automação</TableHead>
+            <TableHead>Quem comentou</TableHead>
+            <TableHead>Situação</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.id}>
+              <TableCell className="font-mono text-[0.75rem] text-muted-foreground">
+                {formatDateTime(row.createdAt)}
+              </TableCell>
+              <TableCell className="font-medium text-foreground">
+                {row.automationName ?? "—"}
+              </TableCell>
+              <TableCell className="font-mono text-[0.75rem] text-muted-foreground">
+                {handleOf(row)}
+              </TableCell>
+              <TableCell>{stateOf(row.state)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function RecentCommentsList({ rows }: { rows: RecentComment[] }) {
+  return (
+    <ul className="md:hidden">
+      {rows.map((row) => (
+        <li className="border-b border-line-subtle py-3" key={row.id}>
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-sm font-medium text-foreground">
+              {row.automationName ?? "—"}
+            </span>
+            {stateOf(row.state)}
+          </div>
+          <div className="mt-0.5 flex items-baseline justify-between gap-3">
+            <span className="truncate font-mono text-[0.75rem] text-muted-foreground">
+              {handleOf(row)}
+            </span>
+            <span className="font-mono text-[0.75rem] text-muted-soft">
+              {formatDateTime(row.createdAt)}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Últimos comentários: tabela no desktop, registro de duas linhas no mobile. */
+export function RecentCommentsSection({
+  rows,
+  total,
+}: {
+  rows: RecentComment[];
+  total: number;
+}) {
+  const visible = rows.slice(0, RECENT_LIMIT);
+
+  return (
+    <section aria-label="Últimos comentários" className="min-w-0">
+      <SectionHeading
+        meta={visible.length > 0 ? `${visible.length} de ${total}` : undefined}
+        title="Últimos comentários"
+      />
+
+      {visible.length === 0 ? (
+        <p className="border-b border-line-subtle py-4 text-sm text-muted-foreground">
+          Os comentários aparecem aqui assim que chegam.
+        </p>
+      ) : (
+        <>
+          <RecentCommentsTable rows={visible} />
+          <RecentCommentsList rows={visible.slice(0, MOBILE_LIMIT)} />
+        </>
+      )}
+    </section>
+  );
+}
+
+function Readout({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b border-line-subtle py-2.5">
       <dt className="text-label text-muted-foreground">{label}</dt>
-      <dd
-        className="text-right font-mono text-mono text-foreground"
-        data-numeric
-      >
+      <dd className="text-right font-mono text-[0.8125rem] text-foreground">
         {value}
       </dd>
     </div>
@@ -295,19 +347,19 @@ function Readout({
 
 export function OperationsPanel({
   queuedJobs,
+  waitingReply,
   lastTickAt,
   recentEvents,
-}: Pick<DashboardData, "queuedJobs" | "lastTickAt" | "recentEvents">) {
+}: Pick<
+  DashboardData,
+  "queuedJobs" | "waitingReply" | "lastTickAt" | "recentEvents"
+>) {
   return (
     <aside aria-labelledby="operacao-title" className="min-w-0">
-      <h2
-        className="border-b border-border pb-3 text-title text-foreground"
-        id="operacao-title"
-      >
-        Operação
-      </h2>
-      <dl className="divide-y divide-line-subtle">
+      <SectionHeading title="Operação" />
+      <dl>
         <Readout label="Mensagens na fila" value={queuedJobs} />
+        <Readout label="Aguardando resposta" value={waitingReply} />
         <Readout
           label="Última tarefa"
           value={lastTickAt ? formatDateTime(new Date(lastTickAt)) : "—"}
@@ -315,13 +367,11 @@ export function OperationsPanel({
         <Readout
           label="Último webhook"
           value={
-            recentEvents[0]
-              ? formatDateTime(recentEvents[0].receivedAt)
-              : "—"
+            recentEvents[0] ? formatDateTime(recentEvents[0].receivedAt) : "—"
           }
         />
       </dl>
-      <p className="mt-4 text-label text-muted-soft">
+      <p className="mt-5 max-w-[34ch] text-[0.8125rem] leading-5 text-muted-soft">
         &quot;Aceita&quot; significa que a Meta recebeu a solicitação; não é
         confirmação de leitura.
       </p>
@@ -329,84 +379,13 @@ export function OperationsPanel({
   );
 }
 
-/* ------------------------------------------------------------------ R4 */
-
-const RECENT_LIMIT = 5;
-const MOBILE_LIMIT = 3;
-
-export function RecentCommentsSection({
-  rows,
-}: {
-  rows: DashboardData["recent"];
-}) {
-  const visible = rows.slice(0, RECENT_LIMIT);
-
+export function NewAutomationButton() {
   return (
-    <section aria-labelledby="recentes-title" className="min-w-0">
-      <div className="border-b border-border pb-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h2 className="text-section text-foreground" id="recentes-title">
-            Últimos comentários atendidos
-          </h2>
-          {visible.length > 0 ? (
-            <span className="hidden font-mono text-micro text-muted-foreground sm:inline">
-              {visible.length} de {rows.length}
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-1 text-label text-muted-foreground">
-          {rows.length === 0
-            ? "Os comentários aparecem aqui assim que chegam."
-            : visible.length === 1
-              ? "O mais recente."
-              : `Os ${visible.length} mais recentes.`}
-        </p>
-      </div>
-
-      {visible.length > 0 ? (
-        <Table className="table-stack">
-          <caption className="sr-only">
-            Últimos comentários atendidos, com data, automação, autor e situação
-          </caption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Quando</TableHead>
-              <TableHead>Automação</TableHead>
-              <TableHead>Quem comentou</TableHead>
-              <TableHead>Situação</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visible.map((row, index) => (
-              <TableRow
-                className={cn(index >= MOBILE_LIMIT && "table-stack-extra")}
-                key={row.id}
-              >
-                <TableCell
-                  className="font-mono text-mono text-muted-foreground"
-                  data-label="Quando"
-                >
-                  {formatDateTime(row.createdAt)}
-                </TableCell>
-                <TableCell className="text-foreground" data-label="Automação">
-                  {row.automationName ?? "—"}
-                </TableCell>
-                <TableCell
-                  className="font-mono text-mono text-muted-foreground"
-                  data-label="Quem comentou"
-                >
-                  {row.commenter}
-                </TableCell>
-                <TableCell data-label="Situação">
-                  <StatusChip tone={interactionTones[row.state] ?? "neutral"}>
-                    {interactionLabels[row.state] ?? row.state}
-                  </StatusChip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      ) : null}
-    </section>
+    <Button asChild className="hidden md:inline-flex" size="lg">
+      <Link href="/admin/automacoes/nova">
+        <PlusIcon aria-hidden />
+        Nova automação
+      </Link>
+    </Button>
   );
 }

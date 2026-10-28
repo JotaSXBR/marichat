@@ -3,7 +3,8 @@
  *
  * Uso:
  *   1. npm run dev
- *   2. npm run a11y
+ *   2. npm run a11y            (tema claro)
+ *      node scripts/a11y.mjs dark   (tema escuro)
  *
  * Lê ADMIN_PASSWORD e APP_URL de .env.local. Salva capturas em .stitch/v5/ e
  * falha (exit 1) em qualquer violação WCAG A/AA ou scroll horizontal.
@@ -47,6 +48,17 @@ const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900 },
 ];
 
+// `node scripts/a11y.mjs dark` audita o tema escuro; o padrão é o claro.
+const theme = process.argv[2] === "dark" ? "dark" : "light";
+
+/** Mostra até 3 nós por violação, para o relatório caber no terminal. */
+function printNodes(nodes) {
+  for (const node of nodes.slice(0, 3)) {
+    console.error(`    ${node.target.join(" ")}`);
+    console.error(`    ${node.failureSummary?.split("\n")[1]?.trim() ?? ""}`);
+  }
+}
+
 const browser = await chromium.launch();
 let failures = 0;
 
@@ -55,6 +67,9 @@ for (const viewport of VIEWPORTS) {
     viewport: { width: viewport.width, height: viewport.height },
     httpCredentials: { username: "admin", password },
   });
+  await context.addInitScript((value) => {
+    localStorage.setItem("marichat-theme", value);
+  }, theme);
   const page = await context.newPage();
 
   for (const route of ROUTES) {
@@ -106,12 +121,7 @@ for (const viewport of VIEWPORTS) {
       console.error(
         `  [${violation.impact}] ${violation.id}: ${violation.help} (${violation.nodes.length})`,
       );
-      for (const node of violation.nodes.slice(0, 3)) {
-        console.error(`    ${node.target.join(" ")}`);
-        console.error(
-          `    ${node.failureSummary?.split("\n")[1]?.trim() ?? ""}`,
-        );
-      }
+      printNodes(violation.nodes);
     }
   }
 

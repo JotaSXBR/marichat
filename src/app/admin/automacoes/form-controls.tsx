@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
 
-import { Card } from "@/components/ui/card";
 import {
   FieldDescription,
   FieldError as UiFieldError,
   FieldLabel,
 } from "@/components/ui/field";
 
-/** Bloco do formulário: título, explicação e campos. */
+/** Bloco do formulário: régua, título, explicação e campos. */
 export function FormSection({
   title,
   description,
@@ -18,15 +17,15 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <Card className="gap-5">
-      <div className="space-y-1">
-        <h2 className="text-section text-foreground">{title}</h2>
-        {description ? (
-          <p className="text-label text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
-      <div className="space-y-5">{children}</div>
-    </Card>
+    <section className="border-b border-border py-5 first:pt-0 last:border-b-0">
+      <h2 className="text-section text-foreground">{title}</h2>
+      {description ? (
+        <p className="mt-1 max-w-[70ch] text-[0.8125rem] leading-5 text-muted-soft">
+          {description}
+        </p>
+      ) : null}
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
   );
 }
 

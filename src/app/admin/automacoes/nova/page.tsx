@@ -7,6 +7,7 @@ import { loadMediaOptions } from "@/app/admin/automacoes/media-options";
 import { getActiveAccount } from "@/lib/accounts";
 import { requireAdmin } from "@/lib/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHeader } from "@/components/marichat/page-header";
 
 export const instant = false;
 
@@ -20,7 +21,7 @@ export default async function NewAutomationPage() {
   if (!account || !media) {
     return (
       <div className="space-y-6">
-        <h1 className="text-display text-foreground text-balance">Nova automação</h1>
+        <PageHeader title="Nova automação" />
         <Alert variant="warning">
           <PlugZapIcon aria-hidden />
           <AlertTitle>Conecte o Instagram primeiro</AlertTitle>

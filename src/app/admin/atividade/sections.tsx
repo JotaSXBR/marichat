@@ -1,9 +1,9 @@
 import Link from "next/link";
 import {
   ArrowRightIcon,
+  ChevronDownIcon,
   ClockIcon,
   PlugZapIcon,
-  RefreshCwIcon,
   ShieldAlertIcon,
 } from "lucide-react";
 
@@ -13,9 +13,8 @@ import {
 } from "@/app/admin/atividade/data";
 import { formatDateTime, interactionLabels } from "@/app/admin/labels";
 import type { ActivityData } from "@/app/admin/atividade/data";
-import { PageHeader } from "@/components/marichat/page-header";
+import { FilterSelect } from "@/components/marichat/filter-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const ACTIVITY_TABS = ["interacoes", "envios", "webhooks"] as const;
@@ -37,25 +36,6 @@ function tabHref(tab: ActivityTab, situation?: ActivityFilter) {
   if (tab === "interacoes" && situation) params.set("situacao", situation);
   const query = params.toString();
   return query ? `/admin/atividade?${query}` : "/admin/atividade";
-}
-
-/* ------------------------------------------------------------------ R2 */
-
-export function ActivityHeader({ href }: { href: string }) {
-  return (
-    <PageHeader
-      action={
-        <Button asChild className="w-full sm:w-auto" size="lg" variant="secondary">
-          <Link href={href}>
-            <RefreshCwIcon aria-hidden />
-            Atualizar
-          </Link>
-        </Button>
-      }
-      description="Interações, envios e webhooks do primeiro teste em produção."
-      title="Atividade"
-    />
-  );
 }
 
 /* ------------------------------------------------------------------ R3 */
@@ -124,7 +104,7 @@ export function ActivityAlerts(props: Parameters<typeof buildAlerts>[0]) {
   if (alerts.length === 0) return null;
 
   return (
-    <section aria-label="Avisos" className="grid gap-3">
+    <section aria-label="Avisos" className="grid gap-2">
       {alerts.map((alert) => {
         const Icon = alert.icon;
         return (
@@ -170,7 +150,7 @@ export function ActivityTabs({
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex min-h-12 flex-1 items-center justify-center px-2 text-label transition-colors duration-150 ease-out md:flex-none md:justify-start md:px-5 md:first:pl-0",
+              "relative flex min-h-11 flex-1 items-center justify-center px-2 text-[0.875rem] transition-colors duration-150 ease-out md:flex-none md:justify-start md:px-5 md:first:pl-0",
               active
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground",
@@ -182,7 +162,7 @@ export function ActivityTabs({
             {active ? (
               <span
                 aria-hidden
-                className="absolute inset-x-2 bottom-0 h-0.5 bg-primary md:inset-x-5"
+                className="absolute inset-x-0 bottom-0 h-0.5 bg-foreground"
               />
             ) : null}
           </Link>
@@ -202,12 +182,12 @@ function Readout({
   hint: string;
 }) {
   return (
-    <div className="min-w-0">
-      <dt className="text-micro text-muted-foreground uppercase">{label}</dt>
-      <dd className="mt-1 text-title text-foreground" data-numeric>
+    <div className="min-w-0 border-b border-line-subtle py-2.5">
+      <dt className="text-[0.75rem] text-muted-soft">{label}</dt>
+      <dd className="mt-0.5 font-mono text-[0.8125rem] text-foreground">
         {value}
       </dd>
-      <p className="mt-0.5 text-label text-muted-soft">{hint}</p>
+      <p className="mt-0.5 text-[0.75rem] text-muted-soft">{hint}</p>
     </div>
   );
 }
@@ -222,10 +202,7 @@ export function ActivityStats({
   "lastTickAt" | "lastDrainAt" | "drainSummary" | "lastSendAt"
 >) {
   return (
-    <dl
-      aria-label="Estado da operação"
-      className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
-    >
+    <dl aria-label="Estado da operação" className="grid gap-x-8 sm:grid-cols-2">
       <Readout
         hint="Se parar, a fila para"
         label="Última tarefa agendada"
@@ -257,62 +234,28 @@ export function ActivityFilterBar({
   situation?: ActivityFilter;
 }) {
   return (
-    <>
-      <form
-        action="/admin/atividade"
-        className="flex items-end gap-2 sm:hidden"
-        method="get"
+    <form
+      action="/admin/atividade"
+      className="flex flex-wrap items-center gap-2"
+      method="get"
+    >
+      <label className="sr-only" htmlFor="situacao">
+        Situação
+      </label>
+      <FilterSelect
+        className="h-11 w-[240px] rounded-md border border-input bg-muted px-3 text-label text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:h-9"
+        defaultValue={situation ?? ""}
+        id="situacao"
+        name="situacao"
       >
-        <label className="sr-only" htmlFor="situacao">
-          Situação
-        </label>
-        <select
-          className="h-12 min-w-0 flex-1 rounded-md border border-input bg-muted px-3 text-body text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          defaultValue={situation ?? ""}
-          id="situacao"
-          name="situacao"
-        >
-          <option value="">Todas as situações</option>
-          {ACTIVITY_FILTERS.map((filter) => (
-            <option key={filter} value={filter}>
-              {interactionLabels[filter] ?? filter}
-            </option>
-          ))}
-        </select>
-        <Button className="h-12" type="submit" variant="secondary">
-          Filtrar
-        </Button>
-      </form>
-
-      <nav
-        aria-label="Filtrar interações por situação"
-        className="hidden flex-wrap items-center gap-2 sm:flex"
-      >
-        <Button asChild size="sm" variant={situation ? "ghost" : "secondary"}>
-          <Link
-            aria-current={situation ? undefined : "page"}
-            href="/admin/atividade"
-          >
-            Todas
-          </Link>
-        </Button>
+        <option value="">Todas as situações</option>
         {ACTIVITY_FILTERS.map((filter) => (
-          <Button
-            key={filter}
-            asChild
-            size="sm"
-            variant={situation === filter ? "secondary" : "ghost"}
-          >
-            <Link
-              aria-current={situation === filter ? "page" : undefined}
-              href={`/admin/atividade?situacao=${filter}`}
-            >
-              {interactionLabels[filter] ?? filter}
-            </Link>
-          </Button>
+          <option key={filter} value={filter}>
+            {interactionLabels[filter] ?? filter}
+          </option>
         ))}
-      </nav>
-    </>
+      </FilterSelect>
+    </form>
   );
 }
 
@@ -322,9 +265,47 @@ export function ConnectionTestNote({
   result: NonNullable<ActivityData["connectionTest"]>;
 }) {
   return (
-    <p className="text-label text-muted-foreground">
+    <p className="text-[0.8125rem] text-muted-foreground">
       Último teste de conexão em {formatDateTime(new Date(result.checkedAt))}:{" "}
       {result.problems.length === 0 ? "tudo certo." : result.problems.join(" ")}
     </p>
+  );
+}
+
+/** Diagnóstico fica fechado: é consulta, não a tarefa da tela. */
+export function ActivityDiagnostics({
+  data,
+}: {
+  data: Pick<
+    ActivityData,
+    | "lastTickAt"
+    | "lastDrainAt"
+    | "drainSummary"
+    | "lastSendAt"
+    | "connectionTest"
+  >;
+}) {
+  return (
+    <details className="group border-t border-border">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-3 text-[0.875rem] font-medium text-foreground [&::-webkit-details-marker]:hidden">
+        Diagnóstico da operação
+        <ChevronDownIcon
+          aria-hidden
+          className="size-4 text-muted-soft transition-transform duration-150 group-open:rotate-180"
+        />
+      </summary>
+      <div className="space-y-4 pb-2">
+        <ActivityStats
+          drainSummary={data.drainSummary}
+          lastDrainAt={data.lastDrainAt}
+          lastSendAt={data.lastSendAt}
+          lastTickAt={data.lastTickAt}
+        />
+
+        {data.connectionTest ? (
+          <ConnectionTestNote result={data.connectionTest} />
+        ) : null}
+      </div>
+    </details>
   );
 }

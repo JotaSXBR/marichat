@@ -1,11 +1,5 @@
 import { CopyButton } from "@/app/admin/conexao/copy-button";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ExternalLinkIcon } from "lucide-react";
 
 type Props = {
@@ -27,20 +21,13 @@ function Endpoint({ value }: { value: string }) {
 function MetaGuide({ endpoint }: { endpoint: string }) {
   return (
     <>
-      <div>
-        <CardTitle>Configuração no painel da Meta</CardTitle>
-        <CardDescription>
-          No app da Meta, o webhook do Instagram deve apontar para o endereço
-          abaixo.
-        </CardDescription>
-      </div>
       <Endpoint value={endpoint} />
-      <p className="text-body text-muted-foreground">
+      <p className="text-[0.875rem] leading-6 text-muted-foreground">
         Assine os campos <strong>comments</strong>, <strong>messages</strong> e{" "}
         <strong>messaging_postbacks</strong>. O token de verificação é o valor
         de <code className="font-mono">META_WEBHOOK_VERIFY_TOKEN</code>.
       </p>
-      <p className="text-label text-muted-foreground">
+      <p className="text-[0.8125rem] leading-5 text-muted-soft">
         <strong>messaging_postbacks</strong> é necessário para receber o toque
         em &quot;Já segui&quot;. Os três campos precisam estar ativos também nas
         assinaturas do app (App Dashboard → Webhooks → Instagram).
@@ -62,19 +49,13 @@ function MetaGuide({ endpoint }: { endpoint: string }) {
 function ZernioGuide({ endpoint }: { endpoint: string }) {
   return (
     <>
-      <div>
-        <CardTitle>Configuração na Zernio</CardTitle>
-        <CardDescription>
-          O webhook da Zernio deve apontar para o endereço abaixo.
-        </CardDescription>
-      </div>
       <Endpoint value={endpoint} />
-      <p className="text-body text-muted-foreground">
+      <p className="text-[0.875rem] leading-6 text-muted-foreground">
         Assine os eventos <strong>comment.received</strong> e{" "}
         <strong>message.received</strong>. O segredo usado na assinatura é o
         valor de <code className="font-mono">ZERNIO_WEBHOOK_SECRET</code>.
       </p>
-      <p className="text-label text-muted-foreground">
+      <p className="text-[0.8125rem] leading-5 text-muted-soft">
         O botão <strong>Registrar webhook na Zernio</strong> cria esse endpoint
         automaticamente. Se você já criou um endpoint no painel da Zernio, evite
         clicar para não duplicar.
@@ -96,22 +77,22 @@ export function WebhookSetupCard({ isZernio, appUrl }: Props) {
     : "(APP_URL ainda não configurada)";
 
   return (
-    <Card className="gap-4">
-      <CardHeader>
-        <CardTitle>
-          {isZernio ? "Webhook na Zernio" : "Webhook na Meta"}
-        </CardTitle>
-        <CardDescription>
-          {appUrl
-            ? "Copie o endereço e confira os campos assinados."
-            : "Defina APP_URL no servidor para gerar o endereço do webhook."}
-        </CardDescription>
-      </CardHeader>
-      {isZernio ? (
-        <ZernioGuide endpoint={endpoint} />
-      ) : (
-        <MetaGuide endpoint={endpoint} />
-      )}
-    </Card>
+    <section className="border-b border-border py-4">
+      <h2 className="text-[0.875rem] font-semibold text-foreground">
+        {isZernio ? "Webhook na Zernio" : "Webhook na Meta"}
+      </h2>
+      <p className="mt-1 text-[0.8125rem] leading-5 text-muted-soft">
+        {appUrl
+          ? "Copie o endereço e confira os campos assinados."
+          : "Defina APP_URL no servidor para gerar o endereço do webhook."}
+      </p>
+      <div className="mt-3 space-y-3">
+        {isZernio ? (
+          <ZernioGuide endpoint={endpoint} />
+        ) : (
+          <MetaGuide endpoint={endpoint} />
+        )}
+      </div>
+    </section>
   );
 }
