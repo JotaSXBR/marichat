@@ -34,8 +34,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/status-chip";
+import {
+  DEFAULT_FOLLOW_DIRECT_TEXT,
+  DEFAULT_FOLLOW_OPTIONAL_TEXT,
+} from "@/lib/automation-defaults";
 import type { AutomationFormState } from "@/lib/automation-input";
-import type { FollowMode } from "@/lib/follow-mode";
+import { isFollowMode, type FollowMode } from "@/lib/follow-mode";
 
 const AUTOMATIONS_PATH = "/admin/automacoes";
 const FORM_ID = "automation-form";
@@ -46,13 +50,18 @@ type Props = {
   mediaError?: string;
 };
 
+const PREVIEW_DEFAULTS: PreviewValues = {
+  firstDmText: "",
+  firstDmButtonLabel: "",
+  secondDmText: "",
+  linkButtonTitle: "Abrir link",
+  followMode: "off",
+  followDirectText: DEFAULT_FOLLOW_DIRECT_TEXT,
+  followOptionalText: DEFAULT_FOLLOW_OPTIONAL_TEXT,
+};
+
 function previewOf(initial?: AutomationInitialValues): PreviewValues {
-  return {
-    firstDmText: initial?.firstDmText ?? "",
-    firstDmButtonLabel: initial?.firstDmButtonLabel ?? "",
-    secondDmText: initial?.secondDmText ?? "",
-    linkButtonTitle: initial?.linkButtonTitle ?? "Abrir link",
-  };
+  return { ...PREVIEW_DEFAULTS, ...initial };
 }
 
 function fieldText(data: FormData, field: string): string {
@@ -61,11 +70,16 @@ function fieldText(data: FormData, field: string): string {
 }
 
 function previewFromForm(data: FormData): PreviewValues {
+  const mode = fieldText(data, "followMode");
   return {
+    ...PREVIEW_DEFAULTS,
     firstDmText: fieldText(data, "firstDmText"),
     firstDmButtonLabel: fieldText(data, "firstDmButtonLabel"),
     secondDmText: fieldText(data, "secondDmText"),
     linkButtonTitle: fieldText(data, "linkButtonTitle"),
+    followMode: isFollowMode(mode) ? mode : "off",
+    followDirectText: fieldText(data, "followDirectText"),
+    followOptionalText: fieldText(data, "followOptionalText"),
   };
 }
 

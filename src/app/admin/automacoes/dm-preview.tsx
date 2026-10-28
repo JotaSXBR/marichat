@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Card } from "@/components/ui/card";
+import type { FollowMode } from "@/lib/follow-mode";
 import { cn } from "@/lib/utils";
 
 export type PreviewValues = {
@@ -8,7 +9,17 @@ export type PreviewValues = {
   firstDmButtonLabel: string;
   secondDmText: string;
   linkButtonTitle: string;
+  followMode: FollowMode;
+  followDirectText: string;
+  followOptionalText: string;
 };
+
+/** Texto que a segunda DM realmente usa em cada modo. */
+function secondText(values: PreviewValues): string {
+  if (values.followMode === "direct") return values.followDirectText;
+  if (values.followMode === "optional") return values.followOptionalText;
+  return values.secondDmText;
+}
 
 /**
  * Bolha de mensagem enviada pela conta.
@@ -49,6 +60,7 @@ function Bubble({
 /** R5: prévia aproximada da conversa, ao lado do formulário. */
 export function DmPreview({ values }: { values: PreviewValues }) {
   const firstButton = values.firstDmButtonLabel.trim();
+  const second = secondText(values);
 
   return (
     <Card className="gap-4 p-5">
@@ -88,9 +100,9 @@ export function DmPreview({ values }: { values: PreviewValues }) {
             <Bubble muted>A primeira mensagem aparece aqui.</Bubble>
           )}
 
-          {values.secondDmText.trim() ? (
+          {second.trim() ? (
             <Bubble button={values.linkButtonTitle.trim() || "Abrir link"}>
-              {values.secondDmText}
+              {second}
             </Bubble>
           ) : (
             <Bubble muted button="Abrir link">
