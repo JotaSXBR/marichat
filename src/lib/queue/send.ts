@@ -27,6 +27,7 @@ import type {
 } from "@/lib/queue/types";
 import {
   ZernioApiError,
+  replyToComment,
   sendConversationMessage,
   sendPrivateReply,
 } from "@/lib/zernio/client";
@@ -69,7 +70,7 @@ async function sendWithZernio(
   job: JobRow,
   account: AccountRow,
   interaction: InteractionRow,
-): Promise<{ messageId: string }> {
+): Promise<{ messageId: string | null }> {
   if (!account.providerAccountId) {
     throw new ZernioApiError(
       "A conta da Zernio não está vinculada. Reconecte em Conexão.",
@@ -79,6 +80,16 @@ async function sendWithZernio(
   }
 
   const content = toZernioMessage(job.payload);
+
+  if (job.kind === "public_reply") {
+    await replyToComment({
+      accountId: account.providerAccountId,
+      postId: interaction.mediaId,
+      commentId: interaction.commentId,
+      message: content.message,
+    });
+    return { messageId: null };
+  }
 
   if (job.kind === "private_reply") {
     return sendPrivateReply({
@@ -111,7 +122,7 @@ function sendViaProvider(
   account: AccountRow,
   interaction: InteractionRow,
   accessToken: string | null,
-): Promise<{ messageId: string }> {
+): Promise<{ messageId: string | null }> {
   if (account.provider === "zernio") {
     return sendWithZernio(job, account, interaction);
   }
@@ -240,6 +251,16 @@ export async function processJob(
 
   const blocked = await blockedIfNotSendable(job, account, interaction);
   if (blocked) return blocked;
+
+  if (job.kind === "public_reply" && account.provider !== "zernio") {
+    await markFailed(
+      job,
+      interaction,
+      "A resposta pública no comentário está disponível apenas com a Zernio.",
+      "PUBLIC_REPLY_UNSUPPORTED",
+    );
+    return "failed";
+  }
 
   const token = await readAccountToken(job, account, interaction);
   if ("outcome" in token) return token.outcome;

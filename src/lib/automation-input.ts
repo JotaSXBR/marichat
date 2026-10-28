@@ -16,6 +16,7 @@ import {
 import { readText } from "@/lib/form-data";
 import { FOLLOW_MODES } from "@/lib/follow-mode";
 import { normalizeKeyword } from "@/lib/matching";
+import { MIN_PUBLIC_REPLIES, parsePublicReplies } from "@/lib/public-replies";
 
 export type AutomationFormState = {
   error?: string;
@@ -73,6 +74,23 @@ export const automationSchema = z.object({
     .trim()
     .max(20, "O texto do botão pode ter no máximo 20 caracteres.")
     .optional(),
+  publicReplies: z
+    .string()
+    .default("")
+    .refine(
+      (value) =>
+        parsePublicReplies(value).length === 0 ||
+        parsePublicReplies(value).length >= MIN_PUBLIC_REPLIES,
+      {
+        message:
+          "Informe pelo menos 3 respostas públicas (uma por linha) ou deixe tudo em branco.",
+      },
+    )
+    .refine(
+      (value) =>
+        parsePublicReplies(value).every((line) => countChars(line) <= 2200),
+      { message: "Cada resposta pública pode ter no máximo 2.200 caracteres." },
+    ),
   secondDmText: z
     .string()
     .trim()
@@ -137,6 +155,7 @@ export function readAutomationForm(formData: FormData) {
     mediaId: readText(formData, "mediaId"),
     firstDmText: readText(formData, "firstDmText"),
     firstDmButtonLabel: readText(formData, "firstDmButtonLabel"),
+    publicReplies: readText(formData, "publicReplies"),
     secondDmText: readText(formData, "secondDmText"),
     linkButtonTitle: readText(formData, "linkButtonTitle"),
     linkUrl: readText(formData, "linkUrl"),
@@ -171,6 +190,7 @@ export function automationColumns(values: AutomationInput) {
       values.firstDmButtonLabel && values.firstDmButtonLabel.length > 0
         ? values.firstDmButtonLabel
         : null,
+    publicReplies: parsePublicReplies(values.publicReplies).join("\n"),
     secondDmText: values.secondDmText,
     linkButtonTitle: values.linkButtonTitle,
     linkUrl: values.linkUrl,

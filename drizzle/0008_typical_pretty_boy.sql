@@ -1,0 +1,1 @@
+ALTER TABLE "automations" ADD COLUMN "public_replies" text DEFAULT '' NOT NULL;

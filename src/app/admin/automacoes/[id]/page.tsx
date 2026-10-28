@@ -46,6 +46,7 @@ export default async function EditAutomationPage({
         mediaId: automation.mediaId ?? "",
         firstDmText: automation.firstDmText,
         firstDmButtonLabel: automation.firstDmButtonLabel ?? "",
+        publicReplies: automation.publicReplies,
         secondDmText: automation.secondDmText,
         linkButtonTitle: automation.linkButtonTitle,
         linkUrl: automation.linkUrl,

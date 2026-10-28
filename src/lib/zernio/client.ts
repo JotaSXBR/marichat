@@ -186,6 +186,28 @@ export type ZernioSentMessage = {
 };
 
 /**
+ * Resposta pública: aparece embaixo do comentário na publicação.
+ *
+ * Não gasta a resposta privada nem precisa da janela de 24h, por isso é o
+ * primeiro passo do fluxo — e é o que deixa o comentário com resposta visível.
+ */
+export async function replyToComment(params: {
+  accountId: string;
+  postId: string;
+  commentId: string;
+  message: string;
+}): Promise<void> {
+  await requestJson(`/v1/inbox/comments/${encodeURIComponent(params.postId)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      accountId: params.accountId,
+      message: params.message,
+      commentId: params.commentId,
+    }),
+  });
+}
+
+/**
  * Resposta privada a um comentário (a nossa DM 1).
  *
  * `postId` é o ID da mídia na Meta, então funciona também em posts que não

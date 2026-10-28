@@ -22,6 +22,7 @@ function settings(
     mediaId: null,
     firstDmText: "Responda esta mensagem para receber o link.",
     firstDmButtonLabel: null,
+    publicReplies: "",
     quickReplyTitle: "Quero o link",
     secondDmText: "Aqui está o link que você pediu",
     linkButtonTitle: "Abrir link",

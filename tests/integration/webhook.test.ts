@@ -179,6 +179,53 @@ suite("webhook: comentário, resposta e porta de seguidor", () => {
     expect(payload.message).not.toHaveProperty("quick_replies");
   });
 
+  it("responde publicamente no comentário antes de agendar a DM", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id, {
+      publicReplies: "Te enviei no direct!\nOlha sua DM!\nMandei no direct 😉",
+    });
+
+    const summary = await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-public",
+        text: "QUERO",
+      }),
+    );
+
+    expect(summary.processed).toBe(1);
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs).toHaveLength(2);
+    const publicJob = jobs.find((job) => job.kind === "public_reply")!;
+    expect(publicJob.status).toBe("pending");
+    const payload = publicJob.payload as { message: string };
+    expect([
+      "Te enviei no direct!",
+      "Olha sua DM!",
+      "Mandei no direct 😉",
+    ]).toContain(payload.message);
+    expect(jobs.some((job) => job.kind === "private_reply")).toBe(true);
+  });
+
+  it("sem respostas públicas configuradas, envia só a DM", async () => {
+    const account = await seedAccount();
+    await seedAutomation(account.id);
+
+    await handleWebhookPayload(
+      commentPayload({
+        igUserId: account.instagramUserId,
+        commentId: "comment-sem-publica",
+        text: "QUERO",
+      }),
+    );
+
+    const db = getDb();
+    const jobs = await db.select().from(outboundMessages);
+    expect(jobs.map((job) => job.kind)).toEqual(["private_reply"]);
+  });
+
   it("ignora evento repetido (dedupe) e comentários sem correspondência", async () => {
     const account = await seedAccount();
     await seedAutomation(account.id);

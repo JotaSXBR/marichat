@@ -25,6 +25,7 @@ export const jobStatusLabels: Record<string, string> = {
 };
 
 export const jobKindLabels: Record<string, string> = {
+  public_reply: "Resposta no comentário",
   private_reply: "DM 1 — resposta privada",
   followup_link: "Link após checagem",
   link_optional: "Link + botão seguir",

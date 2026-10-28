@@ -72,6 +72,11 @@ export const automations = pgTable(
      */
     firstDmButtonLabel: text("first_dm_button_label"),
     /**
+     * Respostas públicas no comentário, uma por linha; vazio = sem resposta.
+     * Sorteamos uma a cada comentário para não parecer robô.
+     */
+    publicReplies: text("public_replies").notNull().default(""),
+    /**
      * Campo legado da primeira versão (botão de quick reply na primeira DM).
      * Mantido para não perder dados; a primeira DM agora é sempre texto puro.
      */
@@ -232,7 +237,8 @@ export const outboundMessages = pgTable(
       .notNull()
       .references(() => commentInteractions.id, { onDelete: "restrict" }),
     /**
-     * private_reply (primeira DM) | followup_link (segunda mensagem) |
+     * public_reply (resposta pública no comentário) | private_reply (primeira
+     * DM) | followup_link (segunda mensagem) |
      * link_optional (botões Seguir + link) | link_direct (só o link) |
      * follow_gate (mensagem com os botões de seguidor) |
      * follow_check / follow_check_2 (consultas ao perfil; não enviam nada).

@@ -94,6 +94,36 @@ describe("automationSchema", () => {
 
     expect(parsed.success).toBe(false);
   });
+
+  it("aceita resposta pública vazia (desligada)", () => {
+    const parsed = automationSchema.safeParse(
+      readAutomationForm(validForm({ publicReplies: "  " })),
+    );
+
+    expect(parsed.success).toBe(true);
+    expect(automationColumns(parsed.data!).publicReplies).toBe("");
+  });
+
+  it("recusa lista de respostas públicas com menos de 3", () => {
+    const parsed = automationSchema.safeParse(
+      readAutomationForm(validForm({ publicReplies: "uma\nduas" })),
+    );
+
+    expect(parsed.success).toBe(false);
+  });
+
+  it("guarda as respostas públicas com uma por linha", () => {
+    const parsed = automationSchema.safeParse(
+      readAutomationForm(
+        validForm({ publicReplies: "  uma \n\n duas \n três " }),
+      ),
+    );
+
+    expect(parsed.success).toBe(true);
+    expect(automationColumns(parsed.data!).publicReplies).toBe(
+      "uma\nduas\ntrês",
+    );
+  });
 });
 
 describe("automationColumns", () => {

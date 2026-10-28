@@ -184,6 +184,9 @@ export async function markExpired(
 
     if (updated.length === 0) return;
 
+    // Resposta pública não muda o estado da interação: quem manda é a DM.
+    if (job.kind === "public_reply") return;
+
     if (job.kind === "private_reply") {
       await tx
         .update(commentInteractions)

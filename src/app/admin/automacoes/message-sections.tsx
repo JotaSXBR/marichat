@@ -17,6 +17,36 @@ type Props = {
   errors: FieldErrors;
 };
 
+/** Resposta pública no comentário, sorteada de uma lista. */
+export function PublicReplySection({ initial, errors }: Props) {
+  return (
+    <FormSection
+      title="Resposta no comentário (opcional)"
+      description="Aparece em público, embaixo do comentário, antes da DM. Sorteia uma frase da lista a cada comentário. Deixe em branco para não responder publicamente."
+    >
+      <div>
+        <Label
+          htmlFor="publicReplies"
+          hint="Uma frase por linha. Mínimo 3. Ex.: “Te enviei no direct!”"
+        >
+          Frases de resposta
+        </Label>
+        <Textarea
+          id="publicReplies"
+          name="publicReplies"
+          rows={6}
+          defaultValue={initial?.publicReplies ?? ""}
+          placeholder={
+            "Te mandei no direct, confere lá!\nEnviei na sua DM 😉\nOlha sua caixa de mensagens!"
+          }
+          aria-invalid={errors.publicReplies ? true : undefined}
+        />
+        <FieldError message={errors.publicReplies} />
+      </div>
+    </FormSection>
+  );
+}
+
 /** Primeira DM, enviada como resposta privada ao comentário. */
 export function FirstMessageSection({ initial, errors }: Props) {
   return (

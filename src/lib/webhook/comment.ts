@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db/client";
 import { commentInteractions, outboundMessages } from "@/lib/db/schema";
 import { IG } from "@/lib/instagram/config";
 import { buildPrivateReplyPayload } from "@/lib/outbound";
+import { pickPublicReply } from "@/lib/public-replies";
 import {
   fullAutomation,
   findMatchingAutomation,
@@ -51,6 +52,22 @@ async function createInteractionWithFirstDm(
         });
 
       if (!interaction) return;
+
+      // A resposta pública sai antes da DM: é o que o comentário mostra em
+      // público, e não gasta a resposta privada se falhar.
+      const publicReply = pickPublicReply(params.settings.publicReplies);
+      if (publicReply) {
+        await tx.insert(outboundMessages).values({
+          accountId: params.account.id,
+          interactionId: interaction.id,
+          kind: "public_reply",
+          status: "pending",
+          payload: { message: publicReply },
+          // Um segundo à frente da DM: a fila atende por next_attempt_at e as
+          // duas tarefas nascem no mesmo instante.
+          nextAttemptAt: new Date(Date.now() - 1000),
+        });
+      }
 
       // A primeira DM entra na mesma transação. Com botão, o postback carrega
       // o token da interação para o toque cair na conversa certa.

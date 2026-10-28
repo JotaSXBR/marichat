@@ -14,6 +14,7 @@ export type AutomationInitialValues = {
   mediaId: string;
   firstDmText: string;
   firstDmButtonLabel: string;
+  publicReplies: string;
   secondDmText: string;
   linkButtonTitle: string;
   linkUrl: string;

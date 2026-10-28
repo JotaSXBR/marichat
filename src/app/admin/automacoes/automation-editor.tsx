@@ -20,6 +20,7 @@ import { MediaSection } from "@/app/admin/automacoes/media-section";
 import {
   FirstMessageSection,
   LinkMessageSection,
+  PublicReplySection,
 } from "@/app/admin/automacoes/message-sections";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -177,6 +178,7 @@ function EditorFields({ error, ...props }: FieldsProps) {
         mediaOptions={props.mediaOptions}
         mediaError={props.mediaError}
       />
+      <PublicReplySection initial={props.initial} errors={props.errors} />
       <FirstMessageSection initial={props.initial} errors={props.errors} />
       <FollowGateSection
         initial={props.initial}

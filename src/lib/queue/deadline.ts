@@ -6,7 +6,7 @@ export function deadlineFor(
   job: JobRow,
   interaction: InteractionRow,
 ): number | null {
-  if (job.kind === "private_reply") {
+  if (job.kind === "private_reply" || job.kind === "public_reply") {
     return interaction.replyDeadlineAt.getTime();
   }
   if (!interaction.userLastMessageAt) return null;

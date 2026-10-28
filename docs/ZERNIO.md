@@ -65,6 +65,18 @@ Evento `message.received`:
 
 ### Envio
 
+Resposta pública ao comentário (aparece na publicação, antes da DM):
+
+```
+POST /v1/inbox/comments/{postId}
+Body: { accountId, message, commentId }
+```
+
+- `commentId` no corpo responde àquele comentário; sem ele, vira comentário
+  novo no post.
+- Não gasta a resposta privada nem depende da janela de 7 dias.
+- Única tarefa que não devolve `messageId` — não há mensagem, só comentário.
+
 Resposta privada a comentário (DM 1):
 
 ```
