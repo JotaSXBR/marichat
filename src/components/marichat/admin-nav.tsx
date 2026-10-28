@@ -23,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { StatusChip } from "@/components/ui/status-chip";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -46,8 +45,8 @@ function initials(handle: string | null) {
 }
 
 /**
- * R1 — uma navegação só. Desktop: pílula de vidro no topo. Mobile: barra
- * plana no topo + 4 abas fixas no polegar (§3, §4).
+ * R1 — uma navegação só. Desktop: masthead de 64 px com régua e item ativo
+ * sublinhado. Mobile: a mesma barra sem itens + 4 abas fixas (§3, §4).
  */
 export function AdminNav({
   handle,
@@ -60,21 +59,22 @@ export function AdminNav({
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-40 md:px-4 md:pt-6">
-        <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur md:h-16 md:gap-3 md:rounded-xl md:border md:bg-card md:px-4">
+      <header className="sticky top-0 z-40 border-b border-border bg-background">
+        <div className="mx-auto flex h-16 max-w-[1240px] items-center gap-5 px-4 md:gap-8">
           <Link
-            className="flex h-12 shrink-0 items-center font-heading text-title tracking-[-0.02em] text-foreground md:h-auto"
+            className="flex h-12 shrink-0 items-center gap-2.5 font-heading text-title font-semibold tracking-[0.06em] text-foreground"
             href="/admin"
           >
+            <span aria-hidden className="size-2.5 rounded-sm bg-primary" />
             MARICHAT
           </Link>
 
           <DesktopNav pathname={pathname} />
 
-          <div className="ml-auto flex min-w-0 items-center gap-2">
-            <ConnectionChip connected={connected} handle={handle} />
+          <div className="ml-auto flex min-w-0 items-center gap-3">
+            <ConnectionStatus connected={connected} handle={handle} />
 
-            <CommandPalette className="hidden w-64 xl:block" />
+            <CommandPalette className="hidden w-56 lg:block" />
 
             <AccountMenu handle={handle} />
           </div>
@@ -90,7 +90,7 @@ function DesktopNav({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Seções do painel"
-      className="ml-2 hidden items-center gap-1 md:flex"
+      className="hidden h-16 items-stretch gap-6 md:flex"
     >
       {NAV_ITEMS.map((item) => {
         const active = isActive(pathname, item.href);
@@ -98,15 +98,21 @@ function DesktopNav({ pathname }: { pathname: string }) {
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-2 text-label transition-colors duration-150 ease-out",
+              "relative flex items-center text-label transition-colors duration-150 ease-out",
               active
-                ? "bg-secondary text-primary"
-                : "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             href={item.href}
             key={item.href}
           >
             {item.label}
+            {active ? (
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-0.5 bg-primary"
+              />
+            ) : null}
           </Link>
         );
       })}
@@ -118,7 +124,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Seções do painel"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="grid grid-cols-4">
         {NAV_ITEMS.map((item) => {
@@ -129,7 +135,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-label transition-colors duration-150 ease-out",
+                  "relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-micro font-medium tracking-normal transition-colors duration-150 ease-out",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
                 href={item.href}
@@ -137,7 +143,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
                 {active ? (
                   <span
                     aria-hidden
-                    className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                    className="absolute inset-x-4 top-0 h-0.5 bg-primary"
                   />
                 ) : null}
                 <Icon aria-hidden className="size-5" />
@@ -151,7 +157,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
   );
 }
 
-function ConnectionChip({
+function ConnectionStatus({
   handle,
   connected,
 }: {
@@ -160,7 +166,7 @@ function ConnectionChip({
 }) {
   return (
     <Link
-      className="flex h-12 items-center md:h-auto"
+      className="flex h-12 min-w-0 items-center gap-2 md:h-10"
       href="/admin/conexao"
       title={
         handle
@@ -168,23 +174,21 @@ function ConnectionChip({
           : "Nenhuma conta conectada"
       }
     >
-      <StatusChip
-        className="max-md:gap-1 max-md:px-2 max-md:tracking-normal"
-        tone={connected ? "success" : handle ? "warning" : "neutral"}
-      >
-        <span className="truncate">
-          {handle ? (
-            <>
-              <span className="md:hidden">
-                {connected ? "Conectado" : "Atenção"}
-              </span>
-              <span className="hidden md:inline">@{handle}</span>
-            </>
-          ) : (
-            "Sem conta"
-          )}
+      <span
+        aria-hidden
+        className={cn(
+          "size-1.5 shrink-0 rounded-full",
+          connected ? "bg-success" : handle ? "bg-warning" : "bg-line-strong",
+        )}
+      />
+      <span className="truncate text-label text-muted-foreground">
+        <span className="md:hidden">
+          {connected ? "Conectado" : handle ? "Atenção" : "Sem conta"}
         </span>
-      </StatusChip>
+        <span className="hidden font-mono text-mono md:inline">
+          {handle ? `@${handle}` : "sem conta"}
+        </span>
+      </span>
     </Link>
   );
 }

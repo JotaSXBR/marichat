@@ -97,10 +97,10 @@ function EditorHeader({
   onBack: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-display text-foreground">
+          <h1 className="text-display text-foreground text-balance">
             {isEditing ? "Editar automação" : "Nova automação"}
           </h1>
           <StatusChip tone={isActive ? "success" : "neutral"}>
@@ -305,7 +305,7 @@ export function AutomationEditor({ initial, mediaOptions, mediaError }: Props) {
         </aside>
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line-subtle bg-background/95 p-3 backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background p-3 md:hidden">
         <Button
           className="w-full"
           form={FORM_ID}

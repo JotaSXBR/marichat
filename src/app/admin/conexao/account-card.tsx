@@ -12,12 +12,6 @@ import type { Account } from "@/lib/accounts";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 
@@ -30,16 +24,18 @@ type Props = {
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-md border border-line-subtle px-3 py-2">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-line-subtle py-2.5 last:border-b-0">
       <dt className="text-label text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 break-all text-body text-foreground">{children}</dd>
+      <dd className="break-all text-right text-body text-foreground">
+        {children}
+      </dd>
     </div>
   );
 }
 
 function AccountDetails({ account, isZernio, subscribedAt }: Props) {
   return (
-    <dl className="grid gap-2 sm:grid-cols-2">
+    <dl className="mt-5 border-t border-border">
       {isZernio ? (
         <Detail label="ID da conta na Zernio">
           <span className="font-mono text-mono">
@@ -70,7 +66,7 @@ function AccountActions({ isZernio }: Pick<Props, "isZernio">) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {isZernio ? null : (
-        <Button asChild className="max-sm:h-12">
+        <Button asChild className="max-sm:h-12" variant="secondary">
           <a href="/api/auth/instagram/start">
             <RefreshCwIcon aria-hidden />
             Reconectar
@@ -107,15 +103,15 @@ export function AccountCard({
   };
 
   return (
-    <Card className="gap-5">
-      <CardHeader>
-        <CardTitle>Conta atual</CardTitle>
-        <CardDescription>
-          O perfil que recebe os comentários e envia as DMs.
-        </CardDescription>
-      </CardHeader>
+    <section aria-labelledby="conta-title" className="min-w-0">
+      <h2 className="text-section text-foreground" id="conta-title">
+        Conta atual
+      </h2>
+      <p className="mt-1 text-label text-muted-foreground">
+        O perfil que recebe os comentários e envia as DMs.
+      </p>
 
-      <div className="flex items-center gap-3">
+      <div className="mt-5 flex items-center gap-3">
         <Avatar size="lg">
           <AvatarFallback>
             {account.username.slice(0, 2).toUpperCase()}
@@ -137,14 +133,16 @@ export function AccountCard({
       />
 
       {webhookError ? (
-        <Alert variant="warning">
+        <Alert className="mt-5" variant="warning">
           <TriangleAlertIcon aria-hidden />
           <AlertTitle>Inscrição de webhooks com erro</AlertTitle>
           <AlertDescription>{webhookError}</AlertDescription>
         </Alert>
       ) : null}
 
-      <AccountActions isZernio={isZernio} />
-    </Card>
+      <div className="mt-5 border-t border-border pt-4">
+        <AccountActions isZernio={isZernio} />
+      </div>
+    </section>
   );
 }

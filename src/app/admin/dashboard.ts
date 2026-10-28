@@ -3,6 +3,7 @@ import "server-only";
 import { count, desc, eq, sql } from "drizzle-orm";
 
 import { getActiveAccount, getAppStateValue } from "@/lib/accounts";
+import { interactionFlow, type InteractionStat } from "@/app/admin/flow";
 import { getDb } from "@/lib/db/client";
 import {
   automations,
@@ -16,7 +17,6 @@ import {
  * e os cálculos ficam aqui, cada um com nome.
  */
 
-type InteractionStat = { state: string; total: number | string };
 type JobStat = { status: string; total: number | string };
 
 function loadRecentInteractions(db: ReturnType<typeof getDb>) {
@@ -71,6 +71,7 @@ function computeMetrics(params: {
 }) {
   const byState = sumByState(params.interactionStats);
   const byJob = sumJobs(params.jobStats);
+  const flow = interactionFlow(params.interactionStats);
 
   return {
     waitingReply:
@@ -80,6 +81,7 @@ function computeMetrics(params: {
       (byState.get("failed") ?? 0) +
       (byState.get("uncertain") ?? 0) +
       (byState.get("expired") ?? 0),
+    ...flow,
     tokenDaysLeft: tokenDaysLeft(params.account, params.dbNow),
   };
 }

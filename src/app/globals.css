@@ -43,32 +43,32 @@
   --color-info: var(--info);
 
   /* Raio — §5.5 */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-2xl: 24px;
-  --radius-3xl: 32px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
 
   /* Tipografia — §5.4 */
-  --font-sans: var(--font-inter);
-  --font-heading: var(--font-inter);
+  --font-sans: var(--font-archivo);
+  --font-heading: var(--font-archivo);
   --font-mono: var(--font-jetbrains-mono);
 
-  /* v5: corpo em 16 px e título que encolhe no celular. */
-  --text-display: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem);
-  --text-display--line-height: 1.15;
-  --text-display--letter-spacing: -0.03em;
+  /* v6: escala de operação, número de fluxo e título mais firme. */
+  --text-display: clamp(1.875rem, 1.5rem + 1.8vw, 2.75rem);
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.025em;
   --text-display--font-weight: 600;
 
   --text-section: 1.25rem;
   --text-section--line-height: 1.75rem;
-  --text-section--letter-spacing: -0.02em;
+  --text-section--letter-spacing: -0.015em;
   --text-section--font-weight: 600;
 
-  --text-title: 1rem;
-  --text-title--line-height: 1.375rem;
-  --text-title--font-weight: 500;
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.4375rem;
+  --text-title--font-weight: 600;
 
   --text-body: 1rem;
   --text-body--line-height: 1.5rem;
@@ -79,8 +79,13 @@
 
   --text-micro: 0.75rem;
   --text-micro--line-height: 1rem;
-  --text-micro--letter-spacing: 0.08em;
+  --text-micro--letter-spacing: 0.06em;
   --text-micro--font-weight: 600;
+
+  --text-figure: 2.5rem;
+  --text-figure--line-height: 1;
+  --text-figure--letter-spacing: -0.02em;
+  --text-figure--font-weight: 500;
 
   --text-mono: 0.875rem;
   --text-mono--line-height: 1.25rem;
@@ -102,6 +107,12 @@
     @apply bg-background text-foreground;
   }
 
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+  }
+
   ::selection {
     background: var(--primary);
     color: var(--primary-foreground);
@@ -120,21 +131,10 @@
 }
 
 @layer utilities {
-  /* Superfície de vidro do §5.3: card + blur + borda + realce interno. */
-  .glass {
+  /* Superfície do §5.3: tinta opaca na prática, régua de 1 px, sem vidro. */
+  .surface {
     background-color: var(--card);
     border: 1px solid var(--border);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
-    backdrop-filter: blur(20px);
-  }
-
-  /* Aurora: brilho radial lime no canto superior direito, ≤ 8%. */
-  .aurora {
-    background-image: radial-gradient(
-      60rem 32rem at 100% 0%,
-      rgb(163 230 53 / 0.08),
-      transparent 70%
-    );
   }
 
   /* Abaixo de 768 px a tabela vira blocos rotulados (§4). */
@@ -179,7 +179,9 @@
       content: attr(data-label);
       flex-shrink: 0;
       color: var(--muted-foreground);
+      font-family: var(--font-mono);
       font-size: 0.75rem;
+      font-weight: 500;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }

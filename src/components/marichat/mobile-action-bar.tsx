@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
  */
 export function MobileActionBar({ href }: { href: string }) {
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-line-subtle bg-background/95 p-3 backdrop-blur md:hidden">
+    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background p-3 md:hidden">
       <Button asChild className="w-full" size="lg">
         <Link href={href}>
           <PlusIcon aria-hidden />

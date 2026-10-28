@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 /**
- * Tabela — §6.4: uma densidade só, linha de 56 px, sem zebra.
- * Cabeçalho em caixa alta de 11 px (`micro`).
+ * Tabela â€” Â§6.4: uma densidade sÃ³, linha de 56 px, sem zebra.
+ * CabeÃ§alho em caixa alta de 11 px (`micro`).
  */
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
@@ -76,7 +76,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-3 text-left align-middle text-micro tracking-[0.08em] whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
+        "h-10 px-3 text-left align-middle font-mono text-micro font-medium tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -89,7 +89,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "h-14 px-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        "h-12 px-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

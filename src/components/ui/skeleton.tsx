@@ -1,6 +1,6 @@
-import { cn } from "cn";
+﻿import { cn } from "@/lib/utils";
 
-/** Skeleton — §7: mesmo tamanho do conteúdo final, sem layout shift. */
+/** Skeleton â€” Â§7: mesmo tamanho do conteÃºdo final, sem layout shift. */
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

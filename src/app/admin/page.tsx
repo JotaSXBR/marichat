@@ -2,9 +2,10 @@ import { connection } from "next/server";
 
 import { loadDashboard } from "@/app/admin/dashboard";
 import {
+  AttentionLedger,
   DashboardAlerts,
-  DashboardCards,
   DashboardHeader,
+  FlowPanel,
   OperationsPanel,
   RecentCommentsSection,
 } from "@/app/admin/dashboard-sections";
@@ -21,7 +22,7 @@ export default async function AdminDashboard() {
   const data = await loadDashboard();
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-8">
       <DashboardHeader />
 
       <DashboardAlerts
@@ -30,18 +31,30 @@ export default async function AdminDashboard() {
         webhookError={data.webhookError}
       />
 
-      <DashboardCards
-        needAttention={data.needAttention}
-        waitingReply={data.waitingReply}
-      />
+      <div className="grid gap-8 lg:grid-cols-12">
+        <div className="space-y-8 lg:col-span-8">
+          <FlowPanel
+            acceptedDms={data.acceptedDms}
+            linksSent={data.linksSent}
+            totalInteractions={data.totalInteractions}
+          />
 
-      <OperationsPanel
-        lastTickAt={data.lastTickAt}
-        queuedJobs={data.queuedJobs}
-        recentEvents={data.recentEvents}
-      />
+          <AttentionLedger
+            needAttention={data.needAttention}
+            waitingReply={data.waitingReply}
+          />
 
-      <RecentCommentsSection rows={data.recent} />
+          <RecentCommentsSection rows={data.recent} />
+        </div>
+
+        <aside className="min-w-0 lg:col-span-4 lg:border-l lg:border-border lg:pl-8">
+          <OperationsPanel
+            lastTickAt={data.lastTickAt}
+            queuedJobs={data.queuedJobs}
+            recentEvents={data.recentEvents}
+          />
+        </aside>
+      </div>
 
       <MobileActionBar href="/admin/automacoes/nova" />
     </div>

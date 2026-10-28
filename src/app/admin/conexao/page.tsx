@@ -45,30 +45,34 @@ export default async function ConnectionPage({
 
       <section
         aria-label="Conta e diagnóstico"
-        className="grid gap-4 lg:grid-cols-2"
+        className="grid gap-8 lg:grid-cols-2 lg:gap-0"
       >
-        {data.account ? (
-          <AccountCard
-            account={data.account}
-            isZernio={isZernio}
-            webhookError={data.webhookError}
-            subscribedAt={data.subscribedAt}
-          />
-        ) : (
-          <EmptyAccountCard
-            isZernio={isZernio}
-            zernioAccounts={data.zernioAccounts}
-            zernioListError={data.zernioListError}
-          />
-        )}
+        <div className="min-w-0">
+          {data.account ? (
+            <AccountCard
+              account={data.account}
+              isZernio={isZernio}
+              webhookError={data.webhookError}
+              subscribedAt={data.subscribedAt}
+            />
+          ) : (
+            <EmptyAccountCard
+              isZernio={isZernio}
+              zernioAccounts={data.zernioAccounts}
+              zernioListError={data.zernioListError}
+            />
+          )}
+        </div>
 
         {data.account ? (
-          <DiagnosticsCard isZernio={isZernio} test={data.connectionTest} />
+          <div className="min-w-0 lg:border-l lg:border-border lg:pl-8">
+            <DiagnosticsCard isZernio={isZernio} test={data.connectionTest} />
+          </div>
         ) : null}
       </section>
 
-      <details className="group">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-border bg-card px-5 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
+      <details className="group border-t border-border">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
           <span>
             Avançado
             <span className="ml-2 font-sans text-label font-normal text-muted-foreground">

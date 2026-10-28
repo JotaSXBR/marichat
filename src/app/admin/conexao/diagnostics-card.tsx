@@ -8,12 +8,6 @@ import {
 import type { ConnectionTestResult } from "@/lib/instagram/diagnostics";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 
@@ -121,16 +115,18 @@ function TestResult({
 /** Teste da conexão e resultado da última verificação. */
 export function DiagnosticsCard({ isZernio, test }: Props) {
   return (
-    <Card className="gap-5">
+    <section aria-labelledby="diagnostico-title" className="min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <CardHeader>
-          <CardTitle>Diagnóstico da conexão</CardTitle>
-          <CardDescription>
+        <div>
+          <h2 className="text-section text-foreground" id="diagnostico-title">
+            Diagnóstico da conexão
+          </h2>
+          <p className="mt-1 max-w-[52ch] text-label text-muted-foreground">
             {isZernio
               ? "Confere se a chave da Zernio é aceita e se a conta vinculada continua ativa lá."
               : "Confere se o token ainda é aceito pela Meta e se os campos de webhook estão assinados nesta conta."}
-          </CardDescription>
-        </CardHeader>
+          </p>
+        </div>
         <form
           action={isZernio ? testZernioConnection : testInstagramConnection}
           className="max-sm:w-full"
@@ -145,15 +141,17 @@ export function DiagnosticsCard({ isZernio, test }: Props) {
         </form>
       </div>
 
-      {test ? (
-        <TestResult test={test} isZernio={isZernio} />
-      ) : (
-        <p className="text-body text-muted-foreground">
-          {isZernio
-            ? "Nenhum teste executado desde a conexão. Rode o teste depois de registrar o webhook."
-            : "Nenhum teste executado desde a conexão. Rode o teste depois de configurar os webhooks no painel da Meta."}
-        </p>
-      )}
-    </Card>
+      <div className="mt-5 border-t border-border pt-4">
+        {test ? (
+          <TestResult test={test} isZernio={isZernio} />
+        ) : (
+          <p className="text-body text-muted-foreground">
+            {isZernio
+              ? "Nenhum teste executado desde a conexão. Rode o teste depois de registrar o webhook."
+              : "Nenhum teste executado desde a conexão. Rode o teste depois de configurar os webhooks no painel da Meta."}
+          </p>
+        )}
+      </div>
+    </section>
   );
 }

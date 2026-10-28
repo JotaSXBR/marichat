@@ -12,12 +12,6 @@ import {
   webhookTones,
   type ChipTone,
 } from "@/app/admin/labels";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
@@ -46,22 +40,23 @@ function Shell({
   children: ReactNode;
 }) {
   return (
-    <Card className="gap-4 p-0">
-      <CardHeader className="px-5 pt-5">
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          {description} Mostrando {count}.
-        </CardDescription>
-      </CardHeader>
+    <section className="border-t border-border pt-5">
+      <div className="pb-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <h2 className="text-section text-foreground">{title}</h2>
+          <span className="font-mono text-micro text-muted-foreground">
+            {count} {count === 1 ? "registro" : "registros"}
+          </span>
+        </div>
+        <p className="mt-1 text-label text-muted-foreground">{description}</p>
+      </div>
       {children}
-    </Card>
+    </section>
   );
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return (
-    <p className="px-5 pb-5 text-body text-muted-foreground">{children}</p>
-  );
+  return <p className="py-4 text-body text-muted-foreground">{children}</p>;
 }
 
 function Chip({
@@ -88,7 +83,7 @@ function InteractionRow({
   return (
     <TableRow>
       <TableCell
-        className="text-label text-muted-foreground"
+        className="font-mono text-mono text-muted-foreground"
         data-label="Quando"
       >
         {formatDateTime(row.createdAt)}
@@ -160,7 +155,7 @@ function JobRow({ row }: { row: ActivityData["jobs"][number] }) {
   return (
     <TableRow>
       <TableCell
-        className="text-label text-muted-foreground"
+        className="font-mono text-mono text-muted-foreground"
         data-label="Atualizado"
       >
         {formatDateTime(row.updatedAt)}
@@ -243,7 +238,7 @@ export function EventsSection({ rows }: { rows: ActivityData["events"] }) {
             {rows.map((row) => (
               <TableRow key={row.eventKey}>
                 <TableCell
-                  className="text-label text-muted-foreground"
+                  className="font-mono text-mono text-muted-foreground"
                   data-label="Quando"
                 >
                   {formatDateTime(row.receivedAt)}

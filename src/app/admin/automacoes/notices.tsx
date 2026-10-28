@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export function ConnectAccountNotice() {
   return (
     <div className="space-y-6">
-      <h1 className="text-display text-foreground">Editar automação</h1>
+      <h1 className="text-display text-foreground text-balance">Editar automação</h1>
       <Alert variant="warning">
         <PlugZapIcon aria-hidden />
         <AlertTitle>Conecte o Instagram primeiro</AlertTitle>

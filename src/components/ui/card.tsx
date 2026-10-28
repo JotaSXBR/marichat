@@ -1,40 +1,40 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 /**
- * Card — §5.3 e §6.4.
- * Vidro (sem sombra), raio de card 24 px, padding 24 px.
- * Variantes: glass (padrão), interactive, empty, alert.
+ * Card â€” Â§5.3 e Â§6.4.
+ * SuperfÃ­cie opaca, raio de card 12 px, padding 20 px.
+ * Variantes: surface (padrÃ£o), interactive, empty, alert.
  */
 const cardVariants = cva(
-  "group/card relative flex flex-col gap-6 overflow-hidden rounded-xl text-body text-card-foreground",
+  "group/card relative flex flex-col gap-5 overflow-hidden rounded-xl text-body text-card-foreground",
   {
     variants: {
       variant: {
-        glass: "glass",
+        surface: "surface",
         interactive:
-          "glass transition-[border-color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:border-line-strong",
+          "surface transition-[border-color] duration-150 ease-out hover:border-line-strong",
         empty: "border border-dashed border-line-strong bg-transparent",
-        alert: "glass border-l-2 border-l-warning",
+        alert: "surface border-l-2 border-l-warning",
       },
     },
     defaultVariants: {
-      variant: "glass",
+      variant: "surface",
     },
   },
 );
 
 function Card({
   className,
-  variant = "glass",
+  variant = "surface",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof cardVariants>) {
   return (
     <div
       data-slot="card"
       data-variant={variant}
-      className={cn(cardVariants({ variant }), "p-6", className)}
+      className={cn(cardVariants({ variant }), "p-5", className)}
       {...props}
     />
   );
@@ -57,7 +57,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("text-title text-foreground text-balance", className)}
+      className={cn("font-heading text-title text-foreground text-balance", className)}
       {...props}
     />
   );
@@ -101,7 +101,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-footer"
       className={cn(
-        "-mx-6 -mb-6 flex items-center gap-3 border-t border-line-subtle px-6 py-4",
+        "-mx-5 -mb-5 flex items-center gap-3 border-t border-line-subtle px-5 py-4",
         className,
       )}
       {...props}

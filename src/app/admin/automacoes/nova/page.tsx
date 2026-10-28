@@ -20,7 +20,7 @@ export default async function NewAutomationPage() {
   if (!account || !media) {
     return (
       <div className="space-y-6">
-        <h1 className="text-display text-foreground">Nova automação</h1>
+        <h1 className="text-display text-foreground text-balance">Nova automação</h1>
         <Alert variant="warning">
           <PlugZapIcon aria-hidden />
           <AlertTitle>Conecte o Instagram primeiro</AlertTitle>

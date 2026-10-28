@@ -16,13 +16,7 @@ import {
 import type { DashboardData } from "@/app/admin/dashboard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { PageHeader } from "@/components/marichat/page-header";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
@@ -38,20 +32,18 @@ import { cn } from "@/lib/utils";
 
 export function DashboardHeader() {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-6">
-      <div className="max-w-2xl">
-        <h1 className="text-display text-foreground">Visão geral</h1>
-        <p className="mt-2 text-body text-muted-foreground">
-          Comentário com a palavra-chave → DM pedindo resposta → link.
-        </p>
-      </div>
-      <Button asChild className="hidden md:inline-flex" size="lg">
-        <Link href="/admin/automacoes/nova">
-          <PlusIcon aria-hidden />
-          Nova automação
-        </Link>
-      </Button>
-    </div>
+    <PageHeader
+      action={
+        <Button asChild className="hidden md:inline-flex" size="lg">
+          <Link href="/admin/automacoes/nova">
+            <PlusIcon aria-hidden />
+            Nova automação
+          </Link>
+        </Button>
+      }
+      description="Comentário com a palavra-chave → DM pedindo resposta → link."
+      title="Visão geral"
+    />
   );
 }
 
@@ -174,54 +166,130 @@ export function DashboardAlerts({
 
 /* ------------------------------------------------------------------ R4 */
 
-export function Metric({
-  label,
-  value,
-  hint,
-  tone,
-}: {
-  label: string;
-  value: number | string;
-  hint: string;
-  tone?: "warning";
-}) {
+/** O caminho real do produto, com número de cada etapa. */
+export function FlowPanel({
+  totalInteractions,
+  acceptedDms,
+  linksSent,
+}: Pick<
+  DashboardData,
+  "totalInteractions" | "acceptedDms" | "linksSent"
+>) {
+  const stages = [
+    {
+      step: "01",
+      label: "Comentários",
+      value: totalInteractions,
+      hint: "palavra-chave encontrada",
+    },
+    {
+      step: "02",
+      label: "DMs aceitas",
+      value: acceptedDms,
+      hint: "a Meta confirmou o envio",
+    },
+    {
+      step: "03",
+      label: "Links enviados",
+      value: linksSent,
+      hint: "a pessoa recebeu o link",
+    },
+  ];
+
   return (
-    <Card
-      className={cn(
-        "gap-2 p-5",
-        tone === "warning" && "border-l-2 border-l-warning",
-      )}
-    >
-      <p className="text-micro text-muted-foreground uppercase">{label}</p>
-      <p className="text-section text-foreground" data-numeric>
-        {value}
-      </p>
-      <p className="text-label text-muted-soft">{hint}</p>
-    </Card>
+    <section aria-labelledby="fluxo-title" className="border-y border-border">
+      <h2 className="sr-only" id="fluxo-title">
+        Fluxo dos comentários
+      </h2>
+      <dl className="grid divide-y divide-line-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {stages.map((stage) => (
+          <div
+            className="py-5 sm:px-5 sm:first:pl-0 sm:last:pr-0"
+            key={stage.step}
+          >
+            <dt className="flex items-baseline gap-2">
+              <span className="font-mono text-micro text-muted-foreground">
+                {stage.step}
+              </span>
+              <span className="text-label text-foreground">{stage.label}</span>
+            </dt>
+            <dd className="mt-3 text-figure text-foreground" data-numeric>
+              {stage.value}
+              <span className="mt-2 block font-sans text-label font-normal tracking-normal text-muted-soft">
+                {stage.hint}
+              </span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
-export function DashboardCards({
-  waitingReply,
+export function AttentionLedger({
   needAttention,
-}: Pick<DashboardData, "waitingReply" | "needAttention">) {
+  waitingReply,
+}: Pick<DashboardData, "needAttention" | "waitingReply">) {
   return (
-    <section
-      aria-label="Resumo do período"
-      className="grid grid-cols-2 gap-3 md:gap-4"
-    >
-      <Metric
-        hint="Falhas, incertezas ou expirações"
-        label="Precisam de atenção"
-        tone={needAttention > 0 ? "warning" : undefined}
-        value={needAttention}
-      />
-      <Metric
-        hint="Primeira DM aceita, link ainda não enviado"
-        label="Aguardando resposta"
-        value={waitingReply}
-      />
+    <section aria-labelledby="pendencias-title">
+      <h2 className="sr-only" id="pendencias-title">
+        Pendências
+      </h2>
+      <dl className="divide-y divide-line-subtle border-b border-border">
+        <div className="flex items-baseline justify-between gap-6 py-4">
+          <dt>
+            <span className="text-body text-foreground">
+              Precisam de atenção
+            </span>
+            <span className="mt-0.5 block text-label text-muted-soft">
+              Falhas, incertezas ou expirações
+            </span>
+          </dt>
+          <dd
+            className={cn(
+              "text-figure",
+              needAttention > 0 ? "text-warning" : "text-foreground",
+            )}
+            data-numeric
+          >
+            {needAttention}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-6 py-4">
+          <dt>
+            <span className="text-body text-foreground">
+              Aguardando resposta
+            </span>
+            <span className="mt-0.5 block text-label text-muted-soft">
+              Primeira DM aceita, link ainda não enviado
+            </span>
+          </dt>
+          <dd className="text-figure text-foreground" data-numeric>
+            {waitingReply}
+          </dd>
+        </div>
+      </dl>
     </section>
+  );
+}
+
+function Readout({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-3">
+      <dt className="text-label text-muted-foreground">{label}</dt>
+      <dd
+        className="text-right font-mono text-mono text-foreground"
+        data-numeric
+      >
+        {value}
+      </dd>
+    </div>
   );
 }
 
@@ -231,45 +299,33 @@ export function OperationsPanel({
   recentEvents,
 }: Pick<DashboardData, "queuedJobs" | "lastTickAt" | "recentEvents">) {
   return (
-    <Card className="gap-4 p-5">
-      <CardHeader>
-        <CardTitle>Operação</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <dt className="text-micro text-muted-foreground uppercase">
-              Mensagens na fila
-            </dt>
-            <dd className="mt-1 text-section text-foreground" data-numeric>
-              {queuedJobs}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-micro text-muted-foreground uppercase">
-              Última tarefa
-            </dt>
-            <dd className="mt-1 text-body text-foreground">
-              {lastTickAt ? formatDateTime(new Date(lastTickAt)) : "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-micro text-muted-foreground uppercase">
-              Último webhook
-            </dt>
-            <dd className="mt-1 text-body text-foreground">
-              {recentEvents[0]
-                ? formatDateTime(recentEvents[0].receivedAt)
-                : "—"}
-            </dd>
-          </div>
-        </dl>
-        <p className="mt-4 text-label text-muted-soft">
-          &quot;Aceita&quot; significa que a Meta recebeu a solicitação; não é
-          confirmação de leitura.
-        </p>
-      </CardContent>
-    </Card>
+    <aside aria-labelledby="operacao-title" className="min-w-0">
+      <h2
+        className="border-b border-border pb-3 text-title text-foreground"
+        id="operacao-title"
+      >
+        Operação
+      </h2>
+      <dl className="divide-y divide-line-subtle">
+        <Readout label="Mensagens na fila" value={queuedJobs} />
+        <Readout
+          label="Última tarefa"
+          value={lastTickAt ? formatDateTime(new Date(lastTickAt)) : "—"}
+        />
+        <Readout
+          label="Último webhook"
+          value={
+            recentEvents[0]
+              ? formatDateTime(recentEvents[0].receivedAt)
+              : "—"
+          }
+        />
+      </dl>
+      <p className="mt-4 text-label text-muted-soft">
+        &quot;Aceita&quot; significa que a Meta recebeu a solicitação; não é
+        confirmação de leitura.
+      </p>
+    </aside>
   );
 }
 
@@ -286,63 +342,71 @@ export function RecentCommentsSection({
   const visible = rows.slice(0, RECENT_LIMIT);
 
   return (
-    <Card className="gap-0 overflow-hidden p-0">
-      <CardHeader className="px-5 pt-5 md:px-6 md:pt-6">
-        <CardTitle>Últimos comentários atendidos</CardTitle>
-        <CardDescription>
+    <section aria-labelledby="recentes-title" className="min-w-0">
+      <div className="border-b border-border pb-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <h2 className="text-section text-foreground" id="recentes-title">
+            Últimos comentários atendidos
+          </h2>
+          {visible.length > 0 ? (
+            <span className="hidden font-mono text-micro text-muted-foreground sm:inline">
+              {visible.length} de {rows.length}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-1 text-label text-muted-foreground">
           {rows.length === 0
             ? "Os comentários aparecem aqui assim que chegam."
-            : `Os ${visible.length} mais recentes.`}
-        </CardDescription>
-      </CardHeader>
+            : visible.length === 1
+              ? "O mais recente."
+              : `Os ${visible.length} mais recentes.`}
+        </p>
+      </div>
 
       {visible.length > 0 ? (
-        <div className="mt-4">
-          <Table className="table-stack">
-            <caption className="sr-only">
-              Últimos comentários atendidos, com data, automação, autor e
-              situação
-            </caption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Quando</TableHead>
-                <TableHead>Automação</TableHead>
-                <TableHead>Quem comentou</TableHead>
-                <TableHead>Situação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visible.map((row, index) => (
-                <TableRow
-                  className={cn(index >= MOBILE_LIMIT && "table-stack-extra")}
-                  key={row.id}
+        <Table className="table-stack">
+          <caption className="sr-only">
+            Últimos comentários atendidos, com data, automação, autor e situação
+          </caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Quando</TableHead>
+              <TableHead>Automação</TableHead>
+              <TableHead>Quem comentou</TableHead>
+              <TableHead>Situação</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.map((row, index) => (
+              <TableRow
+                className={cn(index >= MOBILE_LIMIT && "table-stack-extra")}
+                key={row.id}
+              >
+                <TableCell
+                  className="font-mono text-mono text-muted-foreground"
+                  data-label="Quando"
                 >
-                  <TableCell
-                    className="text-muted-foreground"
-                    data-label="Quando"
-                  >
-                    {formatDateTime(row.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-foreground" data-label="Automação">
-                    {row.automationName ?? "—"}
-                  </TableCell>
-                  <TableCell
-                    className="font-mono text-mono text-muted-foreground"
-                    data-label="Quem comentou"
-                  >
-                    {row.commenter}
-                  </TableCell>
-                  <TableCell data-label="Situação">
-                    <StatusChip tone={interactionTones[row.state] ?? "neutral"}>
-                      {interactionLabels[row.state] ?? row.state}
-                    </StatusChip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                  {formatDateTime(row.createdAt)}
+                </TableCell>
+                <TableCell className="text-foreground" data-label="Automação">
+                  {row.automationName ?? "—"}
+                </TableCell>
+                <TableCell
+                  className="font-mono text-mono text-muted-foreground"
+                  data-label="Quem comentou"
+                >
+                  {row.commenter}
+                </TableCell>
+                <TableCell data-label="Situação">
+                  <StatusChip tone={interactionTones[row.state] ?? "neutral"}>
+                    {interactionLabels[row.state] ?? row.state}
+                  </StatusChip>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       ) : null}
-    </Card>
+    </section>
   );
 }

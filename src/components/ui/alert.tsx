@@ -1,10 +1,10 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 /**
- * Alerta — região R3 (§9). No máximo 2 empilhados.
- * Fundo tintado a 12% do tom, borda do mesmo tom, ícone + texto.
+ * Alerta â€” regiÃ£o R3 (Â§9). No mÃ¡ximo 2 empilhados.
+ * Fundo tintado a 12% do tom, borda do mesmo tom, Ã­cone + texto.
  */
 const alertVariants = cva(
   "group/alert relative grid w-full gap-1 rounded-lg border px-4 py-3 text-left text-body has-data-[slot=alert-action]:pr-20 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-3 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",

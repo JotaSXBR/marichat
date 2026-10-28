@@ -1,17 +1,30 @@
-# MARICHAT — Design System v5
+# MARICHAT — Design System v6
 
-Fonte única de verdade visual do painel. Substitui a v4 por completo.
+Fonte única de verdade visual do painel. Substitui a v5 por completo.
 
-A v5 é a v4 implementada e enxugada: o mesmo cockpit escuro, agora com barra de
-abas no polegar no celular, corpo em 16 px, duas métricas na Visão geral, abas na
-Atividade e o diagnóstico técnico atrás de um disclosure. Nada de dado técnico
-que não ajude a decidir.
+A v5 organizou o produto, mas herdou a cara de dashboard SaaS: pílula de vidro,
+aurora lime, card de 24 px para tudo, Inter em todos os pesos e métricas em
+caixas iguais. A v6 parte de outra ideia: **mesa de operação**. O painel mostra
+o caminho do produto (comentário → DM → link) como uma linha de montagem, usa
+régua e tipografia no lugar de cartão decorativo, e reserva o lime para a ação
+primária, a aba ativa e o fluxo.
 
-A diferença central da v4: **o visual nasce do Kokonut UI OSS** (registry do
-shadcn), com a base neutra escura e o vidro que ele já usa, e tudo o que o
-Kokonut não tem vem do **shadcn/ui** — que é a dependência que o próprio Kokonut
-assume. O produto, as telas e as leis de UX continuam os mesmos; o que muda é de
-onde vêm os componentes e como eles são adaptados.
+Consequências diretas:
+
+- **Arquivo** no texto e nos títulos; **JetBrains Mono** em dado, handle, ID,
+  URL e timestamp. Inter sai.
+- **Superfície opaca** em dois degraus. Sem `backdrop-blur`, sem aurora, sem
+  dot grid, sem realce interno de vidro.
+- **Raio curto**: 8 px em controle, 10 px em bloco, 12 px em card, 16 px em
+  moldura. Card não é almofada.
+- **Régua antes de caixa**: se o conteúdo não é um objeto separado, ele vive
+  numa seção com linha e espaço, não dentro de mais um card.
+- **Uma ação por linha**: "Editar" vira link de texto com alvo de 48 px, não
+  botão repetido em cada card.
+
+A base de componentes continua shadcn/ui + Kokonut OSS; o que muda é a
+composição e os tokens. As capturas Stitch da v5 ficam como referência
+histórica, não como fonte.
 
 - Catálogo e regras do Kokonut: [`docs/KOKONUT.md`](docs/KOKONUT.md).
 - Brief original do produto: [`docs/PROMPT-INICIAL.md`](docs/PROMPT-INICIAL.md).
@@ -66,12 +79,13 @@ relatórios, tema claro.
 
 ## 3. Navegação e informação
 
-Uma navegação só: no desktop, pílula de vidro no topo com **4 itens**, marca
-`MARICHAT`, indicador de conexão (`@handle`), botão de comandos `Ctrl K` e menu
-de conta. No celular, barra plana no topo (marca, chip de conexão e conta) e
+Uma navegação só: no desktop, **masthead** de 64 px encostado no topo, com
+régua inferior, marca `MARICHAT` + quadrado lime, **4 itens** em texto com
+sublinhado lime no ativo, leitura de conexão em mono (`● @handle`), botão de
+comandos `Ctrl K` e menu de conta. No celular, a mesma barra sem os itens e
 **4 abas fixas no rodapé**, com alvo de 64 px; a ação primária das telas que
 criam algo sobe para uma barra acima das abas, na zona do polegar. Sem sidebar,
-sem topbar duplicada, sem seletor de tema.
+sem topbar duplicada, sem seletor de tema, sem pílula flutuante.
 
 Profundidade máxima: 2 níveis (nav → página → drawer). O editor tem URL própria.
 Filtros e busca vivem na URL (`?q=&status=`).
@@ -84,7 +98,7 @@ Toda tela é `R1 + R2 + (R3?) + R4 + (R5?) + (R6?)`. Nenhuma sétima região.
 
 | # | Região | Conteúdo | Regra |
 | :-- | :-- | :-- | :-- |
-| R1 | Navegação | pílula de vidro, 4 itens, status, conta | fixa, 24 px do topo |
+| R1 | Navegação | masthead com régua, 4 itens, status em mono, conta | sticky, 64 px |
 | R2 | Cabeçalho | `h1`, subtítulo de uma linha, ação primária | ação à direita |
 | R3 | Sinais | alertas e avisos | no máximo 2 empilhados |
 | R4 | Conteúdo | cards, tabelas, formulário | única região que rola |
@@ -92,11 +106,10 @@ Toda tela é `R1 + R2 + (R3?) + R4 + (R5?) + (R6?)`. Nenhuma sétima região.
 | R6 | Ilha | conexão/fila em tempo real | rodapé central, 8 s |
 
 **Grid:** desktop de referência 1440 px, conteúdo até 1240 px, 12 colunas,
-gutter 24 px. Ritmo vertical: 32 px entre seções, 24 px entre cards, 16 px entre
-campos, 12 px entre controles.
+gutter 16 px. Ritmo vertical: 32 px entre seções, 16 px entre cards, 12 px entre
+campos, 8 px entre controles.
 
-**Responsivo:** ≤1279 px o trilho vai para 320 px ou abaixo do conteúdo; ≤1023 px
-nav compacta + drawer, tabela com scroll e primeira coluna fixa; <768 px uma
+**Responsivo:** ≤1279 px o trilho vai para baixo do conteúdo; <768 px uma
 coluna, abas fixas no rodapé, linhas de tabela viram blocos rotulados com
 `data-label`, ação primária em barra inferior de 48 px com
 `safe-area-inset-bottom`. Em 320 px e 200% de zoom não há scroll horizontal.
@@ -132,7 +145,7 @@ prefixo próprio. Hex só existe em `src/styles/tokens.css`.
 | `--border` | `rgb(255 255 255 / 0.10)` | borda de card |
 | `--input` | `#66666D` | borda de controle (3,49:1) |
 | `--ring` | `#A3E635` | anel de foco |
-| `--radius` | `24px` | raio base do shadcn (usado com `calc`) |
+| `--radius` | `8px` | raio base do shadcn (usado com `calc`) |
 
 Extras do MARICHAT:
 
@@ -147,10 +160,10 @@ Extras do MARICHAT:
 | `--warning` | `#FBBF24` | aguardando, token expirando |
 | `--danger` | `#F87171` | falhou, desconectar |
 | `--info` | `#60A5FA` | processando, informativo |
-| `--radius-control` | `12px` | input, botão |
-| `--radius-inner` | `16px` | bloco interno |
-| `--radius-card` | `24px` | card, tabela |
-| `--radius-frame` | `32px` | moldura de prévia |
+| `--radius-control` | `8px` | input, botão |
+| `--radius-inner` | `10px` | bloco interno |
+| `--radius-card` | `12px` | card, tabela |
+| `--radius-frame` | `16px` | moldura de prévia |
 
 **Proibido:** `#71717A` como texto (4,12:1, reprova), `zinc-*`/`emerald-*`/
 `orange-*` do Kokonut cru, gradiente como fundo de área grande, mais de um
@@ -158,9 +171,9 @@ matiz de ação por tela.
 
 ### 5.2 Contraste verificado (WCAG 2.2 AA)
 
-Fundo `#09090B` e vidro `#131315` (branco 4% sobre o canvas).
+Fundo `#09090B` e superfície `#131315` (branco 4% sobre o canvas).
 
-| Token | Canvas | Vidro | Veredito |
+| Token | Canvas | Superfície | Veredito |
 | :-- | --: | --: | :-- |
 | `--foreground` | 19,06:1 | 17,78:1 | AAA |
 | `--card-foreground` | 13,46:1 | 12,56:1 | AAA |
@@ -180,16 +193,18 @@ Regras: chip usa a cor de estado sobre fundo tintado a 12% (pior par: danger
 `--line-subtle`, `text-muted` e `aria-disabled`; placeholder nunca substitui
 label; borda com significado usa `--input` ou `--ring`, nunca hairline de 10%.
 
-### 5.3 Superfícies, vidro e movimento
+### 5.3 Superfícies, régua e movimento
 
-- **Vidro:** `--card` + `backdrop-blur(20px)` + borda 1 px `--border` + realce
-  interno de 1 px `rgb(255 255 255 / 0.10)` no topo.
+- **Superfície:** `--card` é tinta branca a 4% sobre o canvas, sem blur. O card
+  é opaco na prática, com borda de 1 px `--border` e nenhum realce interno.
 - **Elevação:** sem sombra em card. Overlay usa `0 24px 64px rgb(0 0 0 / 0.45)`.
-- **Card:** raio 24 px, padding 24 px. Hover em card interativo sobe 2 px e a
-  borda vai para `--line-strong`.
-- **Aurora:** um brilho radial lime no canto superior direito, ≤8%, nunca atrás
-  de texto denso. Em `prefers-reduced-motion`, estático.
-- **Dot grid:** 3% de opacidade, 24 px, só no fundo.
+- **Card:** raio 12 px, padding 20 px. Hover em card interativo muda só a borda
+  para `--line-strong`; sem translate.
+- **Régua:** seção sem objeto próprio usa `border-t`/`border-b` de 1 px e
+  espaço, nunca um card em volta.
+- **Aurora, dot grid e vidro:** removidos. Não voltam como decoração.
+- **Sinal lime:** ação primária, sublinhado da navegação ativa e marcador do
+  fluxo. Nada de glow.
 
 | Movimento | Duração | Onde |
 | :-- | :-- | :-- |
@@ -201,29 +216,33 @@ Em `prefers-reduced-motion: reduce`, sem transform nem pulso; só opacidade.
 
 ### 5.4 Tipografia
 
-**Inter** para interface, **JetBrains Mono** para `@handles`, IDs, URLs,
-timestamps e números tabulares. Ambos via `next/font`, `display: swap`.
+**Archivo** para interface e títulos (grotesk de sinal, com largura própria),
+**JetBrains Mono** para `@handles`, IDs, URLs, timestamps e números tabulares.
+Ambos via `next/font`, `display: swap`. Inter não é carregada.
 
 | Token | Tamanho/linha | Peso | Uso |
 | :-- | :-- | :-- | :-- |
-| `display` | `clamp(30, 40)` px / 1.15, -0.03em | 600 | `h1` de página |
-| `section` | 20/28, -0.02em | 600 | título de seção |
-| `title` | 16/22 | 500 | título de card |
+| `display` | `clamp(30, 44)` px / 1.05, -0.025em | 600 | `h1` de página |
+| `section` | 20/28, -0.015em | 600 | título de seção |
+| `title` | 17/23 | 600 | título de card |
 | `body` | 16/24 | 400 | corpo |
 | `label` | 14/20 | 500 | label, botão, nav |
-| `micro` | 12/16, +0.08em | 600 | label de tabela/métrica |
+| `micro` | 12/16, +0.06em | 600 | label de tabela/métrica |
+| `figure` | 40/40, -0.02em | 500 | número do fluxo e da pendência |
 | `mono` | 14/20 | 400 | dados técnicos |
 
 Máximo dois pesos por card; sem itálico; `tabular-nums` em métricas; linha de
-68ch; títulos com `text-wrap: balance`. **16 px é o piso do texto corrido**;
+62ch; títulos com `text-wrap: balance`. **16 px é o piso do texto corrido**;
 `micro` só existe em caixa alta curta (cabeçalho de tabela, chip, métrica).
 
 ### 5.5 Espaço, raio, ícones
 
-Espaço só em 4, 8, 12, 16, 24, 32, 48 e 64. Raio: 12 controle, 16 interno, 24
-card, 32 moldura. Ícones **Lucide** (16/18/20 px, stroke 1,75), `aria-hidden`
+Espaço só em 4, 8, 12, 16, 24, 32, 48 e 64. Raio: 8 controle, 10 interno, 12
+card, 16 moldura. Ícones **Lucide** (16/18/20 px, stroke 1,75), `aria-hidden`
 quando decorativos; ícone sozinho exige `aria-label`. Avatar 24 px em tabela,
 40 px em card, 64 px em perfil, sempre com borda e fallback de iniciais.
+Ícone só onde acelera reconhecimento: navegação, controle e estado. Sem ícone
+decorativo em título de seção.
 
 ### 5.6 Foco e teclado
 
@@ -301,7 +320,7 @@ Detalhe completo em [`docs/KOKONUT.md`](docs/KOKONUT.md).
 | Componente | Variantes permitidas |
 | :-- | :-- |
 | Botão | `primary`, `secondary`, `ghost`, `destructive`; tamanhos `sm 32`, `md 40`, `lg 48` |
-| Card | `glass`, `interactive`, `empty`, `alert` |
+| Card | `surface`, `interactive`, `empty`, `alert` |
 | Chip | `success`, `warning`, `danger`, `neutral`, `info`, `loading` |
 | Input | `default`, `with-icon`, `with-suffix`, `error`, `disabled` |
 | Tabela | uma densidade: linha 56 px, sem zebra |
@@ -356,14 +375,17 @@ tabela vazio.
 - **R3:** no máximo 2 alertas. Exemplos: "2 DMs falharam e serão tentadas de
   novo" (warning, ação "Revisar"); "Token expira em 6 dias" (info, ação
   "Conexão").
-- **R4:** **duas** tiles (`card` shadcn, sem gráfico): Precisam de atenção 3
-  (borda esquerda warning) e Aguardando resposta 38. Nada de "links enviados"
-  nem "automações ativas": o que não pede ação não ocupa a primeira dobra.
-  Depois, um resumo compacto de operação (fila, última tarefa, último webhook,
-  em uma linha no desktop) e a lista "Últimos comentários atendidos" com 3
-  linhas no celular e 5 no desktop; no desktop, `table`; no celular, blocos
-  rotulados.
-- **Fora da tela:** painel de conta (o chip `@handle` já resolve), token com
+- **R4:** grid 8/4 no desktop. Na coluna principal, nesta ordem:
+  1. **Fluxo** em três etapas numeradas (01 Comentários, 02 DMs aceitas,
+     03 Links enviados) com contagem real e uma linha de explicação por etapa.
+     É o caminho do produto, não uma fila de KPI.
+  2. **Pendências** em `dl` de régua: Precisam de atenção (número em warning só
+     quando > 0) e Aguardando resposta. Sem tiles, sem cards.
+  3. **Últimos comentários atendidos** com 3 linhas no celular e 5 no desktop;
+     no desktop, `table`; no celular, blocos rotulados. Sem moldura de card.
+  Na coluna lateral, **Operação** em mono (fila, última tarefa, último webhook)
+  e a nota do que "aceita" significa.
+- **Fora da tela:** painel de conta (o status `@handle` já resolve), token com
   data, ilha flutuante de status e métricas duplicadas.
 - **Estados:** sem conta → vazio com "Conectar Instagram"; erro de webhook/token
   → alerta danger com link para Conexão; carregando → skeletons; parcial →
@@ -371,9 +393,10 @@ tabela vazio.
 
 ### 9.2 Automações (`/admin/automacoes`) — R1, R2, R3, R4
 
-- Lista de cards (não tabela): chip de status + `switch`, nome, palavra-chave em
-  mono, host do link e "Editar". Publicação, porta de seguidor e IDs ficam no
-  editor.
+- Lista de linhas com superfície (não tabela): chip de status + `switch`, nome,
+  palavra-chave em mono, host do link e "Editar" como link de texto com alvo de
+  48 px no celular. Publicação, porta de seguidor e IDs ficam no editor.
+- A contagem de automações aparece em mono ao lado do `h1`, não como card.
 - Card pausado: chip neutral, borda apagada, sem lime; nada de `opacity` no
   texto (contraste).
 - Busca e filtro na URL; vazio com "Nova automação"; erro de carregamento com
@@ -395,8 +418,9 @@ tabela vazio.
 
 ### 9.4 Atividade (`/admin/atividade`) — R1, R2, R3, R4
 
-- **Abas na URL:** Interações (`?situacao=`), Envios, Webhooks. Uma lista por
-  vez; o filtro de situação só existe em Interações.
+- **Abas na URL:** Interações (`?situacao=`), Envios, Webhooks. Régua inferior
+  com sublinhado lime no ativo, não um segmentado em pílula. Uma lista por vez;
+  o filtro de situação só existe em Interações.
 - Interações: Quando, Automação, Comentário (texto + `@autor`), Situação.
   Envios: Atualizado, Tipo, Quem, Situação, Erro. Webhooks: Quando, Campo,
   Situação, Erro. Sem ID de mídia, ID cru de quem comentou, contagem de
@@ -408,8 +432,9 @@ tabela vazio.
 
 ### 9.5 Conexão (`/admin/conexao`) — R1, R2, R3, R4, R5
 
-- Card da conta: avatar, `@handle`, chip, grid 2×2 de detalhes, "Reconectar" e
-  "Desconectar" (hold-button + diálogo).
+- Seção da conta: avatar, `@handle`, chip, `dl` de régua (sem caixas internas),
+  "Reconectar" e "Desconectar" (hold-button + diálogo). Diagnóstico na coluna
+  ao lado no desktop, separado por régua vertical.
 - Diagnóstico com lista de checagens (ícone + texto), último teste e "Testar
   conexão".
 - **Avançado** (fechado): endereço do webhook, campos assinados, checklist de
@@ -444,20 +469,10 @@ tabela vazio.
 
 ### 10.3 Stitch
 
-O projeto Stitch atual é **MARICHAT — Painel v5** (`8856489533725603480`), com o
-design system **MARICHAT v5** (`8408865358604461237`). Prompts, saídas e capturas
-ficam em `.stitch/v5/`; os scripts `generate.mjs` e `edit.mjs` regeneram uma tela
-sem refazer o projeto.
-
-- Antes de gerar, enviar este `DESIGN.md` e o design system do projeto.
-- Declarar no prompt apenas os componentes do §6.2 pelo nome (ex.: "status
-  island", "uptime card"), sem repetir cores, fontes ou raios.
-- Desktop 1440 px e mobile 390 px, tema escuro fixo, 4 itens de nav (abas no
-  rodapé no mobile), gutter 24 px.
-- Pedir foco visível, erro inline, skeleton, vazio e alvos de 48 px.
-- Limitar a 5–7 linhas/cards visíveis, no máximo 2 alertas, uma ação primária.
-- Nunca pedir hero, ilustração, emoji, 3D, partículas, carrossel, chat lateral,
-  segundo acento, sidebar + topbar.
+As capturas e prompts da v5 ficam em `.stitch/v5/` como **referência histórica**.
+A v6 foi desenhada no código: o layout de fluxo, a tipografia Archivo e as
+superfícies planas não vêm de uma geração Stitch. Antes de gerar uma tela nova,
+enviar este `DESIGN.md`; a v5 não é fonte.
 
 ### 10.4 Ordem de implementação
 
@@ -469,3 +484,16 @@ sem refazer o projeto.
 4. Automações, Editor, Atividade, Conexão, uma por vez.
 5. Testes: `axe` nas 5 rotas, varredura de teclado, contraste dos tokens e
    snapshot em 1440/1024/390/320.
+
+---
+
+## 11. Decisões da v6
+
+| Data | Decisão | Por quê |
+| :-- | :-- | :-- |
+| 2026-10-27 | Archivo no lugar de Inter | Inter em todos os pesos era o principal sinal de template; Archivo dá voz de operação sem virar display exótica. |
+| 2026-10-27 | Superfícies opacas, sem vidro/aurora/dot grid | Profundidade falsa e brilho decorativo não ajudam a decidir; densidade vem da régua e do dado. |
+| 2026-10-27 | Fluxo 01/02/03 na Visão geral | O produto é comentário → DM → link; mostrar o caminho vale mais que quatro KPIs iguais. |
+| 2026-10-27 | Números só onde há ação | Pendências viram ledger; "links enviados" fica no fluxo, não em tile. |
+| 2026-10-27 | Rail de 4 colunas no desktop | 8/4 separa operação (principal) de leitura (lateral) sem sidebar nova. |
+| 2026-10-27 | "Editar" como link em cada automação | Ação repetida em card vira ruído; link com alvo de 48 px resolve sem botão. |

@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { Avatar as AvatarPrimitive } from "radix-ui";
 
 /**
- * Avatar — §5.5: 24 px em tabela (sm), 40 px em card (default),
+ * Avatar â€” Â§5.5: 24 px em tabela (sm), 40 px em card (default),
  * 64 px em perfil (lg). Sempre com borda e fallback de iniciais.
  */
 function Avatar({

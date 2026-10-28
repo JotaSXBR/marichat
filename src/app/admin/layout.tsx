@@ -34,7 +34,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       />
 
       <main
-        className="mx-auto max-w-[1240px] px-4 pt-20 pb-36 md:pt-32 md:pb-16"
+        className="mx-auto max-w-[1240px] px-4 pt-8 pb-36 md:pt-12 md:pb-16"
         id="conteudo"
       >
         {children}

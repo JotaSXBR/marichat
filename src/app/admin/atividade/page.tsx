@@ -49,7 +49,7 @@ export default async function ActivityPage({
     : "/admin/atividade";
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-8">
       <ActivityHeader href={refreshHref} />
 
       <ActivityAlerts
@@ -74,15 +74,15 @@ export default async function ActivityPage({
       {tab === "envios" ? <JobsSection rows={data.jobs} /> : null}
       {tab === "webhooks" ? <EventsSection rows={data.events} /> : null}
 
-      <details className="group rounded-lg border border-border bg-card">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
+      <details className="group border-t border-border">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-3 text-title text-foreground [&::-webkit-details-marker]:hidden">
           Ver diagnóstico
           <ChevronDownIcon
             aria-hidden
             className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-180"
           />
         </summary>
-        <div className="space-y-4 border-t border-line-subtle p-4 md:p-5">
+        <div className="space-y-4 pb-2">
           <ActivityStats
             drainSummary={data.drainSummary}
             lastDrainAt={data.lastDrainAt}

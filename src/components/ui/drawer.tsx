@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { Drawer as DrawerPrimitive } from "vaul";
 
-/** Drawer (vaul) — base do menu no mobile (§4, ≤1023 px). */
+/** Drawer (vaul) â€” base do menu no mobile (Â§4, â‰¤1023 px). */
 function Drawer({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {

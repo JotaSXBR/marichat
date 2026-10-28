@@ -1,8 +1,8 @@
-import * as React from "react";
-import { cn } from "cn";
+﻿import * as React from "react";
+import { cn } from "@/lib/utils";
 
 /**
- * Campo de texto — §6.4.
+ * Campo de texto â€” Â§6.4.
  * Altura 40, raio de controle, borda `--input` (3,49:1) e foco lime.
  */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {

@@ -1,13 +1,13 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { Switch as SwitchPrimitive } from "radix-ui";
 
 /**
- * Toggle de automação — §6.2.
- * Ligado = lime; desligado = `--input`. O estado também é lido por
- * `aria-checked` (nunca só cor).
+ * Toggle de automaÃ§Ã£o â€” Â§6.2.
+ * Ligado = lime; desligado = `--input`. O estado tambÃ©m Ã© lido por
+ * `aria-checked` (nunca sÃ³ cor).
  */
 function Switch({
   className,

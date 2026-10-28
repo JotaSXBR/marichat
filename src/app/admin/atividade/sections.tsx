@@ -11,9 +11,9 @@ import {
   ACTIVITY_FILTERS,
   type ActivityFilter,
 } from "@/app/admin/atividade/data";
-import { Metric } from "@/app/admin/dashboard-sections";
 import { formatDateTime, interactionLabels } from "@/app/admin/labels";
 import type { ActivityData } from "@/app/admin/atividade/data";
+import { PageHeader } from "@/components/marichat/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -43,20 +43,18 @@ function tabHref(tab: ActivityTab, situation?: ActivityFilter) {
 
 export function ActivityHeader({ href }: { href: string }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-6">
-      <div className="max-w-2xl">
-        <h1 className="text-display text-foreground">Atividade</h1>
-        <p className="mt-2 text-body text-muted-foreground">
-          Interações, envios e webhooks do primeiro teste em produção.
-        </p>
-      </div>
-      <Button asChild className="w-full sm:w-auto" size="lg">
-        <Link href={href}>
-          <RefreshCwIcon aria-hidden />
-          Atualizar
-        </Link>
-      </Button>
-    </div>
+    <PageHeader
+      action={
+        <Button asChild className="w-full sm:w-auto" size="lg" variant="secondary">
+          <Link href={href}>
+            <RefreshCwIcon aria-hidden />
+            Atualizar
+          </Link>
+        </Button>
+      }
+      description="Interações, envios e webhooks do primeiro teste em produção."
+      title="Atividade"
+    />
   );
 }
 
@@ -165,29 +163,52 @@ export function ActivityTabs({
   situation?: ActivityFilter;
 }) {
   return (
-    <nav
-      aria-label="Tipo de registro"
-      className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1"
-    >
+    <nav aria-label="Tipo de registro" className="flex border-b border-border">
       {TAB_ITEMS.map((item) => {
         const active = tab === item.id;
         return (
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex min-h-12 items-center justify-center rounded-md px-2 text-label transition-colors duration-150 ease-out",
+              "relative flex min-h-12 flex-1 items-center justify-center px-2 text-label transition-colors duration-150 ease-out md:flex-none md:justify-start md:px-5 md:first:pl-0",
               active
-                ? "bg-secondary text-primary"
-                : "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             href={tabHref(item.id, situation)}
             key={item.id}
           >
             {item.label}
+            {active ? (
+              <span
+                aria-hidden
+                className="absolute inset-x-2 bottom-0 h-0.5 bg-primary md:inset-x-5"
+              />
+            ) : null}
           </Link>
         );
       })}
     </nav>
+  );
+}
+
+function Readout({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number | string;
+  hint: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-micro text-muted-foreground uppercase">{label}</dt>
+      <dd className="mt-1 text-title text-foreground" data-numeric>
+        {value}
+      </dd>
+      <p className="mt-0.5 text-label text-muted-soft">{hint}</p>
+    </div>
   );
 }
 
@@ -201,31 +222,31 @@ export function ActivityStats({
   "lastTickAt" | "lastDrainAt" | "drainSummary" | "lastSendAt"
 >) {
   return (
-    <section
+    <dl
       aria-label="Estado da operação"
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
     >
-      <Metric
+      <Readout
         hint="Se parar, a fila para"
         label="Última tarefa agendada"
         value={lastTickAt ? formatDateTime(new Date(lastTickAt)) : "nunca"}
       />
-      <Metric
+      <Readout
         hint="Rodada da fila"
         label="Último dreno"
         value={lastDrainAt ? formatDateTime(new Date(lastDrainAt)) : "nunca"}
       />
-      <Metric
+      <Readout
         hint="Aceitas, falhas e expiradas"
         label="Resultado"
         value={drainSummary}
       />
-      <Metric
+      <Readout
         hint="Aceita pela Meta"
         label="Último envio"
         value={lastSendAt ? formatDateTime(new Date(lastSendAt)) : "—"}
       />
-    </section>
+    </dl>
   );
 }
 

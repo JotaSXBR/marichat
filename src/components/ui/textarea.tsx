@@ -1,7 +1,7 @@
-import * as React from "react";
-import { cn } from "cn";
+﻿import * as React from "react";
+import { cn } from "@/lib/utils";
 
-/** Área de texto — mesmo contrato visual do Input, sem altura fixa. */
+/** Ãrea de texto â€” mesmo contrato visual do Input, sem altura fixa. */
 function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (
     <textarea

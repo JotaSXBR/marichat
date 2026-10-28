@@ -1,16 +1,16 @@
-import * as React from "react";
+﻿import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2Icon } from "lucide-react";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 
 /**
- * Chip de status — `badge` do shadcn adaptado (§6.2).
+ * Chip de status â€” `badge` do shadcn adaptado (Â§6.2).
  *
- * Estado nunca só por cor (§2.7): todo chip tem ponto ou spinner e texto.
- * O ponto usa `currentColor`, então acompanha o tom sem classe extra.
+ * Estado nunca sÃ³ por cor (Â§2.7): todo chip tem ponto ou spinner e texto.
+ * O ponto usa `currentColor`, entÃ£o acompanha o tom sem classe extra.
  */
 const statusChipVariants = cva(
-  "inline-flex h-6 w-fit shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-micro tracking-[0.08em] whitespace-nowrap uppercase [&>svg]:size-3 [&>svg]:shrink-0",
+  "inline-flex h-6 w-fit shrink-0 items-center gap-1.5 rounded-sm border px-2 text-micro tracking-[0.04em] whitespace-nowrap uppercase [&>svg]:size-3 [&>svg]:shrink-0",
   {
     variants: {
       tone: {
@@ -42,7 +42,7 @@ function StatusChip({
       {...props}
     >
       {tone === "loading" ? (
-        <Loader2Icon className="animate-spin" aria-hidden />
+        <Loader2Icon className="motion-safe:animate-spin" aria-hidden />
       ) : (
         <span className="size-1.5 rounded-full bg-current" aria-hidden />
       )}

@@ -40,7 +40,7 @@
   --input: #66666d;
   --ring: #a3e635;
 
-  --radius: 24px;
+  --radius: 8px;
 
   /* ---- extras do MARICHAT ---- */
   --surface-hover: rgb(255 255 255 / 0.07);
@@ -55,10 +55,10 @@
   --danger: #f87171;
   --info: #60a5fa;
 
-  --radius-control: 12px;
-  --radius-inner: 16px;
-  --radius-card: 24px;
-  --radius-frame: 32px;
+  --radius-control: 8px;
+  --radius-inner: 10px;
+  --radius-card: 12px;
+  --radius-frame: 16px;
 
   /* Elevação: só overlay. Card não tem sombra (§5.3). */
   --shadow-overlay: 0 24px 64px rgb(0 0 0 / 0.45);
