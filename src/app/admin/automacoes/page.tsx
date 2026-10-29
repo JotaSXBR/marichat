@@ -4,7 +4,10 @@ import { desc, eq } from "drizzle-orm";
 
 import { AutomationsTable } from "@/app/admin/automacoes/automations-table";
 import {
+  automationsHref,
   automationsMeta,
+  AUTOMATIONS_LIMIT,
+  AUTOMATIONS_MAX_LIMIT,
   matchesAutomation,
   readAutomationsQuery,
 } from "@/app/admin/automacoes/query";
@@ -31,7 +34,7 @@ export default async function AutomationsPage({
   await connection();
   await requireAdmin();
 
-  const { saved, q, situacao, filtering } = readAutomationsQuery(
+  const { saved, q, situacao, limit, filtering } = readAutomationsQuery(
     await searchParams,
   );
 
@@ -42,11 +45,16 @@ export default async function AutomationsPage({
         .from(automations)
         .where(eq(automations.accountId, account.id))
         .orderBy(desc(automations.createdAt))
-        .limit(200)
     : [];
 
-  const visible = rows.filter((row) => matchesAutomation(row, q, situacao));
+  const matched = rows.filter((row) => matchesAutomation(row, q, situacao));
+  const visible = matched.slice(0, limit);
   const active = rows.filter((row) => row.isActive).length;
+  const nextLimit = Math.min(limit + AUTOMATIONS_LIMIT, AUTOMATIONS_MAX_LIMIT);
+  const moreHref =
+    limit < AUTOMATIONS_MAX_LIMIT
+      ? automationsHref({ q, situacao, limit: nextLimit })
+      : undefined;
 
   return (
     <div className="space-y-6">
@@ -59,7 +67,7 @@ export default async function AutomationsPage({
         meta={automationsMeta({
           account: Boolean(account),
           total: rows.length,
-          visible: visible.length,
+          visible: matched.length,
           active,
           filtering,
         })}
@@ -70,7 +78,13 @@ export default async function AutomationsPage({
       {!account ? <NoAccountNotice /> : null}
       {account ? <AutomationsToolbar q={q} situacao={situacao} /> : null}
       {account && rows.length === 0 ? <EmptyAutomations /> : null}
-      {visible.length > 0 ? <AutomationsTable rows={visible} /> : null}
+      {visible.length > 0 ? (
+        <AutomationsTable
+          moreHref={moreHref}
+          rows={visible}
+          total={matched.length}
+        />
+      ) : null}
       {account && rows.length > 0 && visible.length === 0 ? (
         <NoMatchesNotice />
       ) : null}

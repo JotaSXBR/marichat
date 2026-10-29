@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AutomationToggle } from "@/app/admin/automacoes/automation-toggle";
 import { linkLabel } from "@/app/admin/labels";
 import type { automations } from "@/lib/db/schema";
+import { LoadMore } from "@/components/marichat/load-more";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
@@ -115,11 +116,20 @@ function AutomationsMobile({ rows }: { rows: Automation[] }) {
 }
 
 /** Tabela densa no desktop; registro de três linhas no mobile (§4). */
-export function AutomationsTable({ rows }: { rows: Automation[] }) {
+export function AutomationsTable({
+  rows,
+  total,
+  moreHref,
+}: {
+  rows: Automation[];
+  total: number;
+  moreHref?: string;
+}) {
   return (
     <>
       <AutomationsDesktop rows={rows} />
       <AutomationsMobile rows={rows} />
+      <LoadMore href={moreHref} shown={rows.length} total={total} />
       <p className="max-w-[70ch] text-[0.8125rem] leading-5 text-muted-soft">
         Editar uma automação afeta apenas comentários novos. Quem já comentou
         continua o fluxo com o texto do momento do comentário.

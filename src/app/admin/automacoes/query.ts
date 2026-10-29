@@ -1,8 +1,13 @@
 /** Leitura da URL e filtro da lista de automações (sem JSX). */
 
 import type { automations } from "@/lib/db/schema";
+import { readLimit } from "@/lib/pagination";
 
 export type AutomationFilter = "ativa" | "pausada";
+
+export const AUTOMATIONS_LIMIT = 200;
+// shortcut: teto de leitura da tela; subir se a lista passar de mil itens.
+export const AUTOMATIONS_MAX_LIMIT = 1000;
 
 type Automation = Pick<
   typeof automations.$inferSelect,
@@ -51,11 +56,35 @@ export function readAutomationsQuery(
       ? params.situacao
       : undefined;
   const q = typeof params.q === "string" ? params.q.trim() : "";
+  const limit = readLimit(
+    params.limite,
+    AUTOMATIONS_LIMIT,
+    AUTOMATIONS_MAX_LIMIT,
+  );
 
   return {
     saved: params.ok === "1",
     q,
     situacao,
+    limit,
     filtering: Boolean(q || situacao),
   };
+}
+
+/** Link de "Carregar mais" sem perder busca, situação nem o que já foi lido. */
+export function automationsHref({
+  q,
+  situacao,
+  limit,
+}: {
+  q: string;
+  situacao?: AutomationFilter;
+  limit: number;
+}): string {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (situacao) params.set("situacao", situacao);
+  if (limit > AUTOMATIONS_LIMIT) params.set("limite", String(limit));
+  const query = params.toString();
+  return query ? `/admin/automacoes?${query}` : "/admin/automacoes";
 }
