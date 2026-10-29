@@ -197,8 +197,8 @@ Consequências práticas para o MARICHAT:
 
 | Componente | Por que ficou de fora |
 | :-- | :-- |
-| `smooth-drawer` | é um sheet de checkout (itens, velocidade de entrega, total). O menu mobile do painel é navegação simples, feita com `drawer` (vaul) do shadcn. |
-| `profile-dropdown` | assume troca de tema (claro/escuro/sistema) e multi-conta com cartão e cobrança. O MARICHAT é escuro fixo e tem uma conta só; o menu de conta usa `dropdown-menu` do shadcn. |
+| `smooth-drawer` | é um sheet de checkout (itens, velocidade de entrega, total). A navegação mobile do painel é feita com abas fixas no rodapé, sem drawer. |
+| `profile-dropdown` | assume troca de tema (claro/escuro/sistema) e multi-conta com cartão e cobrança. O MARICHAT tem uma conta só e tema local; o menu de conta usa `dropdown-menu` do shadcn. |
 
 Os dois arquivos foram apagados de `src/components/kokonutui/` para não ficarem
 como código morto.

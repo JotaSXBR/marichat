@@ -48,6 +48,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Relatório do vitest --coverage.
     "coverage/**",
+    // Material local de captura/Stitch (gitignored, não é fonte).
+    ".stitch/**",
+    // Skills locais baixadas, fora do código do produto.
+    ".agents/**",
   ]),
   {
     // Lint com informações de tipo: pega promessas esquecidas, `String()` de

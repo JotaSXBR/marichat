@@ -228,8 +228,8 @@ card, e falha o CI abaixo de 4,5:1. Mudar um token sem remedir quebra o build.
 - **Superfície:** `--card` é papel mais claro que o canvas no tema claro e mais
   escuro no escuro; sempre opaco, borda de 1 px `--border`, sem realce interno
   e sem sombra.
-- **Elevação:** só overlay. Diálogo, menu e drawer usam `--shadow-overlay` e
-  raio de 10 px.
+- **Elevação:** só overlay. Diálogo e menu usam `--shadow-overlay` e raio de
+  10 px.
 - **Régua:** seção sem objeto próprio usa `border-b` de 1 px e espaço. Tabela
   usa hairline entre linhas (`--line-subtle`) e nenhuma moldura externa.
 - **Hover:** linha e card interativo mudam o fundo para `--surface-hover`; sem
@@ -239,7 +239,7 @@ card, e falha o CI abaixo de 4,5:1. Mudar um token sem remedir quebra o build.
 | Movimento | Duração | Onde |
 | :-- | :-- | :-- |
 | hover/press | 150 ms, ease-out | botão, linha, item de nav |
-| overlay/drawer | 240 ms, ease-out | diálogo, menu, drawer |
+| overlay | 240 ms, ease-out | diálogo, menu |
 | troca de tema | instantânea | classe no `<html>` |
 
 Em `prefers-reduced-motion: reduce`, sem transform nem pulso; só opacidade.
@@ -322,7 +322,6 @@ entra automaticamente.
 | Alerta R3 | `alert` | shadcn | `ui/alert.tsx` |
 | Toast | `sonner` | shadcn | `ui/sonner.tsx` |
 | Diálogo de confirmação | `alert-dialog` | shadcn | `ui/alert-dialog.tsx` |
-| Drawer mobile | `drawer` (vaul) | shadcn | `ui/drawer.tsx` |
 | Menu de conta e tema | `dropdown-menu` | shadcn | `ui/dropdown-menu.tsx` |
 | Comandos `Ctrl K` | `action-search-bar` | Kokonut | `marichat/command-palette.tsx` + `kokonutui/action-search-bar.tsx` |
 | Toggle de automação | `switch` | shadcn | `ui/switch.tsx` |
@@ -335,8 +334,7 @@ entra automaticamente.
 | Filtro que aplica sozinho | próprio | — | `marichat/filter-select.tsx` |
 | Estado do tema | próprio | — | `marichat/theme-menu.tsx` |
 
-`kokonutui/status-island.tsx` continua no repositório mas **não é usado**: a
-ilha de status saiu na v7 (§4).
+A ilha de status saiu na v7 (§4); o componente não fica no repositório.
 
 ### 6.3 O que o Kokonut tem e o MARICHAT **não** usa
 
@@ -370,7 +368,7 @@ Detalhe completo em [`docs/KOKONUT.md`](docs/KOKONUT.md).
 | Input | `default`, `with-icon`, `error`, `disabled` |
 | Tabela | uma densidade: linha 52 px, sem zebra |
 | Toggle | on, off, disabled |
-| Diálogo | confirmação, drawer |
+| Diálogo | confirmação |
 
 ---
 
