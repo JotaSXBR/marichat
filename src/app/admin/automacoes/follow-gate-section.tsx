@@ -3,6 +3,7 @@ import {
   FormSection,
   Label,
 } from "@/app/admin/automacoes/form-controls";
+import { hiddenFollowModeFields } from "@/app/admin/automacoes/follow-gate-fields";
 import type {
   AutomationInitialValues,
   FieldErrors,
@@ -74,67 +75,6 @@ function FollowModeOptions({
   );
 }
 
-type HiddenField = { name: string; value: string };
-
-function pick(value: string | undefined, fallback: string): string {
-  return value ?? fallback;
-}
-
-/**
- * Campos dos outros modos continuam sendo enviados para não perder o texto já
- * personalizado ao trocar de modo.
- */
-function hiddenFields(
-  initial: Props["initial"],
-  followMode: FollowMode,
-  needsCheck: boolean,
-  needsFollowButton: boolean,
-): HiddenField[] {
-  const gateFields: HiddenField[] = needsCheck
-    ? []
-    : [
-        {
-          name: "followGateText",
-          value: pick(initial?.followGateText, DEFAULT_FOLLOW_GATE_TEXT),
-        },
-        {
-          name: "followGateConfirmLabel",
-          value: pick(initial?.followGateConfirmLabel, DEFAULT_CONFIRM_LABEL),
-        },
-      ];
-
-  return [
-    ...gateFields,
-    ...(followMode === "optional"
-      ? []
-      : [
-          {
-            name: "followOptionalText",
-            value: pick(
-              initial?.followOptionalText,
-              DEFAULT_FOLLOW_OPTIONAL_TEXT,
-            ),
-          },
-        ]),
-    ...(followMode === "direct"
-      ? []
-      : [
-          {
-            name: "followDirectText",
-            value: pick(initial?.followDirectText, DEFAULT_FOLLOW_DIRECT_TEXT),
-          },
-        ]),
-    ...(needsFollowButton
-      ? []
-      : [
-          {
-            name: "followGateFollowLabel",
-            value: pick(initial?.followGateFollowLabel, DEFAULT_FOLLOW_LABEL),
-          },
-        ]),
-  ];
-}
-
 function HiddenModeValues({
   initial,
   followMode,
@@ -143,16 +83,19 @@ function HiddenModeValues({
 }: Props) {
   return (
     <>
-      {hiddenFields(initial, followMode, needsCheck, needsFollowButton).map(
-        (field) => (
-          <input
-            key={field.name}
-            type="hidden"
-            name={field.name}
-            defaultValue={field.value}
-          />
-        ),
-      )}
+      {hiddenFollowModeFields(
+        initial,
+        followMode,
+        needsCheck,
+        needsFollowButton,
+      ).map((field) => (
+        <input
+          key={field.name}
+          type="hidden"
+          name={field.name}
+          defaultValue={field.value}
+        />
+      ))}
     </>
   );
 }

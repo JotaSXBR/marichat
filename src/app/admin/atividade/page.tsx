@@ -1,14 +1,13 @@
 import { connection } from "next/server";
 import Link from "next/link";
 
-import { isActivityFilter, loadActivity } from "@/app/admin/atividade/data";
+import { loadActivity } from "@/app/admin/atividade/data";
+import { readActivityQuery } from "@/app/admin/atividade/navigation";
 import {
   ActivityAlerts,
   ActivityDiagnostics,
   ActivityFilterBar,
   ActivityTabs,
-  isActivityTab,
-  type ActivityTab,
 } from "@/app/admin/atividade/sections";
 import {
   EventsSection,
@@ -18,7 +17,6 @@ import {
 import { PageHeader } from "@/components/marichat/page-header";
 import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
-import type { ActivityFilter } from "@/app/admin/atividade/data";
 
 /**
  * Página de diagnóstico: mostra o que o webhook gravou, o que a fila tentou
@@ -28,36 +26,13 @@ import type { ActivityFilter } from "@/app/admin/atividade/data";
 
 export const instant = false;
 
-/** Aba e situação vivem na URL; valor inválido cai no padrão. */
-function readQuery(params: Record<string, string | string[] | undefined>) {
-  const rawTab = typeof params.aba === "string" ? params.aba : undefined;
-  const rawSituation =
-    typeof params.situacao === "string" ? params.situacao : undefined;
-  const tab: ActivityTab = isActivityTab(rawTab) ? rawTab : "interacoes";
-  const situation: ActivityFilter | undefined = isActivityFilter(rawSituation)
-    ? rawSituation
-    : undefined;
-
-  const query = new URLSearchParams();
-  if (tab !== "interacoes") query.set("aba", tab);
-  if (tab === "interacoes" && situation) query.set("situacao", situation);
-
-  return {
-    tab,
-    situation,
-    refreshHref: query.size
-      ? `/admin/atividade?${query.toString()}`
-      : "/admin/atividade",
-  };
-}
-
 export default async function ActivityPage({
   searchParams,
 }: PageProps<"/admin/atividade">) {
   await connection();
   await requireAdmin();
 
-  const { tab, situation, refreshHref } = readQuery(await searchParams);
+  const { tab, situation, refreshHref } = readActivityQuery(await searchParams);
   const data = await loadActivity(situation ? { situation } : {});
 
   return (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AutomationToggle } from "@/app/admin/automacoes/automation-toggle";
+import { linkLabel } from "@/app/admin/labels";
 import type { automations } from "@/lib/db/schema";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
@@ -13,11 +14,6 @@ import {
 } from "@/components/ui/table";
 
 type Automation = typeof automations.$inferSelect;
-
-/** Link sem protocolo, para caber na coluna. */
-function linkLabel(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
 
 function Situation({ active }: { active: boolean }) {
   return (

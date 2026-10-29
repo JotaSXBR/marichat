@@ -50,3 +50,108 @@ export function formatDateTime(value: Date | null): string {
     timeZone: "America/Sao_Paulo",
   }).format(value);
 }
+
+type TestLines = {
+  tokenOk: boolean;
+  subscriptionChecked: boolean;
+  missingFields: string[];
+};
+
+export function tokenLine(test: TestLines, isZernio: boolean): string {
+  if (test.tokenOk) {
+    return isZernio ? "Chave da Zernio aceita" : "Token aceito";
+  }
+  return isZernio
+    ? "Chave da Zernio recusada ou ausente"
+    : "Token recusado ou ilegível";
+}
+
+export function subscriptionLine(test: TestLines, isZernio: boolean): string {
+  if (!test.subscriptionChecked) {
+    return "Webhooks: não foi possível conferir";
+  }
+  if (test.missingFields.length > 0) {
+    return `Webhooks: faltam ${test.missingFields.join(", ")}`;
+  }
+  return isZernio
+    ? "Webhook: segredo configurado"
+    : "Webhooks: todos os campos exigidos estão assinados";
+}
+
+export type ConnectionNotice = {
+  id: string;
+  variant: "success" | "warning" | "danger" | "info";
+  title: string;
+  description: string;
+};
+
+export type ConnectionNoticeInput = {
+  ok: boolean;
+  accountName?: string;
+  webhookRequested: boolean;
+  errorCode?: string;
+  disconnected: boolean;
+  tested: boolean;
+};
+
+export function buildConnectionNotices({
+  ok,
+  accountName,
+  webhookRequested,
+  errorCode,
+  disconnected,
+  tested,
+}: ConnectionNoticeInput): ConnectionNotice[] {
+  const notices: ConnectionNotice[] = [];
+
+  if (ok) {
+    notices.push({
+      id: "ok",
+      variant: "success",
+      title: "Conta conectada com sucesso",
+      description: accountName
+        ? `@${accountName} já pode disparar automações.`
+        : "A conta já pode disparar automações.",
+    });
+  }
+
+  if (disconnected) {
+    notices.push({
+      id: "disconnected",
+      variant: "warning",
+      title: "Conta desconectada",
+      description:
+        "As automações ficam pausadas e nenhuma mensagem será enviada até reconectar.",
+    });
+  }
+
+  if (errorCode) {
+    notices.push({
+      id: "error",
+      variant: "danger",
+      title: "Não foi possível concluir",
+      description:
+        errorMessages[errorCode] ?? "Não foi possível concluir a operação.",
+    });
+  }
+
+  if (webhookRequested) {
+    notices.push({
+      id: "webhook",
+      variant: "info",
+      title: "Pedido de registro enviado",
+      description: "Confira o resultado em Conta atual.",
+    });
+  }
+
+  if (tested) {
+    notices.push({
+      id: "tested",
+      variant: "info",
+      title: "Teste concluído",
+      description: "Veja o resultado em Diagnóstico da conexão.",
+    });
+  }
+
+  return notices;
+}

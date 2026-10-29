@@ -7,22 +7,26 @@ import {
   ShieldAlertIcon,
 } from "lucide-react";
 
+import { buildActivityAlerts } from "@/app/admin/atividade/alerts";
 import {
   ACTIVITY_FILTERS,
   type ActivityFilter,
 } from "@/app/admin/atividade/data";
+import {
+  activityTabHref,
+  type ActivityTab,
+} from "@/app/admin/atividade/navigation";
 import { formatDateTime, interactionLabels } from "@/app/admin/labels";
 import type { ActivityData } from "@/app/admin/atividade/data";
 import { FilterSelect } from "@/components/marichat/filter-select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
-export const ACTIVITY_TABS = ["interacoes", "envios", "webhooks"] as const;
-export type ActivityTab = (typeof ACTIVITY_TABS)[number];
-
-export function isActivityTab(value: string | undefined): value is ActivityTab {
-  return ACTIVITY_TABS.includes(value as ActivityTab);
-}
+const ALERT_ICONS = {
+  plug: PlugZapIcon,
+  clock: ClockIcon,
+  shield: ShieldAlertIcon,
+};
 
 const TAB_ITEMS: { id: ActivityTab; label: string }[] = [
   { id: "interacoes", label: "Interações" },
@@ -30,83 +34,18 @@ const TAB_ITEMS: { id: ActivityTab; label: string }[] = [
   { id: "webhooks", label: "Webhooks" },
 ];
 
-function tabHref(tab: ActivityTab, situation?: ActivityFilter) {
-  const params = new URLSearchParams();
-  if (tab !== "interacoes") params.set("aba", tab);
-  if (tab === "interacoes" && situation) params.set("situacao", situation);
-  const query = params.toString();
-  return query ? `/admin/atividade?${query}` : "/admin/atividade";
-}
-
 /* ------------------------------------------------------------------ R3 */
 
-type ActivityAlert = {
-  id: string;
-  variant: "warning" | "danger";
-  icon: typeof PlugZapIcon;
-  title: string;
-  description: string;
-  href?: string;
-  action?: string;
-};
-
-function buildAlerts({
-  account,
-  tickDate,
-  tickStale,
-  webhookError,
-}: Pick<
-  ActivityData,
-  "account" | "tickDate" | "tickStale" | "webhookError"
->): ActivityAlert[] {
-  const alerts: ActivityAlert[] = [];
-
-  if (!account) {
-    alerts.push({
-      id: "account",
-      variant: "warning",
-      icon: PlugZapIcon,
-      title: "Nenhuma conta conectada",
-      description: "Conecte o Instagram para começar a receber comentários.",
-      href: "/admin/conexao",
-      action: "Conectar agora",
-    });
-  }
-
-  if (tickStale) {
-    alerts.push({
-      id: "tick",
-      variant: "danger",
-      icon: ClockIcon,
-      title: "A tarefa agendada parou",
-      description: `A fila não anda desde ${formatDateTime(tickDate)}. Confira o cron em /api/cron/tick.`,
-    });
-  }
-
-  if (webhookError) {
-    alerts.push({
-      id: "webhook",
-      variant: "danger",
-      icon: ShieldAlertIcon,
-      title: "A inscrição dos webhooks falhou",
-      description: webhookError,
-      href: "/admin/conexao",
-      action: "Ver Conexão",
-    });
-  }
-
-  // §4: no máximo 2 alertas empilhados.
-  return alerts.slice(0, 2);
-}
-
-export function ActivityAlerts(props: Parameters<typeof buildAlerts>[0]) {
-  const alerts = buildAlerts(props);
+export function ActivityAlerts(
+  props: Parameters<typeof buildActivityAlerts>[0],
+) {
+  const alerts = buildActivityAlerts(props);
   if (alerts.length === 0) return null;
 
   return (
     <section aria-label="Avisos" className="grid gap-2">
       {alerts.map((alert) => {
-        const Icon = alert.icon;
+        const Icon = ALERT_ICONS[alert.icon];
         return (
           <Alert key={alert.id} variant={alert.variant}>
             <Icon aria-hidden />
@@ -155,7 +94,7 @@ export function ActivityTabs({
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
-            href={tabHref(item.id, situation)}
+            href={activityTabHref(item.id, situation)}
             key={item.id}
           >
             {item.label}

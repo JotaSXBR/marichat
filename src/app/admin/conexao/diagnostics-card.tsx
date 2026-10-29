@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 
-import { formatDateTime } from "@/app/admin/conexao/connection-utils";
+import {
+  formatDateTime,
+  subscriptionLine,
+  tokenLine,
+} from "@/app/admin/conexao/connection-utils";
 import type { ConnectionTestResult } from "@/lib/instagram/diagnostics";
 import { SectionHeading } from "@/components/marichat/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -28,27 +32,6 @@ function CheckLine({ ok, children }: { ok: boolean; children: ReactNode }) {
       </span>
     </li>
   );
-}
-
-function tokenLine(test: ConnectionTestResult, isZernio: boolean): string {
-  if (test.tokenOk) {
-    return isZernio ? "Chave da Zernio aceita" : "Token aceito";
-  }
-  return isZernio
-    ? "Chave da Zernio recusada ou ausente"
-    : "Token recusado ou ilegível";
-}
-
-function subscriptionLine(test: ConnectionTestResult, isZernio: boolean) {
-  if (!test.subscriptionChecked) {
-    return "Webhooks: não foi possível conferir";
-  }
-  if (test.missingFields.length > 0) {
-    return `Webhooks: faltam ${test.missingFields.join(", ")}`;
-  }
-  return isZernio
-    ? "Webhook: segredo configurado"
-    : "Webhooks: todos os campos exigidos estão assinados";
 }
 
 function TestResult({

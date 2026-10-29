@@ -1,24 +1,7 @@
 import type { ReactNode } from "react";
 
-import type { FollowMode } from "@/lib/follow-mode";
+import { secondText, type PreviewValues } from "@/app/admin/automacoes/preview";
 import { cn } from "@/lib/utils";
-
-export type PreviewValues = {
-  firstDmText: string;
-  firstDmButtonLabel: string;
-  secondDmText: string;
-  linkButtonTitle: string;
-  followMode: FollowMode;
-  followDirectText: string;
-  followOptionalText: string;
-};
-
-/** Texto que a segunda DM realmente usa em cada modo. */
-function secondText(values: PreviewValues): string {
-  if (values.followMode === "direct") return values.followDirectText;
-  if (values.followMode === "optional") return values.followOptionalText;
-  return values.secondDmText;
-}
 
 /**
  * Bolha de mensagem enviada pela conta.

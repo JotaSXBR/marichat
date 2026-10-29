@@ -84,6 +84,27 @@ export const jobTones: Record<string, ChipTone> = {
   canceled: "neutral",
 };
 
+/** Nome exibível do autor: @usuário quando existe, senão o id. */
+export function handleOf(row: {
+  commenterUsername: string | null;
+  commenter: string | null;
+}): string {
+  if (row.commenterUsername) return `@${row.commenterUsername}`;
+  return row.commenter ?? "—";
+}
+
+/** Texto em uma linha, cortado com reticências. */
+export function short(value: string | null, max = 80): string {
+  if (!value) return "—";
+  const clean = value.replace(/\s+/g, " ").trim();
+  return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+}
+
+/** Link sem protocolo nem barra final, para caber na coluna. */
+export function linkLabel(url: string): string {
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
 export function formatDateTime(value: Date | null): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat("pt-BR", {

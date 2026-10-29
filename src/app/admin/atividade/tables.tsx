@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 import type { ActivityData, ActivityFilter } from "@/app/admin/atividade/data";
 import {
   formatDateTime,
+  handleOf,
   interactionLabels,
   interactionTones,
   jobKindLabels,
   jobStatusLabels,
   jobTones,
+  short,
   webhookStatusLabels,
   webhookTones,
   type ChipTone,
@@ -26,12 +28,6 @@ import {
 type Interaction = ActivityData["interactions"][number];
 type Job = ActivityData["jobs"][number];
 type Event = ActivityData["events"][number];
-
-function short(value: string | null, max = 80): string {
-  if (!value) return "—";
-  const clean = value.replace(/\s+/g, " ").trim();
-  return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
-}
 
 function Shell({
   title,
@@ -80,14 +76,6 @@ function Chip({
       {labels[status] ?? status}
     </StatusChip>
   );
-}
-
-function who(row: {
-  commenterUsername: string | null;
-  commenter: string | null;
-}) {
-  if (row.commenterUsername) return `@${row.commenterUsername}`;
-  return row.commenter ?? "—";
 }
 
 /** Duas linhas de dado pequeno: quem, e quando. */
@@ -184,7 +172,7 @@ const interactionColumns: Column<Interaction>[] = [
       <span className="block max-w-[360px]">
         <span className="block truncate">{short(row.commentText)}</span>
         <span className="block font-mono text-[0.75rem] text-muted-soft">
-          {who(row)}
+          {handleOf(row)}
         </span>
       </span>
     ),
@@ -217,7 +205,7 @@ function InteractionRecord({ row }: { row: Interaction }) {
       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
         {short(row.commentText, 120)}
       </p>
-      <Meta left={who(row)} right={formatDateTime(row.createdAt)} />
+      <Meta left={handleOf(row)} right={formatDateTime(row.createdAt)} />
     </>
   );
 }
@@ -270,7 +258,7 @@ const jobColumns: Column<Job>[] = [
   },
   {
     head: "Quem",
-    cell: (row) => <span className={MONO_CELL}>{who(row)}</span>,
+    cell: (row) => <span className={MONO_CELL}>{handleOf(row)}</span>,
   },
   {
     head: "Situação",
@@ -297,7 +285,7 @@ function JobRecord({ row }: { row: Job }) {
         </span>
         <Chip labels={jobStatusLabels} status={row.status} tones={jobTones} />
       </div>
-      <Meta left={who(row)} right={formatDateTime(row.updatedAt)} />
+      <Meta left={handleOf(row)} right={formatDateTime(row.updatedAt)} />
       <ErrorLine message={row.errorMessage} />
     </>
   );

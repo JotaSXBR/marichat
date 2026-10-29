@@ -295,6 +295,10 @@ do resultado; `processInboundMessage`, `handleZernioEvent`, `handleMessage` e
 
 ### Prioridade 3 — robustez e testes
 
+- **Cobertura:** páginas e seções (`src/app/**/*.tsx`) ficam fora do relatório
+  porque só montam layout e estado de UI. Decisão pura (filtro, leitura da URL,
+  texto de aviso, prévia) mora em módulos `.ts` irmãos e é testada — se precisar
+  de teste para uma regra, tire-a do `.tsx` em vez de baixar o piso.
 - `runZernioConnectionTest` diz “Webhook: segredo configurado” só checando a
   variável de ambiente; não confirma que o endpoint existe na Zernio. Buscar os
   webhooks cadastrados e comparar URL/eventos.

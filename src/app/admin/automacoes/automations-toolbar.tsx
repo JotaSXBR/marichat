@@ -1,9 +1,8 @@
 import Link from "next/link";
 
+import type { AutomationFilter } from "@/app/admin/automacoes/query";
 import { FilterSelect } from "@/components/marichat/filter-select";
 import { Input } from "@/components/ui/input";
-
-export type AutomationFilter = "ativa" | "pausada";
 
 const SELECT_CLASS =
   "h-11 w-[180px] rounded-md border border-input bg-muted px-3 text-label text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-[200px] md:h-9";

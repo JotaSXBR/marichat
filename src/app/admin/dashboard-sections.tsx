@@ -9,10 +9,12 @@ import {
 } from "lucide-react";
 
 import type { DashboardData } from "@/app/admin/dashboard";
+import { buildDashboardAlerts } from "@/app/admin/dashboard-alerts";
 import {
   attentionReasons,
   formatDateTime,
   formatRelative,
+  handleOf,
   interactionLabels,
   interactionTones,
 } from "@/app/admin/labels";
@@ -31,98 +33,25 @@ import {
 
 /* ------------------------------------------------------------------ R3 */
 
-type DashboardAlert = {
-  id: string;
-  /** 0 é o mais urgente. */
-  priority: number;
-  variant: "danger" | "warning" | "info";
-  icon: typeof AlertTriangleIcon;
-  title: string;
-  description: string;
-  href: string;
-  action: string;
+const ALERT_ICONS = {
+  plug: PlugZapIcon,
+  shield: ShieldAlertIcon,
+  alert: AlertTriangleIcon,
+  key: KeyRoundIcon,
 };
-
-/**
- * Alertas da Visão geral, do mais para o menos urgente.
- * A tela mostra no máximo 2 (§9.1): o resto vive na página Conexão.
- */
-function buildAlerts({
-  account,
-  webhookError,
-  tokenDaysLeft,
-}: Pick<DashboardData, "account" | "webhookError" | "tokenDaysLeft">) {
-  const alerts: DashboardAlert[] = [];
-
-  if (!account) {
-    alerts.push({
-      id: "no-account",
-      priority: 0,
-      variant: "warning",
-      icon: PlugZapIcon,
-      title: "Nenhuma conta conectada",
-      description: "Conecte o Instagram para começar a receber comentários.",
-      href: "/admin/conexao",
-      action: "Conectar",
-    });
-  }
-
-  if (account && account.connectionStatus !== "connected") {
-    alerts.push({
-      id: "connection",
-      priority: 0,
-      variant: "danger",
-      icon: ShieldAlertIcon,
-      title: "A conexão precisa ser refeita",
-      description:
-        "Os envios ficam parados até reconectar o perfil do Instagram.",
-      href: "/admin/conexao",
-      action: "Ir para Conexão",
-    });
-  }
-
-  if (webhookError) {
-    alerts.push({
-      id: "webhook",
-      priority: 1,
-      variant: "danger",
-      icon: AlertTriangleIcon,
-      title: "A inscrição dos webhooks falhou",
-      description: "A última tentativa de registro falhou.",
-      href: "/admin/conexao",
-      action: "Ver detalhes",
-    });
-  }
-
-  if (tokenDaysLeft !== null && tokenDaysLeft <= 10) {
-    alerts.push({
-      id: "token",
-      priority: 2,
-      variant: "warning",
-      icon: KeyRoundIcon,
-      title: `O token expira em ${tokenDaysLeft} dia(s)`,
-      description:
-        "A renovação automática roda a cada minuto. Se falhar, reconecte.",
-      href: "/admin/conexao",
-      action: "Conexão",
-    });
-  }
-
-  return alerts.sort((a, b) => a.priority - b.priority).slice(0, 2);
-}
 
 export function DashboardAlerts({
   account,
   webhookError,
   tokenDaysLeft,
 }: Pick<DashboardData, "account" | "webhookError" | "tokenDaysLeft">) {
-  const alerts = buildAlerts({ account, webhookError, tokenDaysLeft });
+  const alerts = buildDashboardAlerts({ account, webhookError, tokenDaysLeft });
   if (alerts.length === 0) return null;
 
   return (
     <section aria-label="Avisos" className="grid gap-2">
       {alerts.map((alert) => {
-        const Icon = alert.icon;
+        const Icon = ALERT_ICONS[alert.icon];
         return (
           <Alert key={alert.id} variant={alert.variant}>
             <Icon aria-hidden />
@@ -161,10 +90,6 @@ const ATTENTION_SHORT: Record<string, string> = {
   expired: "expirada",
   gate_pending: "aguardando",
 };
-
-function handleOf(row: DashboardData["attention"][number]) {
-  return row.commenterUsername ? `@${row.commenterUsername}` : row.commenter;
-}
 
 /** O que o painel pede para uma pessoa resolver, com o caso real. */
 export function AttentionSection({

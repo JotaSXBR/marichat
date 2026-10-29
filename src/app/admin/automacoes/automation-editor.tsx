@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, TriangleAlertIcon } from "lucide-react";
 
 import { saveAutomation } from "@/app/admin/actions";
-import {
-  DmPreview,
-  type PreviewValues,
-} from "@/app/admin/automacoes/dm-preview";
+import { DmPreview } from "@/app/admin/automacoes/dm-preview";
 import { FollowGateSection } from "@/app/admin/automacoes/follow-gate-section";
 import type {
   AutomationInitialValues,
   FieldErrors,
   MediaOption,
 } from "@/app/admin/automacoes/form-types";
+import {
+  previewFromForm,
+  previewOf,
+  type PreviewValues,
+} from "@/app/admin/automacoes/preview";
 import { IdentificationSection } from "@/app/admin/automacoes/identification-section";
 import { MediaSection } from "@/app/admin/automacoes/media-section";
 import {
@@ -34,12 +36,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  DEFAULT_FOLLOW_DIRECT_TEXT,
-  DEFAULT_FOLLOW_OPTIONAL_TEXT,
-} from "@/lib/automation-defaults";
 import type { AutomationFormState } from "@/lib/automation-input";
-import { isFollowMode, type FollowMode } from "@/lib/follow-mode";
+import type { FollowMode } from "@/lib/follow-mode";
 
 const AUTOMATIONS_PATH = "/admin/automacoes";
 const FORM_ID = "automation-form";
@@ -49,39 +47,6 @@ type Props = {
   mediaOptions: MediaOption[];
   mediaError?: string;
 };
-
-const PREVIEW_DEFAULTS: PreviewValues = {
-  firstDmText: "",
-  firstDmButtonLabel: "",
-  secondDmText: "",
-  linkButtonTitle: "Abrir link",
-  followMode: "off",
-  followDirectText: DEFAULT_FOLLOW_DIRECT_TEXT,
-  followOptionalText: DEFAULT_FOLLOW_OPTIONAL_TEXT,
-};
-
-function previewOf(initial?: AutomationInitialValues): PreviewValues {
-  return { ...PREVIEW_DEFAULTS, ...initial };
-}
-
-function fieldText(data: FormData, field: string): string {
-  const value = data.get(field);
-  return typeof value === "string" ? value : "";
-}
-
-function previewFromForm(data: FormData): PreviewValues {
-  const mode = fieldText(data, "followMode");
-  return {
-    ...PREVIEW_DEFAULTS,
-    firstDmText: fieldText(data, "firstDmText"),
-    firstDmButtonLabel: fieldText(data, "firstDmButtonLabel"),
-    secondDmText: fieldText(data, "secondDmText"),
-    linkButtonTitle: fieldText(data, "linkButtonTitle"),
-    followMode: isFollowMode(mode) ? mode : "off",
-    followDirectText: fieldText(data, "followDirectText"),
-    followOptionalText: fieldText(data, "followOptionalText"),
-  };
-}
 
 /** R2: voltar, situação e a ação primária. */
 function EditorHeader({
