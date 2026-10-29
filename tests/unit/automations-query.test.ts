@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  automationsHref,
   automationsMeta,
   matchesAutomation,
   readAutomationsQuery,
@@ -24,6 +25,7 @@ describe("lista de automações", () => {
       saved: true,
       q: "promo",
       situacao: "pausada",
+      limit: 200,
       filtering: true,
     });
 
@@ -31,8 +33,23 @@ describe("lista de automações", () => {
       saved: false,
       q: "",
       situacao: undefined,
+      limit: 200,
       filtering: false,
     });
+  });
+
+  it("lê o limite cumulativo e monta o link sem perder o filtro", () => {
+    expect(readAutomationsQuery({ limite: "400" }).limit).toBe(400);
+    expect(readAutomationsQuery({ limite: "10" }).limit).toBe(200);
+    expect(readAutomationsQuery({ limite: "99999" }).limit).toBe(1000);
+
+    expect(automationsHref({ q: "", limit: 400 })).toBe(
+      "/admin/automacoes?limite=400",
+    );
+    expect(automationsHref({ q: "promo", situacao: "ativa", limit: 400 })).toBe(
+      "/admin/automacoes?q=promo&situacao=ativa&limite=400",
+    );
+    expect(automationsHref({ q: "", limit: 200 })).toBe("/admin/automacoes");
   });
 
   it("filtra por situação e por nome ou palavra-chave sem diferenciar caixa", () => {
