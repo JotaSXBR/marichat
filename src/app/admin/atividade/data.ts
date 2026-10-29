@@ -23,6 +23,8 @@ import { backfillCommenterUsernames } from "@/lib/queue/maintenance";
  */
 
 export const ACTIVITY_LIMIT = 30;
+// shortcut: teto de leitura da tela; subir se o diagnóstico precisar de mais.
+export const ACTIVITY_MAX_LIMIT = 300;
 /** Situações pelas quais a lista de interações pode ser filtrada. */
 export const ACTIVITY_FILTERS = [
   "queued",
@@ -47,7 +49,11 @@ const STALE_TICK_MS = 5 * 60 * 1000;
 
 type Db = ReturnType<typeof getDb>;
 
-function loadInteractions(db: Db, situation?: ActivityFilter) {
+function loadInteractions(
+  db: Db,
+  situation: ActivityFilter | undefined,
+  limit: number,
+) {
   return db
     .select({
       id: commentInteractions.id,
@@ -66,10 +72,10 @@ function loadInteractions(db: Db, situation?: ActivityFilter) {
     .leftJoin(automations, eq(automations.id, commentInteractions.automationId))
     .where(situation ? eq(commentInteractions.state, situation) : undefined)
     .orderBy(desc(commentInteractions.createdAt))
-    .limit(ACTIVITY_LIMIT);
+    .limit(limit);
 }
 
-function loadJobs(db: Db) {
+function loadJobs(db: Db, limit: number) {
   return db
     .select({
       id: outboundMessages.id,
@@ -91,10 +97,10 @@ function loadJobs(db: Db) {
       eq(commentInteractions.id, outboundMessages.interactionId),
     )
     .orderBy(desc(outboundMessages.updatedAt))
-    .limit(ACTIVITY_LIMIT);
+    .limit(limit);
 }
 
-function loadEvents(db: Db) {
+function loadEvents(db: Db, limit: number) {
   return db
     .select({
       eventKey: webhookEvents.eventKey,
@@ -105,7 +111,7 @@ function loadEvents(db: Db) {
     })
     .from(webhookEvents)
     .orderBy(desc(webhookEvents.receivedAt))
-    .limit(ACTIVITY_LIMIT);
+    .limit(limit);
 }
 
 function loadDiagnostics() {
@@ -135,7 +141,8 @@ function isTickStale(tickDate: Date | null, dbNow: Date | null): boolean {
 
 export async function loadActivity({
   situation,
-}: { situation?: ActivityFilter } = {}) {
+  limit = ACTIVITY_LIMIT,
+}: { situation?: ActivityFilter; limit?: number } = {}) {
   const db = getDb();
   // Quem comentou antes desta versão ganha o @ na primeira visita, sem esperar
   // o ciclo de limpeza (que roda a cada 20h).
@@ -147,11 +154,18 @@ export async function loadActivity({
   );
   const dbNow = nowRows[0]?.now ? new Date(nowRows[0].now) : null;
 
-  const [interactions, jobs, events] = await Promise.all([
-    loadInteractions(db, situation),
-    loadJobs(db),
-    loadEvents(db),
-  ]);
+  const [interactions, jobs, events, interactionTotal, jobTotal, eventTotal] =
+    await Promise.all([
+      loadInteractions(db, situation, limit),
+      loadJobs(db, limit),
+      loadEvents(db, limit),
+      db.$count(
+        commentInteractions,
+        situation ? eq(commentInteractions.state, situation) : undefined,
+      ),
+      db.$count(outboundMessages),
+      db.$count(webhookEvents),
+    ]);
 
   const [
     lastTickAt,
@@ -169,6 +183,11 @@ export async function loadActivity({
     interactions,
     jobs,
     events,
+    totals: {
+      interactions: interactionTotal,
+      jobs: jobTotal,
+      events: eventTotal,
+    },
     lastTickAt,
     lastDrainAt,
     lastSendAt,

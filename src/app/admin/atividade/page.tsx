@@ -2,7 +2,10 @@ import { connection } from "next/server";
 import Link from "next/link";
 
 import { loadActivity } from "@/app/admin/atividade/data";
-import { readActivityQuery } from "@/app/admin/atividade/navigation";
+import {
+  activityMoreHrefs,
+  readActivityQuery,
+} from "@/app/admin/atividade/navigation";
 import {
   ActivityAlerts,
   ActivityDiagnostics,
@@ -32,8 +35,11 @@ export default async function ActivityPage({
   await connection();
   await requireAdmin();
 
-  const { tab, situation, refreshHref } = readActivityQuery(await searchParams);
-  const data = await loadActivity(situation ? { situation } : {});
+  const { tab, situation, limit, refreshHref } = readActivityQuery(
+    await searchParams,
+  );
+  const data = await loadActivity(situation ? { situation, limit } : { limit });
+  const more = activityMoreHrefs({ situation, limit });
 
   return (
     <div className="space-y-6">
@@ -43,7 +49,7 @@ export default async function ActivityPage({
             <Link href={refreshHref}>Atualizar</Link>
           </Button>
         }
-        meta={`${data.interactions.length} interações · ${data.jobs.length} envios · ${data.events.length} webhooks`}
+        meta={`${data.totals.interactions} interações · ${data.totals.jobs} envios · ${data.totals.events} webhooks`}
         title="Atividade"
       />
 
@@ -60,14 +66,28 @@ export default async function ActivityPage({
         <>
           <ActivityFilterBar {...(situation ? { situation } : {})} />
           <InteractionsSection
+            moreHref={more.interactions}
             rows={data.interactions}
+            total={data.totals.interactions}
             {...(situation ? { situation } : {})}
           />
         </>
       ) : null}
 
-      {tab === "envios" ? <JobsSection rows={data.jobs} /> : null}
-      {tab === "webhooks" ? <EventsSection rows={data.events} /> : null}
+      {tab === "envios" ? (
+        <JobsSection
+          moreHref={more.jobs}
+          rows={data.jobs}
+          total={data.totals.jobs}
+        />
+      ) : null}
+      {tab === "webhooks" ? (
+        <EventsSection
+          moreHref={more.events}
+          rows={data.events}
+          total={data.totals.events}
+        />
+      ) : null}
 
       <ActivityDiagnostics data={data} />
     </div>

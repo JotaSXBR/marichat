@@ -15,6 +15,7 @@ import {
   type ChipTone,
 } from "@/app/admin/labels";
 import { SectionHeading } from "@/components/marichat/page-header";
+import { LoadMore } from "@/components/marichat/load-more";
 import { StatusChip } from "@/components/ui/status-chip";
 import {
   Table,
@@ -33,23 +34,28 @@ function Shell({
   title,
   description,
   count,
+  total,
+  moreHref,
   children,
 }: {
   title: string;
   description: string;
   count: number;
+  total: number;
+  moreHref?: string;
   children: ReactNode;
 }) {
   return (
     <section className="pt-6">
       <SectionHeading
-        meta={`${count} ${count === 1 ? "registro" : "registros"}`}
+        meta={`${total} ${total === 1 ? "registro" : "registros"}`}
         title={title}
       />
       <p className="mt-2 max-w-[70ch] text-[0.8125rem] leading-5 text-muted-soft">
         {description}
       </p>
       {children}
+      <LoadMore href={moreHref} shown={count} total={total} />
     </section>
   );
 }
@@ -212,16 +218,22 @@ function InteractionRecord({ row }: { row: Interaction }) {
 
 export function InteractionsSection({
   rows,
+  total,
   situation,
+  moreHref,
 }: {
   rows: Interaction[];
+  total: number;
   situation?: ActivityFilter;
+  moreHref?: string;
 }) {
   return (
     <Shell
       count={rows.length}
       description="Comentários recebidos e o que aconteceu com cada um."
+      moreHref={moreHref}
       title="Interações"
+      total={total}
     >
       {rows.length === 0 ? (
         <Empty>
@@ -291,12 +303,22 @@ function JobRecord({ row }: { row: Job }) {
   );
 }
 
-export function JobsSection({ rows }: { rows: Job[] }) {
+export function JobsSection({
+  rows,
+  total,
+  moreHref,
+}: {
+  rows: Job[];
+  total: number;
+  moreHref?: string;
+}) {
   return (
     <Shell
       count={rows.length}
       description="Cada DM e cada checagem de seguidor, com o erro quando existe."
+      moreHref={moreHref}
       title="Envios e tarefas da fila"
+      total={total}
     >
       {rows.length === 0 ? (
         <Empty>Nenhuma tarefa criada ainda.</Empty>
@@ -366,12 +388,22 @@ function EventRecord({ row }: { row: Event }) {
   );
 }
 
-export function EventsSection({ rows }: { rows: Event[] }) {
+export function EventsSection({
+  rows,
+  total,
+  moreHref,
+}: {
+  rows: Event[];
+  total: number;
+  moreHref?: string;
+}) {
   return (
     <Shell
       count={rows.length}
       description="O que chegou da Meta antes de virar interação."
+      moreHref={moreHref}
       title="Webhooks recebidos"
+      total={total}
     >
       {rows.length === 0 ? (
         <Empty>Nenhum evento recebido ainda.</Empty>
