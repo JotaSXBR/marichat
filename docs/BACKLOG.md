@@ -30,13 +30,15 @@ Concluída em 2026-10-29.
 
 ## 2. CI e confiança
 
-- [ ] **Acessibilidade e captura fora do CI.** `scripts/a11y.mjs` depende de
-      dev + Postgres + Chromium; roda só na máquina. O portão existe, mas não
-      impede merge que reprova contraste. Um job com Playwright + banco de
-      teste fecharia isso.
-- [ ] **Nenhum teste de navegador.** Toggle de automação, filtro que aplica ao
-      trocar, troca de tema, salvar com erro e layout em 320 px foram conferidos
-      por captura manual. Os 196 testes são unitários/integração.
+Concluída em 2026-10-30.
+
+- [x] **Acessibilidade no CI.** `e2e/a11y.spec.ts` cobre 7 rotas × 3 larguras × 2
+      temas (42 casos) com axe WCAG A/AA e medição de `scrollWidth`. Roda no job
+      `navegador` do CI, com Postgres de teste, `next build` e Chromium.
+- [x] **Testes de navegador.** `e2e/comportamentos.spec.ts` cobre toggle de
+      automação, filtro da Atividade, tema persistido e erro ao salvar. O
+      `scripts/a11y.mjs` foi apagado: o Playwright é o único harness.
+      Trace e capturas sobem como artifact quando o job falha.
 
 ## 3. Produção: validar em conta real
 
@@ -67,6 +69,6 @@ Do "Pendências antes de produção" do `README.md`:
 2. ~~`loading.tsx` + `error.tsx` do painel.~~ Feito.
 3. ~~Paginação em Atividade e Automações.~~ Feito.
 4. ~~Limpeza dos componentes mortos, stub do DESIGN e logs.~~ Feito.
-5. Job de a11y no CI e testes de navegador.
+5. ~~Job de a11y no CI e testes de navegador.~~ Feito.
 6. Validação em conta real.
 7. Extras de produto — ver [`BACKLOG-FUTURO.md`](BACKLOG-FUTURO.md).

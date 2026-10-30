@@ -34,27 +34,27 @@ produção contra esse banco.
 
 ### Fase 1: harness
 
-- [ ] Task 1: `playwright.config.ts` + `npm run test:e2e` + um spec mínimo
+- [x] Task 1: `playwright.config.ts` + `npm run test:e2e` + um spec mínimo
       (health) que passa localmente contra o banco de 5433.
-- [ ] Task 2: `scripts/seed-e2e.mjs` com conta conectada, 3 automações e
+- [x] Task 2: `scripts/seed-e2e.mjs` com conta conectada, 3 automações e
       interações suficientes para as telas não ficarem vazias; roda antes do
       spec.
 
 ### Fase 2: specs
 
-- [ ] Task 3: a11y — portar `scripts/a11y.mjs` para spec (7 rotas × 3 larguras,
+- [x] Task 3: a11y — portar `scripts/a11y.mjs` para spec (7 rotas × 3 larguras,
       claro e escuro, axe AA + overflow), apagar o script e ajustar
       `package.json`.
-- [ ] Task 4: comportamentos — toggle de automação, filtro preservado na troca
+- [x] Task 4: comportamentos — toggle de automação, filtro preservado na troca
       de aba, tema persistido, erro ao salvar.
-- [ ] Task 5: rodar a suíte inteira (Vitest + e2e) e conferir que nada regrediu.
+- [x] Task 5: rodar a suíte inteira (Vitest + e2e) e conferir que nada regrediu.
 
 ### Fase 3: CI
 
-- [ ] Task 6: job `navegador` no `ci.yml`: Postgres 5433, build, `playwright
+- [x] Task 6: job `navegador` no `ci.yml`: Postgres 5433, build, `playwright
       install --with-deps chromium`, seed, e2e; trace e capturas como artifact
       quando falhar.
-- [ ] Task 7: verificação final (`format:check`, `lint:ci`, `typecheck`,
+- [x] Task 7: verificação final (`format:check`, `lint:ci`, `typecheck`,
       `test`, `build`) e atualização do `docs/BACKLOG.md`.
 
 ## Riscos
