@@ -23,9 +23,9 @@ if (!password) {
 
 export default defineConfig({
   testDir: "./e2e",
-  // Um banco só: os specs compartilham estado e não podem correr em paralelo.
-  fullyParallel: false,
-  workers: 1,
+  // Os quatro navegadores dividem o mesmo servidor; cada spec diz se pode
+  // paralelizar (ver `projects`).
+  workers: 4,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
@@ -35,7 +35,22 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      // Só leitura: abre a página, mede e fecha. Cada caso é independente.
+      name: "a11y",
+      testMatch: "a11y.spec.ts",
+      fullyParallel: true,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      // Escrevem no banco (toggle de automação): em série, como antes.
+      name: "fluxos",
+      testMatch: ["comportamentos.spec.ts", "admin-shell.spec.ts"],
+      fullyParallel: false,
+      use: { ...devices["Desktop Chrome"] },
+    },
+  ],
   webServer: {
     command: `node scripts/start-e2e.mjs ${PORT}`,
     url: `${baseURL}/api/health`,
