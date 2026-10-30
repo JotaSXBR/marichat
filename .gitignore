@@ -41,6 +41,11 @@ yarn-error.log*
 # stitch (local captures and preview artifacts)
 /.stitch/
 
+# ferramentas locais de agente
+/.agents/
+/.opencode/
+/skills-lock.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
