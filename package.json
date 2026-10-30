@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "seed:e2e": "node scripts/seed-e2e.mjs",
     "demo:local": "node scripts/local-demo.mjs",
     "a11y": "node scripts/a11y.mjs",
     "clean": "node scripts/clean.mjs",
