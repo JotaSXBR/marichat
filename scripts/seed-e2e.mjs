@@ -41,6 +41,10 @@ if (!keyBase64) {
   throw new Error("TOKEN_ENCRYPTION_KEY não definida.");
 }
 
+// A conta precisa ser do transporte configurado, senão o painel a ignora.
+const provider =
+  process.env.MESSAGING_PROVIDER ?? env.MESSAGING_PROVIDER ?? "meta";
+
 // Mesmo formato de src/lib/crypto.ts: v1.<iv>.<tag>.<ciphertext> em base64url.
 // Duplicado de propósito: o seed roda em Node puro, sem o alias @/ do Next.
 function encryptToken(plaintext) {
@@ -86,8 +90,9 @@ await sql`
 
 const [account] = await sql`
   INSERT INTO instagram_accounts
-    (provider, instagram_user_id, username, access_token_encrypted, token_expires_at, connection_status)
-  VALUES ('meta', '17841400000000000', 'conta_teste', ${encryptToken("IGQVJtoken-de-teste")},
+    (provider, provider_account_id, instagram_user_id, username, access_token_encrypted, token_expires_at, connection_status)
+  VALUES (${provider}, ${provider === "zernio" ? "zernio-account-teste" : null},
+    '17841400000000000', 'conta_teste', ${encryptToken("IGQVJtoken-de-teste")},
     ${minutes(60 * 24 * 30)}, 'connected')
   RETURNING id
 `;
