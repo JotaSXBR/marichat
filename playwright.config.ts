@@ -2,8 +2,8 @@ import { loadEnvConfig } from "@next/env";
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Harness dos testes de navegador. Roda contra o build de produção
- * (`next start`) na 3100, para não disputar a porta do `npm run dev`.
+ * Harness dos testes de navegador. Roda o pacote standalone (o mesmo do
+ * container) na 3100, para não disputar a porta do `npm run dev`.
  *
  * Local: `npm run build` antes da primeira execução. No CI o build é um passo
  * próprio, e as variáveis vêm do job (sem .env.local).
@@ -37,7 +37,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `npm run start -- --port ${PORT}`,
+    command: `node scripts/start-e2e.mjs ${PORT}`,
     url: `${baseURL}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
