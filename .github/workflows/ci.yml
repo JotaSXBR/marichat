@@ -50,6 +50,9 @@ jobs:
     steps:
       - name: Baixar o código
         uses: actions/checkout@v7
+        with:
+          # O job não faz push; não deixa o token no .git.
+          persist-credentials: false
 
       - name: Configurar Node.js
         uses: actions/setup-node@v7
@@ -58,14 +61,7 @@ jobs:
           cache: npm
 
       - name: Instalar dependências
-        run: npm ci
-
-      # ~100 MB de Chromium; a chave amarra a versão do Playwright.
-      - name: Guardar o Chromium do Playwright
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('package-lock.json') }}
+        run: npm ci --no-audit --no-fund
 
       # Sem isso, o lint tipado e o tsc não encontram os tipos de rotas/páginas
       # gerados pelo Next (.next/types) e acusam "type that cannot be resolved".
@@ -93,8 +89,10 @@ jobs:
       - name: Build de produção
         run: npm run build
 
+      # Só o Chromium headless: os specs não abrem janela, e o shell é ~60 MB
+      # contra os 293 MB do pacote completo (que não compensa em cache).
       - name: Instalar o Chromium do Playwright
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps --only-shell chromium
 
       # Sem dados, as telas abrem vazias e a auditoria cobre pouco.
       - name: Popular o banco de teste
