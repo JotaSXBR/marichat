@@ -208,7 +208,7 @@ function RecentCommentsList({ rows }: { rows: RecentComment[] }) {
     <ul className="md:hidden">
       {rows.map((row) => (
         <li className="border-b border-line-subtle py-3" key={row.id}>
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className="text-sm font-medium text-foreground">
               {row.automationName ?? "—"}
             </span>
