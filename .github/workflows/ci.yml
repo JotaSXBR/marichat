@@ -62,7 +62,7 @@ jobs:
 
       # ~100 MB de Chromium; a chave amarra a versão do Playwright.
       - name: Guardar o Chromium do Playwright
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('package-lock.json') }}
