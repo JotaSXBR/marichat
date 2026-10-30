@@ -406,9 +406,9 @@ Lista vazia não mostra cabeçalho de tabela vazio.
 - Nenhuma informação só por cor.
 
 **Portão automático:** `npm run a11y` roda axe (WCAG 2.0/2.1/2.2 A e AA) nas 7
-rotas × 3 viewports (1440, 390, 320), mede `scrollWidth` e falha em qualquer
-violação ou overflow. `node scripts/a11y.mjs dark` repete a auditoria no tema
-escuro. Hoje: 21/21 em cada tema.
+rotas × 3 viewports (1440, 390, 320), nos temas claro e escuro, mede
+`scrollWidth` e falha em qualquer violação ou overflow. Hoje: 42/42
+(`e2e/a11y.spec.ts`, junto com os demais testes de navegador).
 
 ---
 
