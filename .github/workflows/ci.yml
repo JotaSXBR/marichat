@@ -78,3 +78,71 @@ jobs:
       # O build não acessa o banco: o cliente é criado em tempo de execução.
       - name: Build de produção
         run: npm run build
+
+  navegador:
+    name: acessibilidade e navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: marichat_test
+        ports:
+          # Mesma porta da suíte de integração: o seed recusa outro banco.
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5433/marichat_test
+      ADMIN_PASSWORD: senha-de-teste-do-ci
+      # Chave de teste (32 bytes em base64); nunca a de produção.
+      TOKEN_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      MESSAGING_PROVIDER: meta
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Aplicar migrations no banco de teste
+        run: npm run db:migrate
+
+      - name: Build de produção
+        run: npm run build
+
+      # Sem dados, as telas abrem vazias e a auditoria cobre pouco.
+      - name: Popular o banco de teste
+        run: npm run seed:e2e
+
+      - name: Testes de acessibilidade e de navegador
+        run: npm run test:e2e
+
+      - name: Guardar trace e capturas das falhas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
