@@ -13,11 +13,13 @@ concurrency:
 permissions:
   contents: read
 
+# Um job só: o build é a etapa mais cara e os testes de navegador usam o mesmo
+# build. Portões baratos falham primeiro; o e2e roda por último.
 jobs:
   verificar:
-    name: lint, tipos, testes e build
+    name: lint, tipos, testes, build e navegador
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     services:
       postgres:
@@ -28,71 +30,8 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: marichat_test
         ports:
-          # A suíte de integração só roda na porta 5433 (proteção contra banco
-          # de produção). Ver tests/helpers/db.ts.
-          - 5433:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5433/marichat_test
-      NEXT_TELEMETRY_DISABLED: "1"
-
-    steps:
-      - name: Baixar o código
-        uses: actions/checkout@v7
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Instalar dependências
-        run: npm ci
-
-      # Sem isso, o lint tipado e o tsc não encontram os tipos de rotas/páginas
-      # gerados pelo Next (.next/types) e acusam "type that cannot be resolved".
-      - name: Gerar tipos das rotas do Next
-        run: npm run typegen
-
-      - name: Aplicar migrations no banco de teste
-        run: npm run db:migrate
-
-      - name: Formatação (Prettier)
-        run: npm run format:check
-
-      # Falha em qualquer aviso (baseline atual: zero).
-      - name: Lint com tipos e orçamentos
-        run: npm run lint:ci
-
-      - name: Tipos do TypeScript
-        run: npm run typecheck
-
-      - name: Testes com cobertura
-        run: npm run test:coverage
-
-      # O build não acessa o banco: o cliente é criado em tempo de execução.
-      - name: Build de produção
-        run: npm run build
-
-  navegador:
-    name: acessibilidade e navegador
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    services:
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: marichat_test
-        ports:
-          # Mesma porta da suíte de integração: o seed recusa outro banco.
+          # A suíte de integração e o seed só rodam na porta 5433 (proteção
+          # contra banco de produção). Ver tests/helpers/db.ts.
           - 5433:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
@@ -121,14 +60,41 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Instalar o Chromium do Playwright
-        run: npx playwright install --with-deps chromium
+      # ~100 MB de Chromium; a chave amarra a versão do Playwright.
+      - name: Guardar o Chromium do Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
+
+      # Sem isso, o lint tipado e o tsc não encontram os tipos de rotas/páginas
+      # gerados pelo Next (.next/types) e acusam "type that cannot be resolved".
+      - name: Gerar tipos das rotas do Next
+        run: npm run typegen
 
       - name: Aplicar migrations no banco de teste
         run: npm run db:migrate
 
+      - name: Formatação (Prettier)
+        run: npm run format:check
+
+      # Falha em qualquer aviso (baseline atual: zero).
+      - name: Lint com tipos e orçamentos
+        run: npm run lint:ci
+
+      - name: Tipos do TypeScript
+        run: npm run typecheck
+
+      - name: Testes com cobertura
+        run: npm run test:coverage
+
+      # O build não acessa o banco: o cliente é criado em tempo de execução.
+      # Os testes de navegador sobem este mesmo pacote standalone.
       - name: Build de produção
         run: npm run build
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
 
       # Sem dados, as telas abrem vazias e a auditoria cobre pouco.
       - name: Popular o banco de teste

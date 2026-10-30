@@ -33,8 +33,8 @@ Concluída em 2026-10-29.
 Concluída em 2026-10-30.
 
 - [x] **Acessibilidade no CI.** `e2e/a11y.spec.ts` cobre 7 rotas × 3 larguras × 2
-      temas (42 casos) com axe WCAG A/AA e medição de `scrollWidth`. Roda no job
-      `navegador` do CI, com Postgres de teste, `next build` e Chromium.
+      temas (42 casos) com axe WCAG A/AA e medição de `scrollWidth`. Roda no CI,
+      no mesmo build do job de verificação, com Postgres de teste e Chromium.
 - [x] **Testes de navegador.** `e2e/comportamentos.spec.ts` cobre toggle de
       automação, filtro da Atividade, tema persistido e erro ao salvar. O
       `scripts/a11y.mjs` foi apagado: o Playwright é o único harness.
